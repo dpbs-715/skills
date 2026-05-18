@@ -7,7 +7,7 @@ metadata:
 
 # dpbs Dev
 
-Load only the matching rule file.
+Load every matching rule file, and skip unrelated files to keep context small.
 
 ## Rules
 
