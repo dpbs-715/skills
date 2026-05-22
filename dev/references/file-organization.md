@@ -15,8 +15,10 @@ Placement:
 
 Good to extract:
 
+- Stable, named configuration that helps the main entry stay focused: columns, fields, schemas, rules, metadata, field lists, option maps, status/display config, repeated defaults, or behavior settings.
 - Config/constants reused within the same owner scope.
 - Enums/status/type codes shared within a feature/domain.
+- Independent sub-flows with their own request, loading, validation, submit, or error-handling lifecycle.
 - Complex feature sub-flows or sub-components.
 - Public types/contracts/schemas.
 - Pure utilities with no feature-specific context.
