@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { lstat, mkdir, readdir, realpath, symlink, unlink } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+
+import { pathExists, repoRoot as resolveRepoRoot } from './utils.ts'
 
 export const DEFAULT_TARGETS = [
   '~/.codex/skills',
@@ -48,19 +50,7 @@ function homePath(path: string): string {
 }
 
 function repoRoot(): string {
-  return resolve(dirname(fileURLToPath(import.meta.url)), '..')
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await lstat(path)
-    return true
-  }
-  catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
-      return false
-    throw error
-  }
+  return resolveRepoRoot(import.meta.url)
 }
 
 async function safeRealpath(path: string): Promise<string | null> {

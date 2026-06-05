@@ -8,6 +8,7 @@ This repository separates always-on preferences from task-specific skills:
 - `skills/` is reserved for task-triggered skill packages.
 - `sources/` is reserved for upstream documentation sources used to generate skills.
 - `vendor/` is reserved for synchronized third-party skill repositories.
+- `meta.ts` records manual entries, source projects, and vendored skill mappings.
 
 ## Current Entries
 
@@ -15,6 +16,46 @@ This repository separates always-on preferences from task-specific skills:
 | --- | --- | --- |
 | Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
 | Skill shim | Engineering rules | [skills/engineering-rules/SKILL.md](skills/engineering-rules/SKILL.md) |
+
+## Vendored Skills
+
+This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:
+
+1. Declare the upstream repository and skills to copy in `meta.ts` under `vendors`.
+2. Run the skills manager to add missing submodules.
+3. Sync selected upstream skills into `skills/`.
+
+GSAP is configured as a vendored source:
+
+```bash
+pnpm skills init
+pnpm skills sync
+npm run link
+```
+
+The skills manager supports:
+
+```bash
+pnpm skills init      # add missing source/vendor git submodules from meta.ts
+pnpm skills sync      # update submodules, then sync vendored skills into skills/
+pnpm skills check     # fetch submodules and report upstream updates
+pnpm skills cleanup   # report unused submodules/skills
+pnpm skills cleanup --yes
+```
+
+Manual vendor setup is still possible when you want to add a submodule yourself:
+
+1. Add the upstream repository under `vendor/<name>`.
+2. Declare the skills to copy in `meta.ts` under `vendors`.
+3. Run the vendor sync script directly.
+
+```bash
+git submodule add https://github.com/greensock/gsap-skills vendor/gsap
+pnpm sync:vendors
+npm run link
+```
+
+Synced skills get a `SYNC.md` file with the upstream path, repository URL, git SHA, and sync date. Avoid editing synced skill directories by hand; update the vendor submodule and re-run `pnpm sync:vendors` instead.
 
 ## Conventions
 

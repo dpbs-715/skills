@@ -1,3 +1,8 @@
+export interface VendorSkillMeta {
+  source: string
+  skills: Record<string, string>
+}
+
 export const rules = [
   'engineering',
 ] as const
@@ -8,4 +13,6 @@ export const manual = [
 
 export const sources = {} as const
 
-export const vendors = {} as const
+export const vendors: Record<string, VendorSkillMeta> = {
+
+}

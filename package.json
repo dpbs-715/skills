@@ -6,7 +6,9 @@
     "test": "node --test scripts/*.test.ts",
     "typecheck": "tsc --noEmit",
     "link": "node scripts/link-skills.ts link",
-    "unlink": "node scripts/link-skills.ts unlink"
+    "unlink": "node scripts/link-skills.ts unlink",
+    "skills": "node scripts/cli.ts",
+    "sync:vendors": "node scripts/sync-vendor-skills.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
