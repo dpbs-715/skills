@@ -93,6 +93,35 @@ test('removes only symlinks that point to repo skills', async () => {
   assert.equal(await readlink(join(target, 'other-skill')), '/tmp/elsewhere')
 })
 
+test('removes dangling links left behind by deleted skills', async () => {
+  const root = await createTempDir('skills-repo-')
+  const target = await createTempDir('skills-target-')
+  // A skill that was linked previously, then deleted from the repo.
+  await symlink(join(root, 'skills', 'gsap-core'), join(target, 'gsap-core'))
+
+  const results = await removeSkillLinks({ root, targets: [target] })
+
+  assert.deepEqual(results, [{ name: 'gsap-core', target, status: 'removed' }])
+  await assert.rejects(() => readlink(join(target, 'gsap-core')), /ENOENT/)
+})
+
+test('prunes dangling links for deleted skills when linking', async () => {
+  const root = await createTempDir('skills-repo-')
+  const target = await createTempDir('skills-target-')
+  const source = await createSkill(root, 'engineering-rules')
+  // Stale link from a skill that no longer exists in the repo.
+  await symlink(join(root, 'skills', 'gsap-core'), join(target, 'gsap-core'))
+
+  const results = await createSkillLinks({ root, targets: [target] })
+
+  assert.deepEqual(results, [
+    { name: 'engineering-rules', target, status: 'linked' },
+    { name: 'gsap-core', target, status: 'removed' },
+  ])
+  assert.equal(await readlink(join(target, 'engineering-rules')), source)
+  await assert.rejects(() => readlink(join(target, 'gsap-core')), /ENOENT/)
+})
+
 test.after(async () => {
   await Promise.all(temporaryPaths.map(path => rm(path, { recursive: true, force: true })))
 })

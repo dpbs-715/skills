@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { lstat, mkdir, readdir, realpath, symlink, unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { lstat, mkdir, readdir, readlink, realpath, symlink, unlink } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
@@ -62,6 +62,23 @@ async function safeRealpath(path: string): Promise<string | null> {
   }
 }
 
+/**
+ * Whether `linkPath` is a symlink whose target lives directly inside the
+ * repo's skills directory. Uses the raw link target rather than realpath so
+ * that dangling links (whose source skill was deleted) are still recognised.
+ */
+async function pointsIntoSkills(linkPath: string, skillsDir: string): Promise<boolean> {
+  let target: string
+  try {
+    target = await readlink(linkPath)
+  }
+  catch {
+    return false
+  }
+
+  return dirname(resolve(dirname(linkPath), target)) === skillsDir
+}
+
 export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
   const skillsDir = join(root, 'skills')
   if (!await pathExists(skillsDir))
@@ -107,6 +124,8 @@ export async function createSkillLinks({
   targets = DEFAULT_TARGETS.map(homePath),
 }: LinkOptions = {}): Promise<LinkResult[]> {
   const skills = await discoverSkills(root)
+  const skillsDir = join(root, 'skills')
+  const current = new Set(skills.map(skill => skill.name))
   const results: LinkResult[] = []
 
   for (const target of targets) {
@@ -115,6 +134,20 @@ export async function createSkillLinks({
     for (const skill of skills) {
       const status = await ensureLink(skill.source, join(target, skill.name))
       results.push({ name: skill.name, target, status })
+    }
+
+    // Prune stale links left behind by skills that no longer exist in the repo.
+    const entries = await readdir(target, { withFileTypes: true })
+    for (const entry of entries) {
+      if (current.has(entry.name))
+        continue
+
+      const linkPath = join(target, entry.name)
+      if (!await pointsIntoSkills(linkPath, skillsDir))
+        continue
+
+      await unlink(linkPath)
+      results.push({ name: entry.name, target, status: 'removed' })
     }
   }
 
@@ -125,29 +158,23 @@ export async function removeSkillLinks({
   root = repoRoot(),
   targets = DEFAULT_TARGETS.map(homePath),
 }: LinkOptions = {}): Promise<LinkResult[]> {
-  const skills = await discoverSkills(root)
+  const skillsDir = join(root, 'skills')
   const results: LinkResult[] = []
 
   for (const target of targets) {
     if (!await pathExists(target))
       continue
 
-    for (const skill of skills) {
-      const linkPath = join(target, skill.name)
-      if (!await pathExists(linkPath))
-        continue
-
-      const stat = await lstat(linkPath)
-      if (!stat.isSymbolicLink())
-        continue
-
-      const existing = await safeRealpath(linkPath)
-      const expected = await realpath(skill.source)
-      if (existing !== expected)
+    // Scan the target directory so we also clean up dangling links whose
+    // source skill was deleted from the repo, not just currently known skills.
+    const entries = await readdir(target, { withFileTypes: true })
+    for (const entry of entries) {
+      const linkPath = join(target, entry.name)
+      if (!await pointsIntoSkills(linkPath, skillsDir))
         continue
 
       await unlink(linkPath)
-      results.push({ name: skill.name, target, status: 'removed' })
+      results.push({ name: entry.name, target, status: 'removed' })
     }
   }
 
