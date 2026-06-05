@@ -2,7 +2,9 @@ export const rules = [
   'engineering',
 ] as const
 
-export const manual = [] as const
+export const manual = [
+  'engineering-rules',
+] as const
 
 export const sources = {} as const
 

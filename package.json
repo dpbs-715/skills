@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "test": "node --test scripts/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "link": "node scripts/link-skills.ts link",
+    "unlink": "node scripts/link-skills.ts unlink"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}
