@@ -7,7 +7,7 @@ metadata:
 
 # Personal Knowledge
 
-Read [knowledge/INDEX.md]({{REPO_ROOT}}/knowledge/INDEX.md).
+Read [knowledge/INDEX.md](../../knowledge/INDEX.md) at `{{REPO_ROOT}}/knowledge/INDEX.md`.
 
 Use it as a lightweight index for reusable personal notes and command notes.
 
