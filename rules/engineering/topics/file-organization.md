@@ -13,6 +13,14 @@ Placement:
 - Only cross-domain, business-neutral code goes to common/shared.
 - Do not promote to common just because two files use it once.
 
+Layout:
+
+- Group by role, not by file type; a flat folder mixing entry points, operations, helpers, and tests is a smell.
+- Separate user-facing entry points, the operations they invoke, and the shared libs both depend on.
+- Name directories for their role (entry, commands, lib), not their shape.
+- Colocate tests with the code they cover.
+- Keep the layout reorganizable: a unit must not depend on its own depth or path in the tree.
+
 Good to extract:
 
 - Stable, named configuration that helps the main entry stay focused: columns, fields, schemas, rules, metadata, field lists, option maps, status/display config, repeated defaults, or behavior settings.

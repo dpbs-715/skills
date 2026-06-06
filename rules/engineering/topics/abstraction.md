@@ -21,3 +21,4 @@ Prefer:
 - Domain concepts over generic helpers.
 - Small composable units over long imperative flows.
 - Clear names that explain the design.
+- Shared context (roots, base paths, config) resolved from one fixed anchor over values derived from each caller's location.
