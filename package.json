@@ -5,13 +5,18 @@
   "scripts": {
     "test": "node --test \"scripts/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "link": "node scripts/commands/link.ts link",
     "unlink": "node scripts/commands/link.ts unlink",
     "skills": "node scripts/skills.ts",
     "sync:vendors": "node scripts/commands/sync-vendors.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.0.0",
-    "typescript": "^5.9.3"
+    "eslint": "^10.4.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.60.1"
   }
 }
