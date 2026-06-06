@@ -9,6 +9,7 @@ export const rules = [
 
 export const manual = [
   'engineering-rules',
+  'personal-knowledge',
 ] as const
 
 export const sources = {} as const

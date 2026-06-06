@@ -16,6 +16,7 @@ This repository separates always-on preferences from task-specific skills:
 | --- | --- | --- |
 | Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
 | Skill shim | Engineering rules | [templates/engineering-rules/SKILL.md](templates/engineering-rules/SKILL.md) |
+| Skill shim | Personal knowledge | [templates/personal-knowledge/SKILL.md](templates/personal-knowledge/SKILL.md) |
 
 ## Vendored Skills
 

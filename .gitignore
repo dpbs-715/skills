@@ -2,6 +2,8 @@
 /.obsidian/
 .DS_Store
 node_modules/
-knowledge/
+knowledge/INDEX.md
+knowledge/notes/
 # Generated from templates/ by `pnpm link`
 /skills/engineering-rules/
+/skills/personal-knowledge/
