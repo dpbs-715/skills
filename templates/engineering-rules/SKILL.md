@@ -7,6 +7,6 @@ metadata:
 
 # Engineering Rules
 
-Read `{{REPO_ROOT}}/rules/engineering/RULES.md`.
+Read [rules/engineering/RULES.md]({{REPO_ROOT}}/rules/engineering/RULES.md).
 
 Load only the topic files that match the work. Prefer more specific project rules when they conflict with these personal rules.
