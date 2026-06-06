@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
-import { vendors as defaultVendors, type VendorSkillMeta } from '../meta.ts'
-import { execFileText, pathExists, repoRoot } from './utils.ts'
+import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { execFileText, pathExists, repoRoot } from '../lib/utils.ts'
 
 export type { VendorSkillMeta }
 
@@ -37,7 +37,7 @@ const LICENSE_NAMES = [
 
 async function defaultResolveGitSha(path: string): Promise<string | null> {
   try {
-    return await execFileText('git', ['-C', path, 'rev-parse', 'HEAD'], repoRoot(import.meta.url))
+    return await execFileText('git', ['-C', path, 'rev-parse', 'HEAD'], repoRoot())
   }
   catch {
     return null
@@ -93,7 +93,7 @@ function assertUniqueOutputSkills(vendors: Record<string, VendorSkillMeta>): voi
 export async function syncVendorSkills({
   date = new Date().toISOString().slice(0, 10),
   resolveGitSha = defaultResolveGitSha,
-  root = repoRoot(import.meta.url),
+  root = repoRoot(),
   vendors = defaultVendors,
 }: SyncVendorSkillsOptions = {}): Promise<SyncResult[]> {
   assertUniqueOutputSkills(vendors)

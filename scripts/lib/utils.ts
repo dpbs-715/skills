@@ -6,8 +6,13 @@ import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 
-export function repoRoot(scriptUrl: string): string {
-  return resolve(dirname(fileURLToPath(scriptUrl)), '..')
+/**
+ * Absolute path to the repository root, anchored to this file's location
+ * (`scripts/lib/`) so callers get the same answer no matter how deeply they
+ * live under `scripts/`.
+ */
+export function repoRoot(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 }
 
 export async function pathExists(path: string): Promise<boolean> {

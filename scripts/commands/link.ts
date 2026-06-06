@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
-import { pathExists, repoRoot as resolveRepoRoot } from './utils.ts'
+import { pathExists, repoRoot } from '../lib/utils.ts'
 
 export const DEFAULT_TARGETS = [
   '~/.codex/skills',
@@ -58,10 +58,6 @@ function homePath(path: string): string {
   if (path.startsWith('~/'))
     return join(home, path.slice(2))
   return path
-}
-
-function repoRoot(): string {
-  return resolveRepoRoot(import.meta.url)
 }
 
 async function safeRealpath(path: string): Promise<string | null> {

@@ -13,8 +13,8 @@ import {
   initSubmodules,
   syncSubmodules,
   type RunGit,
-} from './cli.ts'
-import type { VendorSkillMeta } from './sync-vendor-skills.ts'
+} from './skills.ts'
+import type { VendorSkillMeta } from './commands/sync-vendors.ts'
 
 const temporaryPaths: string[] = []
 const execFileAsync = promisify(execFile)

@@ -16,8 +16,8 @@ import {
   syncVendorSkills as defaultSyncVendorSkills,
   type SyncResult,
   type SyncVendorSkillsOptions,
-} from './sync-vendor-skills.ts'
-import { execFileText, pathExists, repoRoot } from './utils.ts'
+} from './commands/sync-vendors.ts'
+import { execFileText, pathExists, repoRoot } from './lib/utils.ts'
 
 export type RunGit = (args: string[]) => Promise<string>
 
@@ -220,7 +220,7 @@ export function getProjects({
 }
 
 export async function initSubmodules({
-  root = repoRoot(import.meta.url),
+  root = repoRoot(),
   runGit = createGitRunner(root),
   sources = defaultSources,
   vendors = defaultVendors,
@@ -276,7 +276,7 @@ export async function initSubmodules({
 }
 
 export async function syncSubmodules({
-  root = repoRoot(import.meta.url),
+  root = repoRoot(),
   runGit = createGitRunner(root),
   syncVendorSkills = defaultSyncVendorSkills,
   vendors = defaultVendors,
@@ -286,7 +286,7 @@ export async function syncSubmodules({
 }
 
 export async function checkUpdates({
-  root = repoRoot(import.meta.url),
+  root = repoRoot(),
   runGit = createGitRunner(root),
   sources = defaultSources,
   vendors = defaultVendors,
@@ -344,7 +344,7 @@ function expectedSkillNames({
 
 export async function cleanupUnusedEntries({
   manual = defaultManual,
-  root = repoRoot(import.meta.url),
+  root = repoRoot(),
   runGit = createGitRunner(root),
   sources = defaultSources,
   vendors = defaultVendors,

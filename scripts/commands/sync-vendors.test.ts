@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { syncVendorSkills, type VendorSkillMeta } from './sync-vendor-skills.ts'
+import { syncVendorSkills, type VendorSkillMeta } from './sync-vendors.ts'
 
 const temporaryPaths: string[] = []
 
