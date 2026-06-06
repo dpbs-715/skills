@@ -2,6 +2,6 @@
 /.obsidian/
 .DS_Store
 node_modules/
-
+knowledge/
 # Generated from templates/ by `pnpm link`
 /skills/engineering-rules/
