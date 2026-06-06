@@ -73,13 +73,15 @@ The repository keeps skill source under `skills/`. Link them into local agent sk
 npm run link
 ```
 
-By default this links skills into:
+By default this links skills into whichever of these target directories already exist:
 
 - `~/.codex/skills`
 - `~/.claude/skills`
 - `~/.agents/skills`
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two discovered skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
+
+Missing default target directories are skipped, so deleting `~/.agents/skills` keeps `npm run link` from recreating it. Use `-- --target <path>` when you want to create or update a specific target directory explicitly.
 
 Remove links created by this repository with:
 

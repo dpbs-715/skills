@@ -161,18 +161,32 @@ async function ensureLink(source: string, linkPath: string): Promise<'exists' | 
   throw new Error(`Refusing to replace symlink with different target: ${linkPath}`)
 }
 
+async function existingDefaultTargets(): Promise<string[]> {
+  const targets: string[] = []
+
+  for (const target of DEFAULT_TARGETS.map(homePath)) {
+    if (await pathExists(target))
+      targets.push(target)
+  }
+
+  return targets
+}
+
 export async function createSkillLinks({
   root = repoRoot(),
-  targets = DEFAULT_TARGETS.map(homePath),
+  targets,
 }: LinkOptions = {}): Promise<LinkResult[]> {
   await renderSkillTemplates(root)
   const skills = await discoverSkills(root)
   const skillsDir = join(root, 'skills')
   const current = new Set(skills.map(skill => skill.name))
   const results: LinkResult[] = []
+  const linkTargets = targets ?? await existingDefaultTargets()
+  const createMissingTargets = targets !== undefined
 
-  for (const target of targets) {
-    await mkdir(target, { recursive: true })
+  for (const target of linkTargets) {
+    if (createMissingTargets)
+      await mkdir(target, { recursive: true })
 
     for (const skill of skills) {
       const status = await ensureLink(skill.source, join(target, skill.name))
@@ -265,10 +279,9 @@ function printResults(results: LinkResult[]): void {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
-  const targets = options.targets.length > 0 ? options.targets : DEFAULT_TARGETS.map(homePath)
   const results = options.action === 'unlink'
-    ? await removeSkillLinks({ targets })
-    : await createSkillLinks({ targets })
+    ? await removeSkillLinks({ targets: options.targets.length > 0 ? options.targets : undefined })
+    : await createSkillLinks({ targets: options.targets.length > 0 ? options.targets : undefined })
 
   printResults(results)
 }

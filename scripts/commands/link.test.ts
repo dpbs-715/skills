@@ -103,6 +103,37 @@ test('creates symlinks for each discovered skill in each target', async () => {
   assert.equal(await readlink(join(target, 'engineering-rules')), source)
 })
 
+test('skips missing default targets instead of creating them', async () => {
+  const root = await createTempDir('skills-repo-')
+  const home = await createTempDir('skills-home-')
+  const source = await createSkill(root, 'engineering-rules')
+  const codexTarget = join(home, '.codex', 'skills')
+  const claudeTarget = join(home, '.claude', 'skills')
+  const agentsTarget = join(home, '.agents', 'skills')
+  await mkdir(codexTarget, { recursive: true })
+  await mkdir(claudeTarget, { recursive: true })
+
+  const previousHome = process.env.HOME
+  process.env.HOME = home
+  try {
+    const results = await createSkillLinks({ root })
+
+    assert.deepEqual(results, [
+      { name: 'engineering-rules', target: codexTarget, status: 'linked' },
+      { name: 'engineering-rules', target: claudeTarget, status: 'linked' },
+    ])
+    assert.equal(await readlink(join(codexTarget, 'engineering-rules')), source)
+    assert.equal(await readlink(join(claudeTarget, 'engineering-rules')), source)
+    assert.equal(await pathExists(agentsTarget), false)
+  }
+  finally {
+    if (previousHome === undefined)
+      delete process.env.HOME
+    else
+      process.env.HOME = previousHome
+  }
+})
+
 test('keeps an existing correct symlink', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
