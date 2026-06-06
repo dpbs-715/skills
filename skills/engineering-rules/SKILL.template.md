@@ -7,6 +7,6 @@ metadata:
 
 # Engineering Rules
 
-Read `/Users/dpbs/Documents/md/skills/rules/engineering/RULES.md`.
+Read `{{REPO_ROOT}}/rules/engineering/RULES.md`.
 
 Load only the topic files that match the work. Prefer more specific project rules when they conflict with these personal rules.

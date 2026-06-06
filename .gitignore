@@ -2,3 +2,6 @@
 /.obsidian/
 .DS_Store
 node_modules/
+
+# Generated from SKILL.template.md by `pnpm link`
+/skills/engineering-rules/SKILL.md

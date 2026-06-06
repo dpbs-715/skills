@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -9,6 +9,8 @@ import {
   DEFAULT_TARGETS,
   discoverSkills,
   removeSkillLinks,
+  renderSkillTemplates,
+  REPO_ROOT_TOKEN,
 } from './link-skills.ts'
 
 const temporaryPaths: string[] = []
@@ -26,12 +28,46 @@ async function createSkill(root: string, name: string): Promise<string> {
   return skillDir
 }
 
+async function createTemplatedSkill(root: string, name: string): Promise<string> {
+  const skillDir = join(root, 'skills', name)
+  await mkdir(skillDir, { recursive: true })
+  await writeFile(
+    join(skillDir, 'SKILL.template.md'),
+    `Read \`${REPO_ROOT_TOKEN}/rules/engineering/RULES.md\`.\n`,
+  )
+  return skillDir
+}
+
 test('defaults to Codex and Claude skill directories', () => {
   assert.deepEqual(DEFAULT_TARGETS, [
     '~/.codex/skills',
     '~/.claude/skills',
     '~/.agents/skills',
   ])
+})
+
+test('renders SKILL.template.md into SKILL.md with the repo root resolved', async () => {
+  const root = await createTempDir('skills-repo-')
+  const skillDir = await createTemplatedSkill(root, 'engineering-rules')
+
+  const rendered = await renderSkillTemplates(root)
+
+  assert.deepEqual(rendered, ['engineering-rules'])
+  const skill = await readFile(join(skillDir, 'SKILL.md'), 'utf-8')
+  assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
+})
+
+test('links a skill that only ships a template by rendering it first', async () => {
+  const root = await createTempDir('skills-repo-')
+  const target = await createTempDir('skills-target-')
+  const source = await createTemplatedSkill(root, 'engineering-rules')
+
+  const results = await createSkillLinks({ root, targets: [target] })
+
+  assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
+  assert.equal(await readlink(join(target, 'engineering-rules')), source)
+  const skill = await readFile(join(source, 'SKILL.md'), 'utf-8')
+  assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
 })
 
 test('discovers directories that contain SKILL.md', async () => {

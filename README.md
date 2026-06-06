@@ -15,7 +15,7 @@ This repository separates always-on preferences from task-specific skills:
 | Type | Name | Entry |
 | --- | --- | --- |
 | Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
-| Skill shim | Engineering rules | [skills/engineering-rules/SKILL.md](skills/engineering-rules/SKILL.md) |
+| Skill shim | Engineering rules | [skills/engineering-rules/SKILL.template.md](skills/engineering-rules/SKILL.template.md) |
 
 ## Vendored Skills
 
@@ -62,6 +62,8 @@ Synced skills get a `SYNC.md` file with the upstream path, repository URL, git S
 Rule sets use `RULES.md` as the entry file and keep focused topic documents in `topics/`.
 
 Skills, when added, should use the standard `SKILL.md` layout under `skills/<name>/`.
+
+A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill ships a `SKILL.template.md` that uses the `{{REPO_ROOT}}` placeholder; `npm run link` renders it into a gitignored `SKILL.md` with this checkout's absolute path. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
 
 ## Linking Skills
 

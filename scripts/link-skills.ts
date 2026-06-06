@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { lstat, mkdir, readdir, readlink, realpath, symlink, unlink } from 'node:fs/promises'
+import { lstat, mkdir, readdir, readFile, readlink, realpath, symlink, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -12,6 +12,16 @@ export const DEFAULT_TARGETS = [
   '~/.claude/skills',
   '~/.agents/skills',
 ] as const
+
+/**
+ * Placeholder inside a `SKILL.template.md` that is replaced with this repo's
+ * absolute path at link time, so a committed skill can reference files outside
+ * its own directory without hardcoding one machine's checkout location.
+ */
+export const REPO_ROOT_TOKEN = '{{REPO_ROOT}}'
+
+const SKILL_TEMPLATE_FILE = 'SKILL.template.md'
+const SKILL_FILE = 'SKILL.md'
 
 type LinkAction = 'link' | 'unlink'
 type LinkStatus = 'exists' | 'linked' | 'removed'
@@ -79,6 +89,37 @@ async function pointsIntoSkills(linkPath: string, skillsDir: string): Promise<bo
   return dirname(resolve(dirname(linkPath), target)) === skillsDir
 }
 
+/**
+ * Render every `SKILL.template.md` into a sibling `SKILL.md`, substituting the
+ * repo root for {@link REPO_ROOT_TOKEN}. Runs before discovery/linking so a
+ * fresh clone produces correct absolute paths on whatever machine ran `link`.
+ * The generated `SKILL.md` is a build artifact and should be gitignored.
+ */
+export async function renderSkillTemplates(root = repoRoot()): Promise<string[]> {
+  const skillsDir = join(root, 'skills')
+  if (!await pathExists(skillsDir))
+    return []
+
+  const entries = await readdir(skillsDir, { withFileTypes: true })
+  const rendered: string[] = []
+
+  for (const entry of entries) {
+    if (!entry.isDirectory())
+      continue
+
+    const templatePath = join(skillsDir, entry.name, SKILL_TEMPLATE_FILE)
+    if (!await pathExists(templatePath))
+      continue
+
+    const template = await readFile(templatePath, 'utf-8')
+    const content = template.replaceAll(REPO_ROOT_TOKEN, root)
+    await writeFile(join(skillsDir, entry.name, SKILL_FILE), content)
+    rendered.push(entry.name)
+  }
+
+  return rendered.sort((left, right) => left.localeCompare(right))
+}
+
 export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
   const skillsDir = join(root, 'skills')
   if (!await pathExists(skillsDir))
@@ -92,7 +133,7 @@ export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
       continue
 
     const source = join(skillsDir, entry.name)
-    if (await pathExists(join(source, 'SKILL.md'))) {
+    if (await pathExists(join(source, SKILL_FILE))) {
       skills.push({ name: entry.name, source })
     }
   }
@@ -123,6 +164,7 @@ export async function createSkillLinks({
   root = repoRoot(),
   targets = DEFAULT_TARGETS.map(homePath),
 }: LinkOptions = {}): Promise<LinkResult[]> {
+  await renderSkillTemplates(root)
   const skills = await discoverSkills(root)
   const skillsDir = join(root, 'skills')
   const current = new Set(skills.map(skill => skill.name))
