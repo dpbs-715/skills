@@ -12,6 +12,7 @@ import {
   renderSkillTemplates,
   REPO_ROOT_TOKEN,
 } from './link-skills.ts'
+import { pathExists } from './utils.ts'
 
 const temporaryPaths: string[] = []
 
@@ -28,14 +29,13 @@ async function createSkill(root: string, name: string): Promise<string> {
   return skillDir
 }
 
-async function createTemplatedSkill(root: string, name: string): Promise<string> {
-  const skillDir = join(root, 'skills', name)
-  await mkdir(skillDir, { recursive: true })
+async function createSkillTemplate(root: string, name: string): Promise<void> {
+  const templateDir = join(root, 'templates', name)
+  await mkdir(templateDir, { recursive: true })
   await writeFile(
-    join(skillDir, 'SKILL.template.md'),
+    join(templateDir, 'SKILL.md'),
     `Read \`${REPO_ROOT_TOKEN}/rules/engineering/RULES.md\`.\n`,
   )
-  return skillDir
 }
 
 test('defaults to Codex and Claude skill directories', () => {
@@ -46,24 +46,35 @@ test('defaults to Codex and Claude skill directories', () => {
   ])
 })
 
-test('renders SKILL.template.md into SKILL.md with the repo root resolved', async () => {
+test('renders a template into skills/<name>/SKILL.md with the repo root resolved', async () => {
   const root = await createTempDir('skills-repo-')
-  const skillDir = await createTemplatedSkill(root, 'engineering-rules')
+  await createSkillTemplate(root, 'engineering-rules')
 
   const rendered = await renderSkillTemplates(root)
 
   assert.deepEqual(rendered, ['engineering-rules'])
-  const skill = await readFile(join(skillDir, 'SKILL.md'), 'utf-8')
+  const skill = await readFile(join(root, 'skills', 'engineering-rules', 'SKILL.md'), 'utf-8')
   assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
 })
 
-test('links a skill that only ships a template by rendering it first', async () => {
+test('does not render templates into the linked skill directory', async () => {
+  const root = await createTempDir('skills-repo-')
+  await createSkillTemplate(root, 'engineering-rules')
+
+  await renderSkillTemplates(root)
+
+  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.template.md')), false)
+  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.md')), true)
+})
+
+test('links a templated skill by rendering it first', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  const source = await createTemplatedSkill(root, 'engineering-rules')
+  await createSkillTemplate(root, 'engineering-rules')
 
   const results = await createSkillLinks({ root, targets: [target] })
 
+  const source = join(root, 'skills', 'engineering-rules')
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
   assert.equal(await readlink(join(target, 'engineering-rules')), source)
   const skill = await readFile(join(source, 'SKILL.md'), 'utf-8')

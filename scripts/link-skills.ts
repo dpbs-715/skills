@@ -14,13 +14,14 @@ export const DEFAULT_TARGETS = [
 ] as const
 
 /**
- * Placeholder inside a `SKILL.template.md` that is replaced with this repo's
- * absolute path at link time, so a committed skill can reference files outside
- * its own directory without hardcoding one machine's checkout location.
+ * Placeholder inside a skill template (`templates/<name>/SKILL.md`) that is
+ * replaced with this repo's absolute path at link time, so a skill can
+ * reference files outside its own directory without hardcoding one machine's
+ * checkout location.
  */
 export const REPO_ROOT_TOKEN = '{{REPO_ROOT}}'
 
-const SKILL_TEMPLATE_FILE = 'SKILL.template.md'
+const TEMPLATES_DIR = 'templates'
 const SKILL_FILE = 'SKILL.md'
 
 type LinkAction = 'link' | 'unlink'
@@ -90,30 +91,34 @@ async function pointsIntoSkills(linkPath: string, skillsDir: string): Promise<bo
 }
 
 /**
- * Render every `SKILL.template.md` into a sibling `SKILL.md`, substituting the
- * repo root for {@link REPO_ROOT_TOKEN}. Runs before discovery/linking so a
+ * Render each `templates/<name>/SKILL.md` into `skills/<name>/SKILL.md`,
+ * substituting the repo root for {@link REPO_ROOT_TOKEN}. Templates live
+ * outside `skills/` so they never ride along into the symlinked skill bundle;
+ * only the generated `SKILL.md` is linked. Runs before discovery/linking so a
  * fresh clone produces correct absolute paths on whatever machine ran `link`.
- * The generated `SKILL.md` is a build artifact and should be gitignored.
+ * The generated skill directory is a build artifact and should be gitignored.
  */
 export async function renderSkillTemplates(root = repoRoot()): Promise<string[]> {
-  const skillsDir = join(root, 'skills')
-  if (!await pathExists(skillsDir))
+  const templatesDir = join(root, TEMPLATES_DIR)
+  if (!await pathExists(templatesDir))
     return []
 
-  const entries = await readdir(skillsDir, { withFileTypes: true })
+  const entries = await readdir(templatesDir, { withFileTypes: true })
   const rendered: string[] = []
 
   for (const entry of entries) {
     if (!entry.isDirectory())
       continue
 
-    const templatePath = join(skillsDir, entry.name, SKILL_TEMPLATE_FILE)
+    const templatePath = join(templatesDir, entry.name, SKILL_FILE)
     if (!await pathExists(templatePath))
       continue
 
     const template = await readFile(templatePath, 'utf-8')
     const content = template.replaceAll(REPO_ROOT_TOKEN, root)
-    await writeFile(join(skillsDir, entry.name, SKILL_FILE), content)
+    const skillDir = join(root, 'skills', entry.name)
+    await mkdir(skillDir, { recursive: true })
+    await writeFile(join(skillDir, SKILL_FILE), content)
     rendered.push(entry.name)
   }
 

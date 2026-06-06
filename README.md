@@ -15,7 +15,7 @@ This repository separates always-on preferences from task-specific skills:
 | Type | Name | Entry |
 | --- | --- | --- |
 | Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
-| Skill shim | Engineering rules | [skills/engineering-rules/SKILL.template.md](skills/engineering-rules/SKILL.template.md) |
+| Skill shim | Engineering rules | [templates/engineering-rules/SKILL.md](templates/engineering-rules/SKILL.md) |
 
 ## Vendored Skills
 
@@ -63,7 +63,7 @@ Rule sets use `RULES.md` as the entry file and keep focused topic documents in `
 
 Skills, when added, should use the standard `SKILL.md` layout under `skills/<name>/`.
 
-A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill ships a `SKILL.template.md` that uses the `{{REPO_ROOT}}` placeholder; `npm run link` renders it into a gitignored `SKILL.md` with this checkout's absolute path. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
+A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. `npm run link` renders the template into a gitignored `skills/<name>/SKILL.md` with this checkout's absolute path, then links it — the template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
 
 ## Linking Skills
 
