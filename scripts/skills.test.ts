@@ -378,26 +378,29 @@ test('uses a configured submodule branch when checking updates', async () => {
 test('cleanup removes extra skills only when confirmed', async () => {
   const root = await createTempDir('skills-repo-')
   await mkdir(join(root, 'skills', 'engineering-rules'), { recursive: true })
+  await mkdir(join(root, 'skills', 'personal-knowledge'), { recursive: true })
   await mkdir(join(root, 'skills', 'gsap-core'), { recursive: true })
   await mkdir(join(root, 'skills', 'extra-skill'), { recursive: true })
 
   const dryRun = await cleanupUnusedEntries({
     root,
-    manual: ['engineering-rules'],
+    linkedSkills: ['engineering-rules'],
+    templateSkills: ['personal-knowledge'],
     vendors,
     yes: false,
   })
   assert.deepEqual(dryRun.skills, [{ name: 'extra-skill', status: 'would-remove' }])
-  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'extra-skill', 'gsap-core'])
+  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'extra-skill', 'gsap-core', 'personal-knowledge'])
 
   const confirmed = await cleanupUnusedEntries({
     root,
-    manual: ['engineering-rules'],
+    linkedSkills: ['engineering-rules'],
+    templateSkills: ['personal-knowledge'],
     vendors,
     yes: true,
   })
   assert.deepEqual(confirmed.skills, [{ name: 'extra-skill', status: 'removed' }])
-  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'gsap-core'])
+  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'gsap-core', 'personal-knowledge'])
 })
 
 test('cleanup only removes extra managed submodules when confirmed', async () => {

@@ -8,7 +8,7 @@ This repository separates always-on preferences from task-specific skills:
 - `skills/` is reserved for task-triggered skill packages.
 - `sources/` is reserved for upstream documentation sources used to generate skills.
 - `vendor/` is reserved for synchronized third-party skill repositories.
-- `meta.ts` records manual entries, source projects, and vendored skill mappings.
+- `meta.ts` records which templates render into `skills/`, which skills link into agents, source projects, and vendored skill mappings.
 
 ## Current Entries
 
@@ -26,7 +26,7 @@ This repository follows the same broad pattern as `antfu/skills` for projects th
 2. Run the skills manager to add missing submodules.
 3. Sync selected upstream skills into `skills/`.
 
-GSAP is configured as a vendored source:
+For a configured vendored source, the normal flow is:
 
 ```bash
 pnpm skills init
@@ -64,23 +64,25 @@ Rule sets use `RULES.md` as the entry file and keep focused topic documents in `
 
 Skills, when added, should use the standard `SKILL.md` layout under `skills/<name>/`.
 
-A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. `npm run link` renders the template into a gitignored `skills/<name>/SKILL.md` with this checkout's absolute path, then links it — the template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
+A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. Add its name to `templateSkills` in `meta.ts`; `npm run link` renders configured templates into gitignored `skills/<name>/SKILL.md` files with this checkout's absolute path. The template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
+
+Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into local agent skill directories. A skill can exist in `skills/` without being linked.
 
 ## Linking Skills
 
-The repository keeps skill source under `skills/`. Link them into local agent skill directories with:
+The repository keeps skill source under `skills/`. Link configured `linkedSkills` into local agent skill directories with:
 
 ```bash
 npm run link
 ```
 
-By default this links skills into whichever of these target directories already exist:
+By default this first renders configured `templateSkills`, then links configured `linkedSkills` into whichever of these target directories already exist:
 
 - `~/.codex/skills`
 - `~/.claude/skills`
 - `~/.agents/skills`
 
-Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two discovered skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
+Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 
 Missing default target directories are skipped, so deleting `~/.agents/skills` keeps `npm run link` from recreating it. Use `-- --target <path>` when you want to create or update a specific target directory explicitly.
 

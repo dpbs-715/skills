@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 import {
-  manual as defaultManual,
+  linkedSkills as defaultLinkedSkills,
   sources as defaultSources,
+  templateSkills as defaultTemplateSkills,
   vendors as defaultVendors,
   type VendorSkillMeta,
 } from '../meta.ts'
@@ -65,7 +66,8 @@ interface SyncOptions extends GitOptions, RootOptions {
 }
 
 interface CleanupOptions extends GitOptions, RootOptions {
-  manual?: readonly string[]
+  linkedSkills?: readonly string[]
+  templateSkills?: readonly string[]
   yes?: boolean
 }
 
@@ -321,15 +323,20 @@ export async function checkUpdates({
 }
 
 function expectedSkillNames({
-  manual = defaultManual,
+  linkedSkills = defaultLinkedSkills,
   sources = defaultSources,
+  templateSkills = defaultTemplateSkills,
   vendors = defaultVendors,
 }: {
-  manual?: readonly string[]
+  linkedSkills?: readonly string[]
   sources?: Record<string, string>
+  templateSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
 }): Set<string> {
-  const expected = new Set<string>(manual)
+  const expected = new Set<string>([
+    ...templateSkills,
+    ...linkedSkills,
+  ])
 
   for (const name of Object.keys(sources))
     expected.add(name)
@@ -343,10 +350,11 @@ function expectedSkillNames({
 }
 
 export async function cleanupUnusedEntries({
-  manual = defaultManual,
+  linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
   runGit = createGitRunner(root),
   sources = defaultSources,
+  templateSkills = defaultTemplateSkills,
   vendors = defaultVendors,
   yes = false,
 }: CleanupOptions = {}): Promise<CleanupResult> {
@@ -357,7 +365,7 @@ export async function cleanupUnusedEntries({
     isManagedSubmodulePath(path) && !expectedSubmodulePaths.has(path),
   )
 
-  const expectedSkills = expectedSkillNames({ manual, sources, vendors })
+  const expectedSkills = expectedSkillNames({ linkedSkills, sources, templateSkills, vendors })
   const existingSkills = await listDirectories(join(root, 'skills'))
   const extraSkills = existingSkills.filter(name => !expectedSkills.has(name))
 

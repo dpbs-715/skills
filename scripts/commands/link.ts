@@ -5,6 +5,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
+import {
+  linkedSkills as defaultLinkedSkills,
+  templateSkills as defaultTemplateSkills,
+} from '../../meta.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
 export const DEFAULT_TARGETS = [
@@ -39,8 +43,15 @@ interface LinkResult {
 }
 
 interface LinkOptions {
+  linkedSkills?: readonly string[]
   root?: string
   targets?: string[]
+  templateSkills?: readonly string[]
+}
+
+interface TemplateOptions {
+  root?: string
+  templateSkills?: readonly string[]
 }
 
 interface CliOptions {
@@ -94,28 +105,33 @@ async function pointsIntoSkills(linkPath: string, skillsDir: string): Promise<bo
  * fresh clone produces correct absolute paths on whatever machine ran `link`.
  * The generated skill directory is a build artifact and should be gitignored.
  */
-export async function renderSkillTemplates(root = repoRoot()): Promise<string[]> {
+export async function renderSkillTemplates({
+  root = repoRoot(),
+  templateSkills = defaultTemplateSkills,
+}: TemplateOptions = {}): Promise<string[]> {
   const templatesDir = join(root, TEMPLATES_DIR)
-  if (!await pathExists(templatesDir))
+  if (templateSkills.length === 0)
     return []
+  if (!await pathExists(templatesDir))
+    throw new Error(`Missing configured skill template: templates/${templateSkills[0]}/${SKILL_FILE}`)
 
   const entries = await readdir(templatesDir, { withFileTypes: true })
+  const available = new Set(entries
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name))
   const rendered: string[] = []
 
-  for (const entry of entries) {
-    if (!entry.isDirectory())
-      continue
-
-    const templatePath = join(templatesDir, entry.name, SKILL_FILE)
-    if (!await pathExists(templatePath))
-      continue
+  for (const name of templateSkills) {
+    const templatePath = join(templatesDir, name, SKILL_FILE)
+    if (!available.has(name) || !await pathExists(templatePath))
+      throw new Error(`Missing configured skill template: templates/${name}/${SKILL_FILE}`)
 
     const template = await readFile(templatePath, 'utf-8')
     const content = template.replaceAll(REPO_ROOT_TOKEN, root)
-    const skillDir = join(root, 'skills', entry.name)
+    const skillDir = join(root, 'skills', name)
     await mkdir(skillDir, { recursive: true })
     await writeFile(join(skillDir, SKILL_FILE), content)
-    rendered.push(entry.name)
+    rendered.push(name)
   }
 
   return rendered.sort((left, right) => left.localeCompare(right))
@@ -140,6 +156,20 @@ export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
   }
 
   return skills.sort((left, right) => left.name.localeCompare(right.name))
+}
+
+async function discoverLinkedSkills(root: string, linkedSkills: readonly string[]): Promise<Skill[]> {
+  const skills = await discoverSkills(root)
+  const byName = new Map(skills.map(skill => [skill.name, skill]))
+
+  return linkedSkills
+    .map((name) => {
+      const skill = byName.get(name)
+      if (!skill)
+        throw new Error(`Missing configured linked skill: skills/${name}/${SKILL_FILE}`)
+      return skill
+    })
+    .sort((left, right) => left.name.localeCompare(right.name))
 }
 
 async function ensureLink(source: string, linkPath: string): Promise<'exists' | 'linked'> {
@@ -173,11 +203,13 @@ async function existingDefaultTargets(): Promise<string[]> {
 }
 
 export async function createSkillLinks({
+  linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
   targets,
+  templateSkills = defaultTemplateSkills,
 }: LinkOptions = {}): Promise<LinkResult[]> {
-  await renderSkillTemplates(root)
-  const skills = await discoverSkills(root)
+  await renderSkillTemplates({ root, templateSkills })
+  const skills = await discoverLinkedSkills(root, linkedSkills)
   const skillsDir = join(root, 'skills')
   const current = new Set(skills.map(skill => skill.name))
   const results: LinkResult[] = []

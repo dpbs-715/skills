@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint'
 // Covers correctness (unused imports/vars, etc.); no style/formatting rules.
 // Generated and third-party skill output is ignored, as is Markdown prose.
 export default tseslint.config(
-  { ignores: ['vendor/**', 'sources/**', 'skills/**'] },
+  { ignores: ['.idea/**', '.obsidian/**', 'vendor/**', 'sources/**', 'skills/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
 )

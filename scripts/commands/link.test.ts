@@ -50,18 +50,51 @@ test('renders a template into skills/<name>/SKILL.md with the repo root resolved
   const root = await createTempDir('skills-repo-')
   await createSkillTemplate(root, 'engineering-rules')
 
-  const rendered = await renderSkillTemplates(root)
+  const rendered = await renderSkillTemplates({
+    root,
+    templateSkills: ['engineering-rules'],
+  })
 
   assert.deepEqual(rendered, ['engineering-rules'])
   const skill = await readFile(join(root, 'skills', 'engineering-rules', 'SKILL.md'), 'utf-8')
   assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
 })
 
+test('renders only configured skill templates', async () => {
+  const root = await createTempDir('skills-repo-')
+  await createSkillTemplate(root, 'engineering-rules')
+  await createSkillTemplate(root, 'personal-knowledge')
+
+  const rendered = await renderSkillTemplates({
+    root,
+    templateSkills: ['engineering-rules'],
+  })
+
+  assert.deepEqual(rendered, ['engineering-rules'])
+  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.md')), true)
+  assert.equal(await pathExists(join(root, 'skills', 'personal-knowledge', 'SKILL.md')), false)
+})
+
+test('throws when a configured skill template is missing', async () => {
+  const root = await createTempDir('skills-repo-')
+
+  await assert.rejects(
+    () => renderSkillTemplates({
+      root,
+      templateSkills: ['engineering-rules'],
+    }),
+    /Missing configured skill template/,
+  )
+})
+
 test('does not render templates into the linked skill directory', async () => {
   const root = await createTempDir('skills-repo-')
   await createSkillTemplate(root, 'engineering-rules')
 
-  await renderSkillTemplates(root)
+  await renderSkillTemplates({
+    root,
+    templateSkills: ['engineering-rules'],
+  })
 
   assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.template.md')), false)
   assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.md')), true)
@@ -72,7 +105,12 @@ test('links a templated skill by rendering it first', async () => {
   const target = await createTempDir('skills-target-')
   await createSkillTemplate(root, 'engineering-rules')
 
-  const results = await createSkillLinks({ root, targets: [target] })
+  const results = await createSkillLinks({
+    root,
+    linkedSkills: ['engineering-rules'],
+    targets: [target],
+    templateSkills: ['engineering-rules'],
+  })
 
   const source = join(root, 'skills', 'engineering-rules')
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
@@ -92,15 +130,37 @@ test('discovers directories that contain SKILL.md', async () => {
   assert.equal(skills[0].source, join(root, 'skills', 'engineering-rules'))
 })
 
-test('creates symlinks for each discovered skill in each target', async () => {
+test('creates symlinks for each configured linked skill in each target', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
   const source = await createSkill(root, 'engineering-rules')
+  await createSkill(root, 'personal-knowledge')
 
-  const results = await createSkillLinks({ root, targets: [target] })
+  const results = await createSkillLinks({
+    root,
+    linkedSkills: ['engineering-rules'],
+    targets: [target],
+    templateSkills: [],
+  })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
   assert.equal(await readlink(join(target, 'engineering-rules')), source)
+  assert.equal(await pathExists(join(target, 'personal-knowledge')), false)
+})
+
+test('throws when a configured linked skill is missing', async () => {
+  const root = await createTempDir('skills-repo-')
+  const target = await createTempDir('skills-target-')
+
+  await assert.rejects(
+    () => createSkillLinks({
+      root,
+      linkedSkills: ['engineering-rules'],
+      targets: [target],
+      templateSkills: [],
+    }),
+    /Missing configured linked skill/,
+  )
 })
 
 test('skips missing default targets instead of creating them', async () => {
@@ -116,7 +176,11 @@ test('skips missing default targets instead of creating them', async () => {
   const previousHome = process.env.HOME
   process.env.HOME = home
   try {
-    const results = await createSkillLinks({ root })
+    const results = await createSkillLinks({
+      root,
+      linkedSkills: ['engineering-rules'],
+      templateSkills: [],
+    })
 
     assert.deepEqual(results, [
       { name: 'engineering-rules', target: codexTarget, status: 'linked' },
@@ -140,7 +204,12 @@ test('keeps an existing correct symlink', async () => {
   const source = await createSkill(root, 'engineering-rules')
   await symlink(source, join(target, 'engineering-rules'))
 
-  const results = await createSkillLinks({ root, targets: [target] })
+  const results = await createSkillLinks({
+    root,
+    linkedSkills: ['engineering-rules'],
+    targets: [target],
+    templateSkills: [],
+  })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'exists' }])
 })
@@ -152,7 +221,12 @@ test('does not overwrite non-symlink entries', async () => {
   await mkdir(join(target, 'engineering-rules'))
 
   await assert.rejects(
-    () => createSkillLinks({ root, targets: [target] }),
+    () => createSkillLinks({
+      root,
+      linkedSkills: ['engineering-rules'],
+      targets: [target],
+      templateSkills: [],
+    }),
     /Refusing to replace non-symlink/,
   )
 })
@@ -190,7 +264,12 @@ test('prunes dangling links for deleted skills when linking', async () => {
   // Stale link from a skill that no longer exists in the repo.
   await symlink(join(root, 'skills', 'gsap-core'), join(target, 'gsap-core'))
 
-  const results = await createSkillLinks({ root, targets: [target] })
+  const results = await createSkillLinks({
+    root,
+    linkedSkills: ['engineering-rules'],
+    targets: [target],
+    templateSkills: [],
+  })
 
   assert.deepEqual(results, [
     { name: 'engineering-rules', target, status: 'linked' },
