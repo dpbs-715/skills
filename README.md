@@ -18,6 +18,8 @@ This repository separates always-on preferences from task-specific skills:
 | Skill shim | Engineering rules | [templates/engineering-rules/SKILL.md](templates/engineering-rules/SKILL.md) |
 | Skill shim | Personal knowledge | [templates/personal-knowledge/SKILL.md](templates/personal-knowledge/SKILL.md) |
 
+Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each is present in `skills/`, any undeclared skill directories, and submodule checkout state.
+
 ## Vendored Skills
 
 This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:
@@ -37,6 +39,7 @@ npm run link
 The skills manager supports:
 
 ```bash
+pnpm skills status    # show configured skills, their roles, and submodule state
 pnpm skills init      # add missing source/vendor git submodules from meta.ts
 pnpm skills sync      # update submodules, then sync vendored skills into skills/
 pnpm skills check     # fetch submodules and report upstream updates

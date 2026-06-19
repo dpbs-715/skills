@@ -9,12 +9,13 @@ import { promisify } from 'node:util'
 import {
   checkUpdates,
   cleanupUnusedEntries,
+  collectStatus,
   getProjects,
   initSubmodules,
   syncSubmodules,
   type RunGit,
 } from './skills.ts'
-import type { VendorSkillMeta } from './commands/sync-vendors.ts'
+import type { VendorSkillMeta } from '../meta.ts'
 
 const temporaryPaths: string[] = []
 const execFileAsync = promisify(execFile)
@@ -373,6 +374,63 @@ test('uses a configured submodule branch when checking updates', async () => {
     ['config', '-f', '.gitmodules', '--get', 'submodule.vendor/gsap.branch'],
     ['-C', 'vendor/gsap', 'rev-list', 'HEAD..origin/stable', '--count'],
   ])
+})
+
+test('status reports skill roles, presence, extra skills, and submodule checkout', async () => {
+  const root = await createTempDir('skills-repo-')
+  const writeSkill = async (name: string): Promise<void> => {
+    await mkdir(join(root, 'skills', name), { recursive: true })
+    await writeFile(join(root, 'skills', name, 'SKILL.md'), `# ${name}\n`)
+  }
+  await writeSkill('personal-knowledge')
+  await writeSkill('gsap-core')
+  await writeSkill('orphan')
+  await mkdir(join(root, 'vendor', 'gsap'), { recursive: true })
+  await writeFile(join(root, 'vendor', 'gsap', 'README.md'), '')
+
+  const status = await collectStatus({
+    root,
+    linkedSkills: ['engineering-rules', 'personal-knowledge'],
+    templateSkills: ['personal-knowledge'],
+    sources: {},
+    vendors,
+  })
+
+  assert.deepEqual(status.skills, [
+    { name: 'engineering-rules', present: false, roles: ['linked'] },
+    { name: 'gsap-core', present: true, roles: ['vendor'] },
+    { name: 'personal-knowledge', present: true, roles: ['template', 'linked'] },
+  ])
+  assert.deepEqual(status.extraSkills, ['orphan'])
+  assert.deepEqual(status.projects, [{
+    checkedOut: true,
+    name: 'gsap',
+    path: 'vendor/gsap',
+    type: 'vendor',
+  }])
+})
+
+test('status marks configured submodules that are not checked out', async () => {
+  const root = await createTempDir('skills-repo-')
+
+  const status = await collectStatus({
+    root,
+    linkedSkills: [],
+    templateSkills: [],
+    sources: {},
+    vendors,
+  })
+
+  assert.deepEqual(status.skills, [
+    { name: 'gsap-core', present: false, roles: ['vendor'] },
+  ])
+  assert.deepEqual(status.extraSkills, [])
+  assert.deepEqual(status.projects, [{
+    checkedOut: false,
+    name: 'gsap',
+    path: 'vendor/gsap',
+    type: 'vendor',
+  }])
 })
 
 test('cleanup removes extra skills only when confirmed', async () => {
