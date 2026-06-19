@@ -13,8 +13,6 @@ export const linkedSkills = [
   'personal-knowledge',
 ] as const
 
-export const sources = {} as const
-
 export const vendors: Record<string, VendorSkillMeta> = {
 
 }

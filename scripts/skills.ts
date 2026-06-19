@@ -7,7 +7,6 @@ import process from 'node:process'
 
 import {
   linkedSkills as defaultLinkedSkills,
-  sources as defaultSources,
   templateSkills as defaultTemplateSkills,
   vendors as defaultVendors,
   type VendorSkillMeta,
@@ -26,7 +25,7 @@ export type RunGit = (args: string[]) => Promise<string>
 export interface Project {
   name: string
   path: string
-  type: 'source' | 'vendor'
+  type: 'vendor'
   url: string
 }
 
@@ -76,7 +75,6 @@ interface StatusOptions extends RootOptions {
 }
 
 export interface ProjectOptions {
-  sources?: Record<string, string>
   vendors?: Record<string, VendorSkillMeta>
 }
 
@@ -233,39 +231,29 @@ function parseBehindCount(output: string, projectPath: string): number {
 }
 
 function isManagedSubmodulePath(path: string): boolean {
-  return path.startsWith('sources/') || path.startsWith('vendor/')
+  return path.startsWith('vendor/')
 }
 
 export function getProjects({
-  sources = defaultSources,
   vendors = defaultVendors,
 }: ProjectOptions = {}): Project[] {
-  return [
-    ...Object.entries(sources).map(([name, url]) => ({
-      name,
-      path: `sources/${name}`,
-      type: 'source' as const,
-      url,
-    })),
-    ...Object.entries(vendors).map(([name, vendor]) => ({
-      name,
-      path: `vendor/${name}`,
-      type: 'vendor' as const,
-      url: vendor.source,
-    })),
-  ]
+  return Object.entries(vendors).map(([name, vendor]) => ({
+    name,
+    path: `vendor/${name}`,
+    type: 'vendor' as const,
+    url: vendor.source,
+  }))
 }
 
 export async function initSubmodules({
   root = repoRoot(),
   runGit = createGitRunner(root),
-  sources = defaultSources,
   vendors = defaultVendors,
 }: RootOptions & GitOptions = {}): Promise<InitResult[]> {
   const results: InitResult[] = []
   await restoreGitmodulesFromIndex(root, runGit)
 
-  for (const project of getProjects({ sources, vendors })) {
+  for (const project of getProjects({ vendors })) {
     if (await submoduleExists(root, project.path)) {
       if (!await isGitTrackedPath(project.path, runGit)) {
         await runGit(['config', '-f', '.gitmodules', '--remove-section', `submodule.${project.path}`])
@@ -325,12 +313,11 @@ export async function syncSubmodules({
 export async function checkUpdates({
   root = repoRoot(),
   runGit = createGitRunner(root),
-  sources = defaultSources,
   vendors = defaultVendors,
 }: RootOptions & GitOptions = {}): Promise<UpdateResult[]> {
   const updates: UpdateResult[] = []
 
-  for (const project of getProjects({ sources, vendors })) {
+  for (const project of getProjects({ vendors })) {
     if (!await pathExists(join(root, project.path)))
       continue
 
@@ -359,12 +346,10 @@ export async function checkUpdates({
 
 function expectedSkillNames({
   linkedSkills = defaultLinkedSkills,
-  sources = defaultSources,
   templateSkills = defaultTemplateSkills,
   vendors = defaultVendors,
 }: {
   linkedSkills?: readonly string[]
-  sources?: Record<string, string>
   templateSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
 }): Set<string> {
@@ -372,9 +357,6 @@ function expectedSkillNames({
     ...templateSkills,
     ...linkedSkills,
   ])
-
-  for (const name of Object.keys(sources))
-    expected.add(name)
 
   for (const vendor of Object.values(vendors)) {
     for (const outputSkill of Object.values(vendor.skills))
@@ -388,19 +370,18 @@ export async function cleanupUnusedEntries({
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
   runGit = createGitRunner(root),
-  sources = defaultSources,
   templateSkills = defaultTemplateSkills,
   vendors = defaultVendors,
   yes = false,
 }: CleanupOptions = {}): Promise<CleanupResult> {
-  const projects = getProjects({ sources, vendors })
+  const projects = getProjects({ vendors })
   const expectedSubmodulePaths = new Set(projects.map(project => project.path))
   const existingSubmodulePaths = await getExistingSubmodulePaths(root)
   const extraSubmodules = existingSubmodulePaths.filter(path =>
     isManagedSubmodulePath(path) && !expectedSubmodulePaths.has(path),
   )
 
-  const expectedSkills = expectedSkillNames({ linkedSkills, sources, templateSkills, vendors })
+  const expectedSkills = expectedSkillNames({ linkedSkills, templateSkills, vendors })
   const existingSkills = await listDirectories(join(root, 'skills'))
   const extraSkills = existingSkills.filter(name => !expectedSkills.has(name))
 
@@ -459,7 +440,6 @@ const SKILL_ROLE_ORDER: SkillRole[] = ['template', 'linked', 'vendor']
 export async function collectStatus({
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
-  sources = defaultSources,
   templateSkills = defaultTemplateSkills,
   vendors = defaultVendors,
 }: StatusOptions = {}): Promise<RepoStatus> {
@@ -494,7 +474,7 @@ export async function collectStatus({
     .sort((left, right) => left.localeCompare(right))
 
   const projects: ProjectStatus[] = []
-  for (const project of getProjects({ sources, vendors })) {
+  for (const project of getProjects({ vendors })) {
     projects.push({
       checkedOut: await isDirectoryNonEmpty(join(root, project.path)),
       name: project.name,
@@ -577,7 +557,7 @@ function printHelp(): void {
 
 Commands:
   status     Show configured skills, their roles, and submodule state
-  init       Add missing source/vendor git submodules from meta.ts
+  init       Add missing vendor git submodules from meta.ts
   sync       Update submodules, then sync vendored skills into skills/
   check      Fetch submodules and report upstream updates
   cleanup    Report unused submodules and skills; pass --yes to remove

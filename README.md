@@ -6,9 +6,8 @@ This repository separates always-on preferences from task-specific skills:
 
 - `rules/` contains durable personal or project rules that should guide broad work.
 - `skills/` is reserved for task-triggered skill packages.
-- `sources/` is reserved for upstream documentation sources used to generate skills.
 - `vendor/` is reserved for synchronized third-party skill repositories.
-- `meta.ts` records which templates render into `skills/`, which skills link into agents, source projects, and vendored skill mappings.
+- `meta.ts` records which templates render into `skills/`, which skills link into agents, and vendored skill mappings.
 
 ## Current Entries
 
@@ -40,7 +39,7 @@ The skills manager supports:
 
 ```bash
 pnpm skills status    # show configured skills, their roles, and submodule state
-pnpm skills init      # add missing source/vendor git submodules from meta.ts
+pnpm skills init      # add missing vendor git submodules from meta.ts
 pnpm skills sync      # update submodules, then sync vendored skills into skills/
 pnpm skills check     # fetch submodules and report upstream updates
 pnpm skills cleanup   # report unused submodules/skills

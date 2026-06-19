@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm as remove, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -50,21 +50,10 @@ const vendors: Record<string, VendorSkillMeta> = {
   },
 }
 
-test('builds source and vendor projects from metadata', () => {
-  const projects = getProjects({
-    sources: {
-      vue: 'https://github.com/vuejs/docs',
-    },
-    vendors,
-  })
+test('builds vendor projects from metadata', () => {
+  const projects = getProjects({ vendors })
 
   assert.deepEqual(projects, [
-    {
-      name: 'vue',
-      path: 'sources/vue',
-      type: 'source',
-      url: 'https://github.com/vuejs/docs',
-    },
     {
       name: 'gsap',
       path: 'vendor/gsap',
@@ -392,7 +381,6 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
     root,
     linkedSkills: ['engineering-rules', 'personal-knowledge'],
     templateSkills: ['personal-knowledge'],
-    sources: {},
     vendors,
   })
 
@@ -417,7 +405,6 @@ test('status marks configured submodules that are not checked out', async () => 
     root,
     linkedSkills: [],
     templateSkills: [],
-    sources: {},
     vendors,
   })
 
@@ -541,5 +528,5 @@ test('cleanup removes an empty gitmodules file', async () => {
 })
 
 test.after(async () => {
-  await Promise.all(temporaryPaths.map(path => rm(path, { recursive: true, force: true })))
+  await Promise.all(temporaryPaths.map(path => remove(path, { recursive: true, force: true })))
 })
