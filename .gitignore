@@ -4,6 +4,7 @@
 node_modules/
 knowledge/INDEX.md
 knowledge/notes/
-# Generated from templates/ by `npm run link`
+# Generated from templates/ by `pnpm skills link`
 /skills/engineering-rules/
 /skills/personal-knowledge/
+/skills/problem-solving-rules/

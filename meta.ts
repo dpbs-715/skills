@@ -6,11 +6,13 @@ export interface VendorSkillMeta {
 export const templateSkills = [
   'engineering-rules',
   'personal-knowledge',
+  'problem-solving-rules',
 ] as const
 
 export const linkedSkills = [
   'engineering-rules',
   'personal-knowledge',
+  'problem-solving-rules',
 ] as const
 
 export const vendors: Record<string, VendorSkillMeta> = {

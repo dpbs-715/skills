@@ -14,8 +14,10 @@ This repository separates always-on preferences from task-specific skills:
 | Type | Name | Entry |
 | --- | --- | --- |
 | Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
+| Rule set | Problem solving | [rules/problem-solving/RULES.md](rules/problem-solving/RULES.md) |
 | Skill shim | Engineering rules | [templates/engineering-rules/SKILL.md](templates/engineering-rules/SKILL.md) |
 | Skill shim | Personal knowledge | [templates/personal-knowledge/SKILL.md](templates/personal-knowledge/SKILL.md) |
+| Skill shim | Problem solving rules | [templates/problem-solving-rules/SKILL.md](templates/problem-solving-rules/SKILL.md) |
 
 Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each is present in `skills/`, any undeclared skill directories, and submodule checkout state.
 
