@@ -1,12 +1,8 @@
-#!/usr/bin/env node
-
 import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import process from 'node:process'
 
 import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
-import { execFileText, pathExists, repoRoot } from '../lib/utils.ts'
+import { execFileText, pathExists, repoRoot } from './utils.ts'
 
 export type { VendorSkillMeta }
 
@@ -141,31 +137,4 @@ export async function syncVendorSkills({
   }
 
   return results
-}
-
-export function printSyncResults(results: SyncResult[]): void {
-  if (results.length === 0) {
-    console.log('No vendor skills configured.')
-    return
-  }
-
-  for (const result of results) {
-    console.log(`${result.status}: ${result.vendor}/${result.sourceSkill} -> skills/${result.outputSkill}`)
-  }
-}
-
-async function main(): Promise<void> {
-  const results = await syncVendorSkills()
-  printSyncResults(results)
-
-  const failed = results.some(result => result.status !== 'synced')
-  if (failed)
-    process.exitCode = 1
-}
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error)
-    process.exit(1)
-  })
 }

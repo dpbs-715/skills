@@ -1,8 +1,5 @@
-#!/usr/bin/env node
-
 import { lstat, mkdir, readdir, readFile, readlink, realpath, symlink, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 import {
@@ -28,7 +25,6 @@ export const REPO_ROOT_TOKEN = '{{REPO_ROOT}}'
 const TEMPLATES_DIR = 'templates'
 const SKILL_FILE = 'SKILL.md'
 
-type LinkAction = 'link' | 'unlink'
 type LinkStatus = 'exists' | 'linked' | 'removed'
 
 interface Skill {
@@ -52,11 +48,6 @@ interface LinkOptions {
 interface TemplateOptions {
   root?: string
   templateSkills?: readonly string[]
-}
-
-interface CliOptions {
-  action: LinkAction
-  targets: string[]
 }
 
 function homePath(path: string): string {
@@ -270,24 +261,16 @@ export async function removeSkillLinks({
   return results
 }
 
-function parseArgs(args: string[]): CliOptions {
-  const options: CliOptions = {
-    action: 'link',
-    targets: [],
-  }
+function parseTargets(args: string[]): string[] {
+  const targets: string[] = []
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
-    if (arg === 'link' || arg === 'unlink') {
-      options.action = arg
-      continue
-    }
-
     if (arg === '--target') {
       const value = args[index + 1]
       if (!value)
         throw new Error('--target requires a path')
-      options.targets.push(homePath(value))
+      targets.push(homePath(value))
       index += 1
       continue
     }
@@ -295,7 +278,7 @@ function parseArgs(args: string[]): CliOptions {
     throw new Error(`Unknown argument: ${arg}`)
   }
 
-  return options
+  return targets
 }
 
 function printResults(results: LinkResult[]): void {
@@ -309,18 +292,12 @@ function printResults(results: LinkResult[]): void {
   }
 }
 
-async function main(): Promise<void> {
-  const options = parseArgs(process.argv.slice(2))
-  const results = options.action === 'unlink'
-    ? await removeSkillLinks({ targets: options.targets.length > 0 ? options.targets : undefined })
-    : await createSkillLinks({ targets: options.targets.length > 0 ? options.targets : undefined })
-
-  printResults(results)
+export async function runLink(args: string[]): Promise<void> {
+  const targets = parseTargets(args)
+  printResults(await createSkillLinks({ targets: targets.length > 0 ? targets : undefined }))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error)
-    process.exit(1)
-  })
+export async function runUnlink(args: string[]): Promise<void> {
+  const targets = parseTargets(args)
+  printResults(await removeSkillLinks({ targets: targets.length > 0 ? targets : undefined }))
 }

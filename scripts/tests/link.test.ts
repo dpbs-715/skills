@@ -11,7 +11,7 @@ import {
   removeSkillLinks,
   renderSkillTemplates,
   REPO_ROOT_TOKEN,
-} from './link.ts'
+} from '../commands/link.ts'
 import { pathExists } from '../lib/utils.ts'
 
 const temporaryPaths: string[] = []

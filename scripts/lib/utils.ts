@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { lstat } from 'node:fs/promises'
+import { lstat, readdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -33,4 +33,23 @@ export async function execFileText(command: string, args: string[], cwd: string)
     encoding: 'utf-8',
   })
   return stdout.trim()
+}
+
+export async function listDirectories(path: string): Promise<string[]> {
+  if (!await pathExists(path))
+    return []
+
+  const entries = await readdir(path, { withFileTypes: true })
+  return entries
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort()
+}
+
+export async function isDirectoryNonEmpty(path: string): Promise<boolean> {
+  if (!await pathExists(path))
+    return false
+
+  const entries = await readdir(path)
+  return entries.length > 0
 }

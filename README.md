@@ -32,19 +32,22 @@ For a configured vendored source, the normal flow is:
 ```bash
 pnpm skills init
 pnpm skills sync
-npm run link
+pnpm skills link
 ```
 
-The skills manager supports:
+Everything is one command — `pnpm skills <command>`:
 
 ```bash
 pnpm skills status    # show configured skills, their roles, and submodule state
-pnpm skills init      # add missing vendor git submodules from meta.ts
+pnpm skills link      # symlink configured skills into local agent skill directories
+pnpm skills unlink    # remove skill symlinks created by this repo
 pnpm skills sync      # update submodules, then sync vendored skills into skills/
+pnpm skills init      # add missing vendor git submodules from meta.ts
 pnpm skills check     # fetch submodules and report upstream updates
-pnpm skills cleanup   # report unused submodules/skills
-pnpm skills cleanup --yes
+pnpm skills cleanup   # report unused submodules/skills (pass --yes to remove)
 ```
+
+Run `pnpm skills` with no arguments to see this list.
 
 Manual vendor setup is still possible when you want to add a submodule yourself:
 
@@ -54,11 +57,11 @@ Manual vendor setup is still possible when you want to add a submodule yourself:
 
 ```bash
 git submodule add https://github.com/greensock/gsap-skills vendor/gsap
-pnpm sync:vendors
-npm run link
+pnpm skills sync
+pnpm skills link
 ```
 
-Synced skills get a `SYNC.md` file with the upstream path, repository URL, git SHA, and sync date. Avoid editing synced skill directories by hand; update the vendor submodule and re-run `pnpm sync:vendors` instead.
+Synced skills get a `SYNC.md` file with the upstream path, repository URL, git SHA, and sync date. Avoid editing synced skill directories by hand; update the vendor submodule and re-run `pnpm skills sync` instead.
 
 ## Conventions
 
@@ -66,7 +69,7 @@ Rule sets use `RULES.md` as the entry file and keep focused topic documents in `
 
 Skills, when added, should use the standard `SKILL.md` layout under `skills/<name>/`.
 
-A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. Add its name to `templateSkills` in `meta.ts`; `npm run link` renders configured templates into gitignored `skills/<name>/SKILL.md` files with this checkout's absolute path. The template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `npm run link` to regenerate.
+A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. Add its name to `templateSkills` in `meta.ts`; `pnpm skills link` renders configured templates into gitignored `skills/<name>/SKILL.md` files with this checkout's absolute path. The template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `pnpm skills link` to regenerate.
 
 Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into local agent skill directories. A skill can exist in `skills/` without being linked.
 
@@ -75,7 +78,7 @@ Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into
 The repository keeps skill source under `skills/`. Link configured `linkedSkills` into local agent skill directories with:
 
 ```bash
-npm run link
+pnpm skills link
 ```
 
 By default this first renders configured `templateSkills`, then links configured `linkedSkills` into whichever of these target directories already exist:
@@ -86,12 +89,12 @@ By default this first renders configured `templateSkills`, then links configured
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 
-Missing default target directories are skipped, so deleting `~/.agents/skills` keeps `npm run link` from recreating it. Use `-- --target <path>` when you want to create or update a specific target directory explicitly.
+Missing default target directories are skipped, so deleting `~/.agents/skills` keeps `pnpm skills link` from recreating it. Use `--target <path>` when you want to create or update a specific target directory explicitly.
 
 Remove links created by this repository with:
 
 ```bash
-npm run unlink
+pnpm skills unlink
 ```
 
-Use `-- --target <path>` to link or unlink a specific target directory.
+Use `--target <path>` to link or unlink a specific target directory.

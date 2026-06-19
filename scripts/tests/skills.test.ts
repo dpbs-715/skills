@@ -6,16 +6,13 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { promisify } from 'node:util'
 
-import {
-  checkUpdates,
-  cleanupUnusedEntries,
-  collectStatus,
-  getProjects,
-  initSubmodules,
-  syncSubmodules,
-  type RunGit,
-} from './skills.ts'
-import type { VendorSkillMeta } from '../meta.ts'
+import { checkUpdates } from '../commands/check.ts'
+import { cleanupUnusedEntries } from '../commands/cleanup.ts'
+import { initSubmodules } from '../commands/init.ts'
+import { collectStatus } from '../commands/status.ts'
+import { syncSubmodules } from '../commands/sync.ts'
+import { getProjects, type RunGit } from '../lib/git.ts'
+import type { VendorSkillMeta } from '../../meta.ts'
 
 const temporaryPaths: string[] = []
 const execFileAsync = promisify(execFile)
