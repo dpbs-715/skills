@@ -1,8 +1,8 @@
 ---
 name: engineering-rules
-description: Use when writing, modifying, or reviewing code for dpbs.
+description: Use when writing, modifying, or reviewing code.
 metadata:
-  short-description: dpbs engineering rules
+  short-description: engineering rules
 ---
 
 # Engineering Rules

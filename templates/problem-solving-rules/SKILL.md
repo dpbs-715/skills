@@ -1,8 +1,8 @@
 ---
 name: problem-solving-rules
-description: Use when investigating problems, failures, warnings, errors, conflicting signals, unclear claims, or deciding whether to suppress, work around, or verify a symptom for dpbs.
+description: Use when investigating problems, failures, warnings, errors, conflicting signals, unclear claims, or deciding whether to suppress, work around, or verify a symptom.
 metadata:
-  short-description: dpbs problem-solving rules
+  short-description: problem-solving rules
 ---
 
 # Problem Solving Rules

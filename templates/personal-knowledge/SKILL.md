@@ -2,7 +2,7 @@
 name: personal-knowledge
 description: Use when the user asks about saved personal notes, remembered judgments, reusable context, command notes, prior knowledge, or whether something has been recorded before.
 metadata:
-  short-description: dpbs personal knowledge notes
+  short-description: personal knowledge notes
 ---
 
 # Personal Knowledge
