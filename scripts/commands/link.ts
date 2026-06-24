@@ -1,261 +1,85 @@
-import { lstat, mkdir, readdir, readFile, readlink, realpath, symlink, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
-import process from 'node:process'
+import { dirname } from 'node:path'
 
 import {
-  linkedSkills as defaultLinkedSkills,
-  templateSkills as defaultTemplateSkills,
+  type ClaudeRule,
+  claudeRules as defaultClaudeRules,
+  type LinkTarget,
+  linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
+import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
+import { createSkillLinks, removeSkillLinks, renderSkillTemplates } from '../lib/skillLinks.ts'
+import { homePath, type LinkResult } from '../lib/symlink.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
-export const DEFAULT_TARGETS = [
-  '~/.codex/skills',
-  '~/.claude/skills',
-  '~/.agents/skills',
-] as const
-
-/**
- * Placeholder inside a skill template (`templates/<name>/SKILL.md`) that is
- * replaced with this repo's absolute path at link time, so a skill can
- * reference files outside its own directory without hardcoding one machine's
- * checkout location.
- */
-export const REPO_ROOT_TOKEN = '{{REPO_ROOT}}'
-
-const TEMPLATES_DIR = 'templates'
-const SKILL_FILE = 'SKILL.md'
-
-type LinkStatus = 'exists' | 'linked' | 'removed'
-
-interface Skill {
-  name: string
-  source: string
-}
-
-interface LinkResult {
-  name: string
-  target: string
-  status: LinkStatus
-}
-
-interface LinkOptions {
-  linkedSkills?: readonly string[]
+interface OrchestrateOptions {
   root?: string
-  targets?: string[]
+  targets?: readonly LinkTarget[]
   templateSkills?: readonly string[]
 }
 
-interface TemplateOptions {
-  root?: string
-  templateSkills?: readonly string[]
-}
-
-function homePath(path: string): string {
-  const home = process.env.HOME
-  if (!home)
-    throw new Error('HOME is not set')
-
-  if (path === '~')
-    return home
-  if (path.startsWith('~/'))
-    return join(home, path.slice(2))
-  return path
-}
-
-async function safeRealpath(path: string): Promise<string | null> {
-  try {
-    return await realpath(path)
-  }
-  catch {
-    return null
-  }
+/** Resolve a skill name to its configured rule (source markdown). */
+function resolveRule(skill: string): ClaudeRule {
+  const rule = defaultClaudeRules.find(entry => entry.skill === skill)
+  if (!rule)
+    throw new Error(`Unknown Claude rule: ${skill}`)
+  return rule
 }
 
 /**
- * Whether `linkPath` is a symlink whose target lives directly inside the
- * repo's skills directory. Uses the raw link target rather than realpath so
- * that dangling links (whose source skill was deleted) are still recognised.
+ * Link every {@link defaultLinkTargets} row to its destination, dispatching on
+ * `kind`. Skill directories are only populated when they already exist (the
+ * tool is installed); the rule directory is created when its parent (e.g.
+ * `~/.claude`) exists. Templates are rendered once up front so the per-target
+ * skill linking below skips re-rendering.
  */
-async function pointsIntoSkills(linkPath: string, skillsDir: string): Promise<boolean> {
-  let target: string
-  try {
-    target = await readlink(linkPath)
-  }
-  catch {
-    return false
-  }
-
-  return dirname(resolve(dirname(linkPath), target)) === skillsDir
-}
-
-/**
- * Render each `templates/<name>/SKILL.md` into `skills/<name>/SKILL.md`,
- * substituting the repo root for {@link REPO_ROOT_TOKEN}. Templates live
- * outside `skills/` so they never ride along into the symlinked skill bundle;
- * only the generated `SKILL.md` is linked. Runs before discovery/linking so a
- * fresh clone produces correct absolute paths on whatever machine ran `link`.
- * The generated skill directory is a build artifact and should be gitignored.
- */
-export async function renderSkillTemplates({
+export async function linkAll({
   root = repoRoot(),
-  templateSkills = defaultTemplateSkills,
-}: TemplateOptions = {}): Promise<string[]> {
-  const templatesDir = join(root, TEMPLATES_DIR)
-  if (templateSkills.length === 0)
-    return []
-  if (!await pathExists(templatesDir))
-    throw new Error(`Missing configured skill template: templates/${templateSkills[0]}/${SKILL_FILE}`)
-
-  const entries = await readdir(templatesDir, { withFileTypes: true })
-  const available = new Set(entries
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name))
-  const rendered: string[] = []
-
-  for (const name of templateSkills) {
-    const templatePath = join(templatesDir, name, SKILL_FILE)
-    if (!available.has(name) || !await pathExists(templatePath))
-      throw new Error(`Missing configured skill template: templates/${name}/${SKILL_FILE}`)
-
-    const template = await readFile(templatePath, 'utf-8')
-    const content = template.replaceAll(REPO_ROOT_TOKEN, root)
-    const skillDir = join(root, 'skills', name)
-    await mkdir(skillDir, { recursive: true })
-    await writeFile(join(skillDir, SKILL_FILE), content)
-    rendered.push(name)
-  }
-
-  return rendered.sort((left, right) => left.localeCompare(right))
-}
-
-export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
-  const skillsDir = join(root, 'skills')
-  if (!await pathExists(skillsDir))
-    return []
-
-  const entries = await readdir(skillsDir, { withFileTypes: true })
-  const skills: Skill[] = []
-
-  for (const entry of entries) {
-    if (!entry.isDirectory())
-      continue
-
-    const source = join(skillsDir, entry.name)
-    if (await pathExists(join(source, SKILL_FILE))) {
-      skills.push({ name: entry.name, source })
-    }
-  }
-
-  return skills.sort((left, right) => left.name.localeCompare(right.name))
-}
-
-async function discoverLinkedSkills(root: string, linkedSkills: readonly string[]): Promise<Skill[]> {
-  const skills = await discoverSkills(root)
-  const byName = new Map(skills.map(skill => [skill.name, skill]))
-
-  return linkedSkills
-    .map((name) => {
-      const skill = byName.get(name)
-      if (!skill)
-        throw new Error(`Missing configured linked skill: skills/${name}/${SKILL_FILE}`)
-      return skill
-    })
-    .sort((left, right) => left.name.localeCompare(right.name))
-}
-
-async function ensureLink(source: string, linkPath: string): Promise<'exists' | 'linked'> {
-  if (!await pathExists(linkPath)) {
-    await symlink(source, linkPath)
-    return 'linked'
-  }
-
-  const stat = await lstat(linkPath)
-  if (!stat.isSymbolicLink()) {
-    throw new Error(`Refusing to replace non-symlink: ${linkPath}`)
-  }
-
-  const existing = await safeRealpath(linkPath)
-  const expected = await realpath(source)
-  if (existing === expected)
-    return 'exists'
-
-  throw new Error(`Refusing to replace symlink with different target: ${linkPath}`)
-}
-
-async function existingDefaultTargets(): Promise<string[]> {
-  const targets: string[] = []
-
-  for (const target of DEFAULT_TARGETS.map(homePath)) {
-    if (await pathExists(target))
-      targets.push(target)
-  }
-
-  return targets
-}
-
-export async function createSkillLinks({
-  linkedSkills = defaultLinkedSkills,
-  root = repoRoot(),
-  targets,
-  templateSkills = defaultTemplateSkills,
-}: LinkOptions = {}): Promise<LinkResult[]> {
+  targets = defaultLinkTargets,
+  templateSkills,
+}: OrchestrateOptions = {}): Promise<LinkResult[]> {
   await renderSkillTemplates({ root, templateSkills })
-  const skills = await discoverLinkedSkills(root, linkedSkills)
-  const skillsDir = join(root, 'skills')
-  const current = new Set(skills.map(skill => skill.name))
   const results: LinkResult[] = []
-  const linkTargets = targets ?? await existingDefaultTargets()
-  const createMissingTargets = targets !== undefined
 
-  for (const target of linkTargets) {
-    if (createMissingTargets)
-      await mkdir(target, { recursive: true })
+  for (const target of targets) {
+    const dir = homePath(target.dir)
 
-    for (const skill of skills) {
-      const status = await ensureLink(skill.source, join(target, skill.name))
-      results.push({ name: skill.name, target, status })
+    if (target.kind === 'skill') {
+      if (!await pathExists(dir))
+        continue
+      results.push(...await createSkillLinks({
+        root,
+        linkedSkills: target.include,
+        targets: [dir],
+        templateSkills: [],
+      }))
+      continue
     }
 
-    // Prune stale links left behind by skills that no longer exist in the repo.
-    const entries = await readdir(target, { withFileTypes: true })
-    for (const entry of entries) {
-      if (current.has(entry.name))
-        continue
-
-      const linkPath = join(target, entry.name)
-      if (!await pointsIntoSkills(linkPath, skillsDir))
-        continue
-
-      await unlink(linkPath)
-      results.push({ name: entry.name, target, status: 'removed' })
-    }
+    if (!await pathExists(dirname(dir)))
+      continue
+    results.push(...await createRuleLinks({
+      root,
+      rules: target.include.map(resolveRule),
+      targets: [dir],
+    }))
   }
 
   return results
 }
 
-export async function removeSkillLinks({
+/** Remove repo-owned links from every {@link defaultLinkTargets} destination. */
+export async function unlinkAll({
   root = repoRoot(),
-  targets = DEFAULT_TARGETS.map(homePath),
-}: LinkOptions = {}): Promise<LinkResult[]> {
-  const skillsDir = join(root, 'skills')
+  targets = defaultLinkTargets,
+}: OrchestrateOptions = {}): Promise<LinkResult[]> {
   const results: LinkResult[] = []
 
   for (const target of targets) {
-    if (!await pathExists(target))
-      continue
-
-    // Scan the target directory so we also clean up dangling links whose
-    // source skill was deleted from the repo, not just currently known skills.
-    const entries = await readdir(target, { withFileTypes: true })
-    for (const entry of entries) {
-      const linkPath = join(target, entry.name)
-      if (!await pointsIntoSkills(linkPath, skillsDir))
-        continue
-
-      await unlink(linkPath)
-      results.push({ name: entry.name, target, status: 'removed' })
-    }
+    const dir = homePath(target.dir)
+    if (target.kind === 'skill')
+      results.push(...await removeSkillLinks({ root, targets: [dir] }))
+    else
+      results.push(...await removeRuleLinks({ root, targets: [dir] }))
   }
 
   return results
@@ -294,10 +118,24 @@ function printResults(results: LinkResult[]): void {
 
 export async function runLink(args: string[]): Promise<void> {
   const targets = parseTargets(args)
-  printResults(await createSkillLinks({ targets: targets.length > 0 ? targets : undefined }))
+
+  // Explicit --target keeps the legacy behavior: link the full skill set into
+  // the given directories (no per-target filtering, no rule linking).
+  if (targets.length > 0) {
+    printResults(await createSkillLinks({ targets }))
+    return
+  }
+
+  printResults(await linkAll())
 }
 
 export async function runUnlink(args: string[]): Promise<void> {
   const targets = parseTargets(args)
-  printResults(await removeSkillLinks({ targets: targets.length > 0 ? targets : undefined }))
+
+  if (targets.length > 0) {
+    printResults(await removeSkillLinks({ targets }))
+    return
+  }
+
+  printResults(await unlinkAll())
 }
