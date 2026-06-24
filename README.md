@@ -7,7 +7,7 @@ This repository separates always-on preferences from task-specific skills:
 - `rules/` contains durable personal or project rules that should guide broad work.
 - `skills/` is reserved for task-triggered skill packages.
 - `vendor/` is reserved for synchronized third-party skill repositories.
-- `meta.ts` records which templates render into `skills/`, which skills link into agents, and vendored skill mappings.
+- `meta.ts` is the link configuration: which templates render into `skills/` (`templateSkills`), which skills link into agents (`linkedSkills`), which skills Claude receives as rules instead of skills (`claudeRules`), the per-destination link table (`linkTargets`), and vendored skill mappings.
 
 ## Current Entries
 
@@ -73,7 +73,7 @@ Skills, when added, should use the standard `SKILL.md` layout under `skills/<nam
 
 A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. Add its name to `templateSkills` in `meta.ts`; `pnpm skills link` renders configured templates into gitignored `skills/<name>/SKILL.md` files with this checkout's absolute path. The template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `pnpm skills link` to regenerate.
 
-Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into local agent skill directories. A skill can exist in `skills/` without being linked.
+Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into local agent skill directories. A skill can exist in `skills/` without being linked. Add it to `claudeRules` (with its `RULES.md` source) when it should instead reach Claude as an always-loaded rule under `~/.claude/rules`; it then continues to link as a skill for the other agents.
 
 ## Linking Skills
 
@@ -83,11 +83,20 @@ The repository keeps skill source under `skills/`. Link configured `linkedSkills
 pnpm skills link
 ```
 
-By default this first renders configured `templateSkills`, then links configured `linkedSkills` into whichever of these target directories already exist:
+By default this first renders configured `templateSkills`, then applies the `linkTargets` table from `meta.ts`. Each row is a destination, a `kind`, and the skills it receives:
 
-- `~/.codex/skills`
-- `~/.claude/skills`
-- `~/.agents/skills`
+| Destination | Kind | Receives |
+| --- | --- | --- |
+| `~/.codex/skills` | skill | all `linkedSkills` |
+| `~/.agents/skills` | skill | all `linkedSkills` |
+| `~/.claude/skills` | skill | `linkedSkills` minus `claudeRules` |
+| `~/.claude/rules` | rule | `claudeRules`, linked as `<skill>.md` markdown |
+
+Skill directories are populated only when they already exist (the tool is installed); missing ones are skipped, not created. The Claude rules directory is created when `~/.claude` exists.
+
+### Why Claude gets rules instead of skills
+
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `claudeRules` (currently the engineering and problem-solving rule sets) are therefore linked into `~/.claude/rules` as markdown pointing at the repo's `RULES.md`, and excluded from `~/.claude/skills`, so they always apply when Claude works. Codex and Agents read them as skills via `~/.codex/skills` / `~/.agents/skills` and are unaffected. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 

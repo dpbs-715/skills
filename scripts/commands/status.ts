@@ -7,8 +7,8 @@ import {
   type VendorSkillMeta,
 } from '../../meta.ts'
 import { getProjects, type Project } from '../lib/git.ts'
+import { discoverSkills } from '../lib/skillLinks.ts'
 import { isDirectoryNonEmpty, repoRoot } from '../lib/utils.ts'
-import { discoverSkills } from './link.ts'
 
 export type SkillRole = 'template' | 'linked' | 'vendor'
 
