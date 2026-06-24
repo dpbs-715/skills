@@ -133,7 +133,14 @@ export async function runUnlink(args: string[]): Promise<void> {
   const targets = parseTargets(args)
 
   if (targets.length > 0) {
-    printResults(await removeSkillLinks({ targets }))
+    // An explicit --target carries no `kind`, and a directory may hold skill
+    // links (into repo `skills/`) or rule links (into repo `rules/`) — e.g.
+    // `~/.claude/rules` holds the latter. Prune both: each pruner only removes
+    // links it owns, so the absent kind and any foreign links are untouched.
+    printResults([
+      ...await removeSkillLinks({ targets }),
+      ...await removeRuleLinks({ targets }),
+    ])
     return
   }
 

@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import test from 'node:test'
 
 import { linkTargets } from '../../meta.ts'
-import { linkAll, unlinkAll } from '../commands/link.ts'
+import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
 import {
   createSkillLinks,
@@ -14,7 +14,7 @@ import {
   renderSkillTemplates,
   REPO_ROOT_TOKEN,
 } from '../lib/skillLinks.ts'
-import { pathExists } from '../lib/utils.ts'
+import { pathExists, repoRoot } from '../lib/utils.ts'
 
 const temporaryPaths: string[] = []
 
@@ -248,6 +248,22 @@ test('unlinkAll removes skill and rule links from their targets', async () => {
 
   assert.equal(await pathExists(join(claudeSkills, 'personal-knowledge')), false)
   assert.equal(await pathExists(join(claudeRulesDir, 'engineering-rules.md')), false)
+})
+
+test('runUnlink --target prunes both skill and rule links from one directory', async () => {
+  const root = repoRoot()
+  const target = await createTempDir('mixed-target-')
+  // Dangling links are still recognised as repo-owned, so the sources need not
+  // exist. One points into repo skills/, one into repo rules/.
+  await symlink(join(root, 'skills', 'personal-knowledge'), join(target, 'personal-knowledge'))
+  await symlink(join(root, 'rules', 'engineering', 'RULES.md'), join(target, 'engineering-rules.md'))
+  await symlink('/tmp/elsewhere.md', join(target, 'foreign.md'))
+
+  await runUnlink(['--target', target])
+
+  assert.equal(await pathExists(join(target, 'personal-knowledge')), false)
+  assert.equal(await pathExists(join(target, 'engineering-rules.md')), false)
+  assert.equal(await readlink(join(target, 'foreign.md')), '/tmp/elsewhere.md')
 })
 
 test('keeps an existing correct symlink', async () => {
