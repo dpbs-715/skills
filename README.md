@@ -1,4 +1,4 @@
-# dpbs Skills
+# Personal Agent Skills
 
 Personal rules and skills for AI coding agents.
 
