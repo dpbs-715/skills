@@ -7,8 +7,10 @@ import { run as runCheck } from './commands/check.ts'
 import { run as runCleanup } from './commands/cleanup.ts'
 import { run as runInit } from './commands/init.ts'
 import { runLink, runUnlink } from './commands/link.ts'
+import { run as runNote } from './commands/note.ts'
 import { run as runStatus } from './commands/status.ts'
 import { run as runSync } from './commands/sync.ts'
+import { run as runValidate } from './commands/validate.ts'
 
 interface Command {
   summary: string
@@ -23,6 +25,8 @@ const COMMANDS: Record<string, Command> = {
   init: { summary: 'Add missing vendor git submodules from meta.ts', run: runInit },
   check: { summary: 'Fetch submodules and report upstream updates', run: runCheck },
   cleanup: { summary: 'Report unused submodules and skills; pass --yes to remove', run: runCleanup },
+  validate: { summary: 'Validate configured templates, generated skills, rules, and skill metadata', run: runValidate },
+  note: { summary: 'Manage private knowledge notes: list, reindex, or add', run: runNote },
 }
 
 function printHelp(): void {

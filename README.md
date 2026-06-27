@@ -21,6 +21,8 @@ This repository separates always-on preferences from task-specific skills:
 
 Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each is present in `skills/`, any undeclared skill directories, and submodule checkout state.
 
+Run `pnpm skills validate` to check that configured templates, generated skill shims, Claude rule sources, skill frontmatter, and repo-local absolute references are still consistent.
+
 ## Vendored Skills
 
 This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:
@@ -47,6 +49,8 @@ pnpm skills sync      # update submodules, then sync vendored skills into skills
 pnpm skills init      # add missing vendor git submodules from meta.ts
 pnpm skills check     # fetch submodules and report upstream updates
 pnpm skills cleanup   # report unused submodules/skills (pass --yes to remove)
+pnpm skills validate  # validate templates, generated skills, rules, and metadata
+pnpm skills note      # manage private knowledge notes (list, reindex, add)
 ```
 
 Run `pnpm skills` with no arguments to see this list.
@@ -74,6 +78,20 @@ Skills, when added, should use the standard `SKILL.md` layout under `skills/<nam
 A skill that must reference files outside its own folder (such as the shared `rules/`) cannot hardcode a portable path, because the skill directory is symlinked into agent locations while its `SKILL.md` is read from arbitrary working directories. Such a skill is defined by `templates/<name>/SKILL.md`, which uses the `{{REPO_ROOT}}` placeholder. Add its name to `templateSkills` in `meta.ts`; `pnpm skills link` renders configured templates into gitignored `skills/<name>/SKILL.md` files with this checkout's absolute path. The template itself stays under `templates/` and is never linked into agent directories. Edit the template, never the generated file, and re-run `pnpm skills link` to regenerate.
 
 Add a skill name to `linkedSkills` in `meta.ts` when it should be symlinked into local agent skill directories. A skill can exist in `skills/` without being linked. Add it to `claudeRules` (with its `RULES.md` source) when it should instead reach Claude as an always-loaded rule under `~/.claude/rules`; it then continues to link as a skill for the other agents.
+
+## Knowledge Notes
+
+Private reusable notes live under `knowledge/notes/`, with `knowledge/INDEX.md` as the lightweight index used by the `personal-knowledge` skill. These files are gitignored by default.
+
+Use the note workflow to keep that index fresh:
+
+```bash
+pnpm skills note list
+pnpm skills note reindex
+pnpm skills note add command-notes/example --title "Example" --summary "Short reusable note." --tag commands
+```
+
+`note reindex` scans markdown files under `knowledge/notes/`, skips hidden directories such as `.obsidian`, preserves existing summaries and tags when possible, and rewrites `knowledge/INDEX.md`. `note add` creates a new note and refuses to overwrite an existing one.
 
 ## Linking Skills
 
