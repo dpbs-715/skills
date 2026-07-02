@@ -67,6 +67,7 @@ const ruleSkillNames: readonly string[] = claudeRules.map(rule => rule.skill)
  */
 export const linkTargets: readonly LinkTarget[] = [
   { dir: '~/.codex/skills', kind: 'skill', include: linkedSkills },
+  { dir: '~/.opencode/skills', kind: 'skill', include: linkedSkills },
   { dir: '~/.agents/skills', kind: 'skill', include: linkedSkills },
   {
     dir: '~/.claude/skills',
