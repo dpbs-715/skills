@@ -5,6 +5,7 @@ export const Skill = {
   EngineeringRules: 'engineering-rules',
   PersonalKnowledge: 'personal-knowledge',
   ProblemSolvingRules: 'problem-solving-rules',
+  Push: 'push',
 } as const
 
 export type Skill = typeof Skill[keyof typeof Skill]
@@ -40,6 +41,7 @@ export const sourceSkills: readonly Skill[] = [
   Skill.EngineeringRules,
   Skill.PersonalKnowledge,
   Skill.ProblemSolvingRules,
+  Skill.Push,
 ]
 
 export const linkedSkills: readonly Skill[] = [
@@ -48,6 +50,7 @@ export const linkedSkills: readonly Skill[] = [
   Skill.EngineeringRules,
   Skill.PersonalKnowledge,
   Skill.ProblemSolvingRules,
+  Skill.Push,
 ]
 
 export const claudeRules: readonly ClaudeRule[] = [
