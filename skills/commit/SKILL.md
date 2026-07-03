@@ -37,6 +37,9 @@ Keep Conventional Commit tokens such as type, scope, `!`, and
 `BREAKING CHANGE:` in English. If neither flag is provided, use English unless
 the user clearly asks for another language.
 
+With `-ch`, write `feat(editor): 支持快捷键配置`. The `feat(editor):`
+prefix stays English; the subject after the colon is Chinese.
+
 ## Verification
 
 Do not run tests by default. Run tests or validation only when the user asks.
@@ -77,7 +80,7 @@ feat(auth): add token refresh
 fix(report): preserve empty filter values
 docs: clarify skill linking flow
 refactor(api)!: rename order endpoints
-feat(auth): 添加令牌刷新
+feat(editor): 支持快捷键配置
 fix(report): 保留空筛选值
 ```
 
