@@ -4,6 +4,8 @@
  * type-stripping mode, which only allows erasable syntax (enums are not).
  */
 export const Skill = {
+  Commit: 'commit',
+  Dcr: 'dcr',
   EngineeringRules: 'engineering-rules',
   PersonalKnowledge: 'personal-knowledge',
   ProblemSolvingRules: 'problem-solving-rules',
@@ -43,6 +45,8 @@ export type LinkTarget = DirectoryLinkTarget | JsonArrayConfigTarget
 
 /** Repo-owned source skills rendered into `generated/<name>/` before linking. */
 export const sourceSkills: readonly Skill[] = [
+  Skill.Commit,
+  Skill.Dcr,
   Skill.EngineeringRules,
   Skill.PersonalKnowledge,
   Skill.ProblemSolvingRules,
@@ -50,6 +54,8 @@ export const sourceSkills: readonly Skill[] = [
 
 /** Skills linked into agent skill directories. */
 export const linkedSkills: readonly Skill[] = [
+  Skill.Commit,
+  Skill.Dcr,
   Skill.EngineeringRules,
   Skill.PersonalKnowledge,
   Skill.ProblemSolvingRules,
