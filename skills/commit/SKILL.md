@@ -37,6 +37,10 @@ Keep Conventional Commit tokens such as type, scope, `!`, and
 `BREAKING CHANGE:` in English. If neither flag is provided, use English unless
 the user clearly asks for another language.
 
+## Verification
+
+Do not run tests by default. Run tests or validation only when the user asks.
+
 ## Commit Message
 
 Use Conventional Commits:
@@ -88,7 +92,5 @@ Included:
 - ...
 
 Verification:
-- ...
+- Not run
 ```
-
-If verification was not run, say so explicitly.
