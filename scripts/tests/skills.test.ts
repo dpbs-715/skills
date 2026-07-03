@@ -365,8 +365,8 @@ test('uses a configured submodule branch when checking updates', async () => {
 test('status reports skill roles, presence, extra skills, and submodule checkout', async () => {
   const root = await createTempDir('skills-repo-')
   const writeSkill = async (name: string): Promise<void> => {
-    await mkdir(join(root, 'skills', name), { recursive: true })
-    await writeFile(join(root, 'skills', name, 'SKILL.md'), `# ${name}\n`)
+    await mkdir(join(root, 'generated', name), { recursive: true })
+    await writeFile(join(root, 'generated', name, 'SKILL.md'), `# ${name}\n`)
   }
   await writeSkill('personal-knowledge')
   await writeSkill('gsap-core')
@@ -377,14 +377,14 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
   const status = await collectStatus({
     root,
     linkedSkills: ['engineering-rules', 'personal-knowledge'],
-    templateSkills: ['personal-knowledge'],
+    sourceSkills: ['personal-knowledge'],
     vendors,
   })
 
   assert.deepEqual(status.skills, [
     { name: 'engineering-rules', present: false, roles: ['linked'] },
     { name: 'gsap-core', present: true, roles: ['vendor'] },
-    { name: 'personal-knowledge', present: true, roles: ['template', 'linked'] },
+    { name: 'personal-knowledge', present: true, roles: ['source', 'linked'] },
   ])
   assert.deepEqual(status.extraSkills, ['orphan'])
   assert.deepEqual(status.projects, [{
@@ -401,7 +401,7 @@ test('status marks configured submodules that are not checked out', async () => 
   const status = await collectStatus({
     root,
     linkedSkills: [],
-    templateSkills: [],
+    sourceSkills: [],
     vendors,
   })
 
@@ -419,30 +419,30 @@ test('status marks configured submodules that are not checked out', async () => 
 
 test('cleanup removes extra skills only when confirmed', async () => {
   const root = await createTempDir('skills-repo-')
-  await mkdir(join(root, 'skills', 'engineering-rules'), { recursive: true })
-  await mkdir(join(root, 'skills', 'personal-knowledge'), { recursive: true })
-  await mkdir(join(root, 'skills', 'gsap-core'), { recursive: true })
-  await mkdir(join(root, 'skills', 'extra-skill'), { recursive: true })
+  await mkdir(join(root, 'generated', 'engineering-rules'), { recursive: true })
+  await mkdir(join(root, 'generated', 'personal-knowledge'), { recursive: true })
+  await mkdir(join(root, 'generated', 'gsap-core'), { recursive: true })
+  await mkdir(join(root, 'generated', 'extra-skill'), { recursive: true })
 
   const dryRun = await cleanupUnusedEntries({
     root,
     linkedSkills: ['engineering-rules'],
-    templateSkills: ['personal-knowledge'],
+    sourceSkills: ['personal-knowledge'],
     vendors,
     yes: false,
   })
   assert.deepEqual(dryRun.skills, [{ name: 'extra-skill', status: 'would-remove' }])
-  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'extra-skill', 'gsap-core', 'personal-knowledge'])
+  assert.deepEqual(await readdir(join(root, 'generated')), ['engineering-rules', 'extra-skill', 'gsap-core', 'personal-knowledge'])
 
   const confirmed = await cleanupUnusedEntries({
     root,
     linkedSkills: ['engineering-rules'],
-    templateSkills: ['personal-knowledge'],
+    sourceSkills: ['personal-knowledge'],
     vendors,
     yes: true,
   })
   assert.deepEqual(confirmed.skills, [{ name: 'extra-skill', status: 'removed' }])
-  assert.deepEqual(await readdir(join(root, 'skills')), ['engineering-rules', 'gsap-core', 'personal-knowledge'])
+  assert.deepEqual(await readdir(join(root, 'generated')), ['engineering-rules', 'gsap-core', 'personal-knowledge'])
 })
 
 test('cleanup only removes extra managed submodules when confirmed', async () => {

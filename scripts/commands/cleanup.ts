@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import {
   linkedSkills as defaultLinkedSkills,
-  templateSkills as defaultTemplateSkills,
+  sourceSkills as defaultSourceSkills,
   vendors as defaultVendors,
   type VendorSkillMeta,
 } from '../../meta.ts'
@@ -17,6 +17,7 @@ import {
   removeGitmodulesIfNoEntries,
   type RunGit,
 } from '../lib/git.ts'
+import { GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
 import { listDirectories, repoRoot } from '../lib/utils.ts'
 
 export interface CleanupResult {
@@ -28,22 +29,22 @@ interface CleanupOptions {
   linkedSkills?: readonly string[]
   root?: string
   runGit?: RunGit
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
   yes?: boolean
 }
 
 function expectedSkillNames({
   linkedSkills = defaultLinkedSkills,
-  templateSkills = defaultTemplateSkills,
+  sourceSkills = defaultSourceSkills,
   vendors = defaultVendors,
 }: {
   linkedSkills?: readonly string[]
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
 }): Set<string> {
   const expected = new Set<string>([
-    ...templateSkills,
+    ...sourceSkills,
     ...linkedSkills,
   ])
 
@@ -59,7 +60,7 @@ export async function cleanupUnusedEntries({
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
   runGit = createGitRunner(root),
-  templateSkills = defaultTemplateSkills,
+  sourceSkills = defaultSourceSkills,
   vendors = defaultVendors,
   yes = false,
 }: CleanupOptions = {}): Promise<CleanupResult> {
@@ -70,8 +71,8 @@ export async function cleanupUnusedEntries({
     isManagedSubmodulePath(path) && !expectedSubmodulePaths.has(path),
   )
 
-  const expectedSkills = expectedSkillNames({ linkedSkills, templateSkills, vendors })
-  const existingSkills = await listDirectories(join(root, 'skills'))
+  const expectedSkills = expectedSkillNames({ linkedSkills, sourceSkills, vendors })
+  const existingSkills = await listDirectories(join(root, GENERATED_SKILLS_DIR))
   const extraSkills = existingSkills.filter(name => !expectedSkills.has(name))
 
   const results: CleanupResult = {
@@ -104,7 +105,7 @@ export async function cleanupUnusedEntries({
 
   for (const name of extraSkills) {
     if (yes) {
-      await rm(join(root, 'skills', name), { recursive: true, force: true })
+      await rm(join(root, GENERATED_SKILLS_DIR, name), { recursive: true, force: true })
       results.skills.push({ name, status: 'removed' })
     }
     else {
@@ -127,7 +128,7 @@ function printCleanupResults(results: CleanupResult, yes: boolean): void {
   for (const result of results.submodules)
     console.log(`${result.status}: ${result.path}`)
   for (const result of results.skills)
-    console.log(`${result.status}: skills/${result.name}`)
+    console.log(`${result.status}: ${GENERATED_SKILLS_DIR}/${result.name}`)
 
   if (!yes)
     console.log('Run with --yes to remove these entries.')

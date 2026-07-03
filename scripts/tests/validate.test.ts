@@ -25,7 +25,7 @@ async function writeRepoFile(root: string, relPath: string, content: string): Pr
   await writeFile(path, content)
 }
 
-function skillTemplate(ruleSource = defaultRuleSource): string {
+function sourceSkill(ruleSource = defaultRuleSource): string {
   return `---
 name: ${skillName}
 description: Use when testing validation.
@@ -47,13 +47,13 @@ async function createValidRepo({
   writeRule?: boolean
 } = {}): Promise<{ options: ValidationOptions, root: string }> {
   const root = await createTempDir('skills-validate-')
-  const template = skillTemplate(ruleSource)
+  const source = sourceSkill(ruleSource)
 
-  await writeRepoFile(root, join('templates', skillName, 'SKILL.md'), template)
+  await writeRepoFile(root, join('skills', skillName, 'SKILL.md'), source)
   await writeRepoFile(
     root,
-    join('skills', skillName, 'SKILL.md'),
-    template.replaceAll(REPO_ROOT_TOKEN, root),
+    join('generated', skillName, 'SKILL.md'),
+    source.replaceAll(REPO_ROOT_TOKEN, root),
   )
   if (writeRule)
     await writeRepoFile(root, ruleSource, '# Rule\n')
@@ -64,7 +64,7 @@ async function createValidRepo({
       claudeRules,
       linkedSkills: [skillName],
       root,
-      templateSkills: [skillName],
+      sourceSkills: [skillName],
     },
   }
 }
@@ -106,22 +106,22 @@ test('run prints a clear success message', async () => {
   assert.deepEqual(logs, ['Validation passed.'])
 })
 
-test('reports a missing configured template', async () => {
+test('reports a missing configured source skill', async () => {
   const { options, root } = await createValidRepo()
-  await rm(join(root, 'templates', skillName, 'SKILL.md'), { force: true })
+  await rm(join(root, 'skills', skillName, 'SKILL.md'), { force: true })
 
   const result = await validateSkills(options)
 
   assert.equal(result.ok, false)
-  assert.deepEqual(issueCodes(result), ['missing-template'])
-  assert.equal(result.issues[0].path, join('templates', skillName, 'SKILL.md'))
+  assert.deepEqual(issueCodes(result), ['missing-source-skill'])
+  assert.equal(result.issues[0].path, join('skills', skillName, 'SKILL.md'))
 })
 
 test('reports a stale generated skill', async () => {
   const { options, root } = await createValidRepo()
   await writeRepoFile(
     root,
-    join('skills', skillName, 'SKILL.md'),
+    join('generated', skillName, 'SKILL.md'),
     `---
 name: ${skillName}
 description: Use when testing validation.
@@ -139,10 +139,10 @@ description: Use when testing validation.
 
 test('reports discovered skill frontmatter problems', async () => {
   const root = await createTempDir('skills-validate-')
-  await writeRepoFile(root, join('skills', 'missing-frontmatter', 'SKILL.md'), '# Missing\n')
+  await writeRepoFile(root, join('generated', 'missing-frontmatter', 'SKILL.md'), '# Missing\n')
   await writeRepoFile(
     root,
-    join('skills', 'name-mismatch', 'SKILL.md'),
+    join('generated', 'name-mismatch', 'SKILL.md'),
     `---
 name: other-name
 description: Use when testing validation.
@@ -154,7 +154,7 @@ description: Use when testing validation.
     claudeRules: [],
     linkedSkills: [],
     root,
-    templateSkills: [],
+    sourceSkills: [],
   })
 
   assert.equal(result.ok, false)
@@ -180,14 +180,14 @@ test('reports a missing configured linked skill', async () => {
     claudeRules: [],
     linkedSkills: [skillName],
     root,
-    templateSkills: [],
+    sourceSkills: [],
   })
 
   assert.equal(result.ok, false)
   assert.deepEqual(issueCodes(result), ['missing-linked-skill'])
 })
 
-test('reports missing repo absolute paths in templates and generated skills', async () => {
+test('reports missing repo absolute paths in source and generated skills', async () => {
   const { options } = await createValidRepo({
     claudeRules: [],
     ruleSource: 'rules/missing/RULES.md',
@@ -201,8 +201,8 @@ test('reports missing repo absolute paths in templates and generated skills', as
   assert.deepEqual(
     result.issues.map(issue => issue.path).sort(),
     [
+      join('generated', skillName, 'SKILL.md'),
       join('skills', skillName, 'SKILL.md'),
-      join('templates', skillName, 'SKILL.md'),
     ],
   )
 })

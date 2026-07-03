@@ -2,15 +2,15 @@ import { join } from 'node:path'
 
 import {
   linkedSkills as defaultLinkedSkills,
-  templateSkills as defaultTemplateSkills,
+  sourceSkills as defaultSourceSkills,
   vendors as defaultVendors,
   type VendorSkillMeta,
 } from '../../meta.ts'
 import { getProjects, type Project } from '../lib/git.ts'
-import { discoverSkills } from '../lib/skillLinks.ts'
+import { discoverSkills, GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
 import { isDirectoryNonEmpty, repoRoot } from '../lib/utils.ts'
 
-export type SkillRole = 'template' | 'linked' | 'vendor'
+export type SkillRole = 'source' | 'linked' | 'vendor'
 
 export interface SkillStatus {
   name: string
@@ -34,22 +34,22 @@ export interface RepoStatus {
 interface StatusOptions {
   linkedSkills?: readonly string[]
   root?: string
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
 }
 
-const SKILL_ROLE_ORDER: SkillRole[] = ['template', 'linked', 'vendor']
+const SKILL_ROLE_ORDER: SkillRole[] = ['source', 'linked', 'vendor']
 
 /**
  * Read-only inventory of what `meta.ts` configures versus what is actually on
- * disk: which skills are expected (and why), whether each one is present in
- * `skills/`, any skill directories not declared in `meta.ts`, and the checkout
- * state of configured submodules. Drives `pnpm skills status`.
+ * disk: which skills are expected (and why), whether each generated bundle is
+ * present, any generated skill directories not declared in `meta.ts`, and the
+ * checkout state of configured submodules. Drives `pnpm skills status`.
  */
 export async function collectStatus({
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
-  templateSkills = defaultTemplateSkills,
+  sourceSkills = defaultSourceSkills,
   vendors = defaultVendors,
 }: StatusOptions = {}): Promise<RepoStatus> {
   const roles = new Map<string, Set<SkillRole>>()
@@ -59,8 +59,8 @@ export async function collectStatus({
     roles.set(name, existing)
   }
 
-  for (const name of templateSkills)
-    addRole(name, 'template')
+  for (const name of sourceSkills)
+    addRole(name, 'source')
   for (const name of linkedSkills)
     addRole(name, 'linked')
   for (const vendor of Object.values(vendors)) {
@@ -108,7 +108,7 @@ function printStatus(status: RepoStatus): void {
   }
 
   if (status.extraSkills.length > 0) {
-    console.log('\nUntracked skills (in skills/ but not declared in meta.ts):')
+    console.log(`\nUntracked generated skills (in ${GENERATED_SKILLS_DIR}/ but not declared in meta.ts):`)
     for (const name of status.extraSkills)
       console.log(`  ${name}`)
   }

@@ -1,22 +1,18 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import {
   linkedSkills as defaultLinkedSkills,
-  templateSkills as defaultTemplateSkills,
+  sourceSkills as defaultSourceSkills,
 } from '../../meta.ts'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
-/**
- * Placeholder inside a skill template (`templates/<name>/SKILL.md`) replaced
- * with this repo's absolute path at link time, so a skill can reference files
- * outside its own directory without hardcoding one machine's checkout location.
- */
 export const REPO_ROOT_TOKEN = '{{REPO_ROOT}}'
 
-const TEMPLATES_DIR = 'templates'
-const SKILL_FILE = 'SKILL.md'
+export const GENERATED_SKILLS_DIR = 'generated'
+export const SKILL_FILE = 'SKILL.md'
+export const SOURCE_SKILLS_DIR = 'skills'
 
 export interface Skill {
   name: string
@@ -27,46 +23,41 @@ interface SkillLinkOptions {
   linkedSkills?: readonly string[]
   root?: string
   targets: string[]
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
 }
 
-interface TemplateOptions {
+interface SourceOptions {
   root?: string
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
 }
 
-/**
- * Render each `templates/<name>/SKILL.md` into `skills/<name>/SKILL.md`,
- * substituting the repo root for {@link REPO_ROOT_TOKEN}. Templates live outside
- * `skills/` so they never ride along into the symlinked skill bundle; only the
- * generated `SKILL.md` is linked. The generated skill directory is a build
- * artifact and should be gitignored.
- */
-export async function renderSkillTemplates({
+export async function renderSkillSources({
   root = repoRoot(),
-  templateSkills = defaultTemplateSkills,
-}: TemplateOptions = {}): Promise<string[]> {
-  const templatesDir = join(root, TEMPLATES_DIR)
-  if (templateSkills.length === 0)
+  sourceSkills = defaultSourceSkills,
+}: SourceOptions = {}): Promise<string[]> {
+  const sourceSkillsDir = join(root, SOURCE_SKILLS_DIR)
+  if (sourceSkills.length === 0)
     return []
-  if (!await pathExists(templatesDir))
-    throw new Error(`Missing configured skill template: templates/${templateSkills[0]}/${SKILL_FILE}`)
+  if (!await pathExists(sourceSkillsDir))
+    throw new Error(`Missing configured source skill: ${SOURCE_SKILLS_DIR}/${sourceSkills[0]}/${SKILL_FILE}`)
 
-  const entries = await readdir(templatesDir, { withFileTypes: true })
+  const entries = await readdir(sourceSkillsDir, { withFileTypes: true })
   const available = new Set(entries
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name))
   const rendered: string[] = []
 
-  for (const name of templateSkills) {
-    const templatePath = join(templatesDir, name, SKILL_FILE)
-    if (!available.has(name) || !await pathExists(templatePath))
-      throw new Error(`Missing configured skill template: templates/${name}/${SKILL_FILE}`)
+  for (const name of sourceSkills) {
+    const sourceDir = join(sourceSkillsDir, name)
+    const sourcePath = join(sourceDir, SKILL_FILE)
+    if (!available.has(name) || !await pathExists(sourcePath))
+      throw new Error(`Missing configured source skill: ${SOURCE_SKILLS_DIR}/${name}/${SKILL_FILE}`)
 
-    const template = await readFile(templatePath, 'utf-8')
-    const content = template.replaceAll(REPO_ROOT_TOKEN, root)
-    const skillDir = join(root, 'skills', name)
-    await mkdir(skillDir, { recursive: true })
+    const source = await readFile(sourcePath, 'utf-8')
+    const content = source.replaceAll(REPO_ROOT_TOKEN, root)
+    const skillDir = join(root, GENERATED_SKILLS_DIR, name)
+    await rm(skillDir, { recursive: true, force: true })
+    await cp(sourceDir, skillDir, { recursive: true })
     await writeFile(join(skillDir, SKILL_FILE), content)
     rendered.push(name)
   }
@@ -75,7 +66,7 @@ export async function renderSkillTemplates({
 }
 
 export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
-  const skillsDir = join(root, 'skills')
+  const skillsDir = join(root, GENERATED_SKILLS_DIR)
   if (!await pathExists(skillsDir))
     return []
 
@@ -103,26 +94,26 @@ async function discoverLinkedSkills(root: string, linkedSkills: readonly string[
     .map((name) => {
       const skill = byName.get(name)
       if (!skill)
-        throw new Error(`Missing configured linked skill: skills/${name}/${SKILL_FILE}`)
+        throw new Error(`Missing configured linked skill: ${GENERATED_SKILLS_DIR}/${name}/${SKILL_FILE}`)
       return skill
     })
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
 /**
- * Link the configured skills (directories) into each target, rendering any
- * templated skills first. Stale links pointing into the repo's `skills/` tree
- * are pruned, so skills removed from a target's set clean themselves up.
+ * Link generated skill bundles into each target. Stale links pointing into the
+ * repo's generated tree are pruned, so removed skills clean themselves up.
  */
 export async function createSkillLinks({
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
   targets,
-  templateSkills = defaultTemplateSkills,
+  sourceSkills = defaultSourceSkills,
 }: SkillLinkOptions): Promise<LinkResult[]> {
-  await renderSkillTemplates({ root, templateSkills })
+  await renderSkillSources({ root, sourceSkills })
   const skills = await discoverLinkedSkills(root, linkedSkills)
-  const skillsDir = join(root, 'skills')
+  const skillsDir = join(root, GENERATED_SKILLS_DIR)
+  const replaceFrom = [join(root, SOURCE_SKILLS_DIR), skillsDir]
   const current = new Set(skills.map(skill => skill.name))
   const results: LinkResult[] = []
 
@@ -130,7 +121,7 @@ export async function createSkillLinks({
     await mkdir(target, { recursive: true })
 
     for (const skill of skills) {
-      const status = await ensureLink(skill.source, join(target, skill.name))
+      const status = await ensureLink(skill.source, join(target, skill.name), { replaceFrom })
       results.push({ name: skill.name, target, status })
     }
 
@@ -147,7 +138,7 @@ export async function removeSkillLinks({
   root?: string
   targets: string[]
 }): Promise<LinkResult[]> {
-  const skillsDir = join(root, 'skills')
+  const skillsDir = join(root, GENERATED_SKILLS_DIR)
   const results: LinkResult[] = []
 
   for (const target of targets) {

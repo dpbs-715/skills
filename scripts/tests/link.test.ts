@@ -6,12 +6,13 @@ import test from 'node:test'
 
 import { linkTargets } from '../../meta.ts'
 import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
+import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
 import {
   createSkillLinks,
   discoverSkills,
   removeSkillLinks,
-  renderSkillTemplates,
+  renderSkillSources,
   REPO_ROOT_TOKEN,
 } from '../lib/skillLinks.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
@@ -24,18 +25,18 @@ async function createTempDir(prefix: string): Promise<string> {
   return path
 }
 
-async function createSkill(root: string, name: string): Promise<string> {
-  const skillDir = join(root, 'skills', name)
+async function createGeneratedSkill(root: string, name: string): Promise<string> {
+  const skillDir = join(root, 'generated', name)
   await mkdir(skillDir, { recursive: true })
   await writeFile(join(skillDir, 'SKILL.md'), `---\nname: ${name}\ndescription: Use when testing.\n---\n`)
   return skillDir
 }
 
-async function createSkillTemplate(root: string, name: string): Promise<void> {
-  const templateDir = join(root, 'templates', name)
-  await mkdir(templateDir, { recursive: true })
+async function createSourceSkill(root: string, name: string): Promise<void> {
+  const sourceDir = join(root, 'skills', name)
+  await mkdir(sourceDir, { recursive: true })
   await writeFile(
-    join(templateDir, 'SKILL.md'),
+    join(sourceDir, 'SKILL.md'),
     `Read \`${REPO_ROOT_TOKEN}/rules/engineering/RULES.md\`.\n`,
   )
 }
@@ -48,9 +49,9 @@ async function writeRule(root: string, relSource: string): Promise<string> {
 }
 
 test('linkTargets excludes Claude rules from Claude skills and links them as rules', () => {
-  const codex = linkTargets.find(target => target.dir === '~/.codex/skills')
-  const claudeSkills = linkTargets.find(target => target.dir === '~/.claude/skills')
-  const claudeRulesTarget = linkTargets.find(target => target.dir === '~/.claude/rules')
+  const codex = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.codex/skills')
+  const claudeSkills = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/skills')
+  const claudeRulesTarget = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/rules')
   assert.ok(codex && claudeSkills && claudeRulesTarget)
 
   // Codex keeps the full skill set (unchanged).
@@ -71,73 +72,101 @@ test('linkTargets excludes Claude rules from Claude skills and links them as rul
   )
 })
 
-test('renders a template into skills/<name>/SKILL.md with the repo root resolved', async () => {
-  const root = await createTempDir('skills-repo-')
-  await createSkillTemplate(root, 'engineering-rules')
+test('linkTargets configures opencode rules and instructions together', () => {
+  const opencodeSkills = linkTargets.find(
+    target => target.kind !== 'json-array' && target.dir === '~/.config/opencode/skills',
+  )
+  const opencodeRules = linkTargets.find(
+    target => target.kind !== 'json-array' && target.dir === '~/.config/opencode/rules',
+  )
+  const opencodeConfig = linkTargets.find(
+    target => target.kind === 'json-array' && target.file === '~/.config/opencode/opencode.json',
+  )
+  assert.ok(opencodeSkills && opencodeRules && opencodeConfig)
+  if (opencodeConfig.kind !== 'json-array')
+    assert.fail('Expected opencode config target')
 
-  const rendered = await renderSkillTemplates({
+  assert.ok(!opencodeSkills.include.includes('engineering-rules'))
+  assert.deepEqual(
+    [...opencodeRules.include].sort(),
+    ['engineering-rules', 'problem-solving-rules'],
+  )
+  assert.equal(opencodeConfig.property, 'instructions')
+  assert.deepEqual(opencodeConfig.include, ['~/.config/opencode/rules/*.md'])
+})
+
+test('renders a source skill into generated/<name>/SKILL.md with the repo root resolved', async () => {
+  const root = await createTempDir('skills-repo-')
+  await createSourceSkill(root, 'engineering-rules')
+
+  const rendered = await renderSkillSources({
     root,
-    templateSkills: ['engineering-rules'],
+    sourceSkills: ['engineering-rules'],
   })
 
   assert.deepEqual(rendered, ['engineering-rules'])
-  const skill = await readFile(join(root, 'skills', 'engineering-rules', 'SKILL.md'), 'utf-8')
+  const skill = await readFile(join(root, 'generated', 'engineering-rules', 'SKILL.md'), 'utf-8')
   assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
 })
 
-test('renders only configured skill templates', async () => {
+test('renders only configured source skills', async () => {
   const root = await createTempDir('skills-repo-')
-  await createSkillTemplate(root, 'engineering-rules')
-  await createSkillTemplate(root, 'personal-knowledge')
+  await createSourceSkill(root, 'engineering-rules')
+  await createSourceSkill(root, 'personal-knowledge')
 
-  const rendered = await renderSkillTemplates({
+  const rendered = await renderSkillSources({
     root,
-    templateSkills: ['engineering-rules'],
+    sourceSkills: ['engineering-rules'],
   })
 
   assert.deepEqual(rendered, ['engineering-rules'])
-  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.md')), true)
-  assert.equal(await pathExists(join(root, 'skills', 'personal-knowledge', 'SKILL.md')), false)
+  assert.equal(await pathExists(join(root, 'generated', 'engineering-rules', 'SKILL.md')), true)
+  assert.equal(await pathExists(join(root, 'generated', 'personal-knowledge', 'SKILL.md')), false)
 })
 
-test('throws when a configured skill template is missing', async () => {
+test('throws when a configured source skill is missing', async () => {
   const root = await createTempDir('skills-repo-')
 
   await assert.rejects(
-    () => renderSkillTemplates({
+    () => renderSkillSources({
       root,
-      templateSkills: ['engineering-rules'],
+      sourceSkills: ['engineering-rules'],
     }),
-    /Missing configured skill template/,
+    /Missing configured source skill/,
   )
 })
 
-test('does not render templates into the linked skill directory', async () => {
+test('copies bundled resources while rendering the generated SKILL.md', async () => {
   const root = await createTempDir('skills-repo-')
-  await createSkillTemplate(root, 'engineering-rules')
+  await createSourceSkill(root, 'engineering-rules')
+  await mkdir(join(root, 'skills', 'engineering-rules', 'references'), { recursive: true })
+  await writeFile(join(root, 'skills', 'engineering-rules', 'references', 'notes.md'), '# Notes\n')
 
-  await renderSkillTemplates({
+  await renderSkillSources({
     root,
-    templateSkills: ['engineering-rules'],
+    sourceSkills: ['engineering-rules'],
   })
 
-  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.template.md')), false)
-  assert.equal(await pathExists(join(root, 'skills', 'engineering-rules', 'SKILL.md')), true)
+  assert.equal(
+    await readFile(join(root, 'generated', 'engineering-rules', 'references', 'notes.md'), 'utf-8'),
+    '# Notes\n',
+  )
+  assert.equal(await pathExists(join(root, 'generated', 'engineering-rules', 'SKILL.md')), true)
 })
 
-test('links a templated skill by rendering it first', async () => {
+test('links a source skill by rendering it first', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  await createSkillTemplate(root, 'engineering-rules')
+  await createSourceSkill(root, 'engineering-rules')
 
   const results = await createSkillLinks({
     root,
     linkedSkills: ['engineering-rules'],
     targets: [target],
-    templateSkills: ['engineering-rules'],
+    sourceSkills: ['engineering-rules'],
   })
 
-  const source = join(root, 'skills', 'engineering-rules')
+  const source = join(root, 'generated', 'engineering-rules')
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
   assert.equal(await readlink(join(target, 'engineering-rules')), source)
   const skill = await readFile(join(source, 'SKILL.md'), 'utf-8')
@@ -146,26 +175,26 @@ test('links a templated skill by rendering it first', async () => {
 
 test('discovers directories that contain SKILL.md', async () => {
   const root = await createTempDir('skills-repo-')
-  await createSkill(root, 'engineering-rules')
-  await mkdir(join(root, 'skills', 'not-a-skill'), { recursive: true })
+  await createGeneratedSkill(root, 'engineering-rules')
+  await mkdir(join(root, 'generated', 'not-a-skill'), { recursive: true })
 
   const skills = await discoverSkills(root)
 
   assert.deepEqual(skills.map(skill => skill.name), ['engineering-rules'])
-  assert.equal(skills[0].source, join(root, 'skills', 'engineering-rules'))
+  assert.equal(skills[0].source, join(root, 'generated', 'engineering-rules'))
 })
 
 test('creates symlinks for each configured linked skill in each target', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  const source = await createSkill(root, 'engineering-rules')
-  await createSkill(root, 'personal-knowledge')
+  const source = await createGeneratedSkill(root, 'engineering-rules')
+  await createGeneratedSkill(root, 'personal-knowledge')
 
   const results = await createSkillLinks({
     root,
     linkedSkills: ['engineering-rules'],
     targets: [target],
-    templateSkills: [],
+    sourceSkills: [],
   })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
@@ -182,7 +211,7 @@ test('throws when a configured linked skill is missing', async () => {
       root,
       linkedSkills: ['engineering-rules'],
       targets: [target],
-      templateSkills: [],
+      sourceSkills: [],
     }),
     /Missing configured linked skill/,
   )
@@ -191,8 +220,8 @@ test('throws when a configured linked skill is missing', async () => {
 test('linkAll links existing skill dirs, skips missing ones, and writes Claude rules', async () => {
   const root = await createTempDir('skills-repo-')
   const home = await createTempDir('skills-home-')
-  await createSkill(root, 'engineering-rules')
-  await createSkill(root, 'personal-knowledge')
+  await createGeneratedSkill(root, 'engineering-rules')
+  await createGeneratedSkill(root, 'personal-knowledge')
   await writeRule(root, 'rules/engineering/RULES.md')
 
   const codexSkills = join(home, '.codex', 'skills')
@@ -210,7 +239,7 @@ test('linkAll links existing skill dirs, skips missing ones, and writes Claude r
     { dir: claudeRulesDir, kind: 'rule' as const, include: ['engineering-rules'] },
   ]
 
-  await linkAll({ root, targets, templateSkills: [] })
+  await linkAll({ root, targets, sourceSkills: [] })
 
   // Codex keeps the full set.
   assert.equal(await pathExists(join(codexSkills, 'engineering-rules')), true)
@@ -227,10 +256,36 @@ test('linkAll links existing skill dirs, skips missing ones, and writes Claude r
   )
 })
 
+test('linkAll writes configured JSON array entries when the config parent exists', async () => {
+  const root = await createTempDir('skills-repo-')
+  const home = await createTempDir('skills-home-')
+  const configFile = join(home, '.config', 'opencode', 'opencode.json')
+  await mkdir(dirname(configFile), { recursive: true })
+  await writeFile(configFile, '{\n  "$schema": "https://opencode.ai/config.json"\n}\n')
+
+  const targets = [
+    {
+      file: configFile,
+      kind: 'json-array' as const,
+      property: 'instructions',
+      include: ['~/.config/opencode/rules/*.md'],
+    },
+  ]
+
+  await linkAll({ root, targets, sourceSkills: [] })
+
+  const config = JSON.parse(await readFile(configFile, 'utf-8')) as {
+    $schema: string
+    instructions: string[]
+  }
+  assert.equal(config.$schema, 'https://opencode.ai/config.json')
+  assert.deepEqual(config.instructions, ['~/.config/opencode/rules/*.md'])
+})
+
 test('unlinkAll removes skill and rule links from their targets', async () => {
   const root = await createTempDir('skills-repo-')
   const home = await createTempDir('skills-home-')
-  const skillSource = await createSkill(root, 'personal-knowledge')
+  const skillSource = await createGeneratedSkill(root, 'personal-knowledge')
   const ruleSource = await writeRule(root, 'rules/engineering/RULES.md')
   const claudeSkills = join(home, '.claude', 'skills')
   const claudeRulesDir = join(home, '.claude', 'rules')
@@ -254,8 +309,8 @@ test('runUnlink --target prunes both skill and rule links from one directory', a
   const root = repoRoot()
   const target = await createTempDir('mixed-target-')
   // Dangling links are still recognised as repo-owned, so the sources need not
-  // exist. One points into repo skills/, one into repo rules/.
-  await symlink(join(root, 'skills', 'personal-knowledge'), join(target, 'personal-knowledge'))
+  // exist. One points into repo generated/, one into repo rules/.
+  await symlink(join(root, 'generated', 'personal-knowledge'), join(target, 'personal-knowledge'))
   await symlink(join(root, 'rules', 'engineering', 'RULES.md'), join(target, 'engineering-rules.md'))
   await symlink('/tmp/elsewhere.md', join(target, 'foreign.md'))
 
@@ -269,23 +324,41 @@ test('runUnlink --target prunes both skill and rule links from one directory', a
 test('keeps an existing correct symlink', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  const source = await createSkill(root, 'engineering-rules')
+  const source = await createGeneratedSkill(root, 'engineering-rules')
   await symlink(source, join(target, 'engineering-rules'))
 
   const results = await createSkillLinks({
     root,
     linkedSkills: ['engineering-rules'],
     targets: [target],
-    templateSkills: [],
+    sourceSkills: [],
   })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'exists' }])
 })
 
+test('updates repo-owned symlinks that point at the old source directory', async () => {
+  const root = await createTempDir('skills-repo-')
+  const target = await createTempDir('skills-target-')
+  const source = await createGeneratedSkill(root, 'engineering-rules')
+  await createSourceSkill(root, 'engineering-rules')
+  await symlink(join(root, 'skills', 'engineering-rules'), join(target, 'engineering-rules'))
+
+  const results = await createSkillLinks({
+    root,
+    linkedSkills: ['engineering-rules'],
+    targets: [target],
+    sourceSkills: [],
+  })
+
+  assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'updated' }])
+  assert.equal(await readlink(join(target, 'engineering-rules')), source)
+})
+
 test('does not overwrite non-symlink entries', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  await createSkill(root, 'engineering-rules')
+  await createGeneratedSkill(root, 'engineering-rules')
   await mkdir(join(target, 'engineering-rules'))
 
   await assert.rejects(
@@ -293,16 +366,16 @@ test('does not overwrite non-symlink entries', async () => {
       root,
       linkedSkills: ['engineering-rules'],
       targets: [target],
-      templateSkills: [],
+      sourceSkills: [],
     }),
     /Refusing to replace non-symlink/,
   )
 })
 
-test('removes only symlinks that point to repo skills', async () => {
+test('removes only symlinks that point to repo generated', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  const source = await createSkill(root, 'engineering-rules')
+  const source = await createGeneratedSkill(root, 'engineering-rules')
   await symlink(source, join(target, 'engineering-rules'))
   await symlink('/tmp/elsewhere', join(target, 'other-skill'))
 
@@ -317,7 +390,7 @@ test('removes dangling links left behind by deleted skills', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
   // A skill that was linked previously, then deleted from the repo.
-  await symlink(join(root, 'skills', 'gsap-core'), join(target, 'gsap-core'))
+  await symlink(join(root, 'generated', 'gsap-core'), join(target, 'gsap-core'))
 
   const results = await removeSkillLinks({ root, targets: [target] })
 
@@ -328,15 +401,15 @@ test('removes dangling links left behind by deleted skills', async () => {
 test('prunes dangling links for deleted skills when linking', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
-  const source = await createSkill(root, 'engineering-rules')
+  const source = await createGeneratedSkill(root, 'engineering-rules')
   // Stale link from a skill that no longer exists in the repo.
-  await symlink(join(root, 'skills', 'gsap-core'), join(target, 'gsap-core'))
+  await symlink(join(root, 'generated', 'gsap-core'), join(target, 'gsap-core'))
 
   const results = await createSkillLinks({
     root,
     linkedSkills: ['engineering-rules'],
     targets: [target],
-    templateSkills: [],
+    sourceSkills: [],
   })
 
   assert.deepEqual(results, [
@@ -360,6 +433,34 @@ test('links configured Claude rules as markdown into the rules target', async ()
 
   assert.deepEqual(results, [{ name: 'engineering-rules.md', target, status: 'linked' }])
   assert.equal(await readlink(join(target, 'engineering-rules.md')), source)
+})
+
+test('merges JSON array config entries without duplicating existing values', async () => {
+  const home = await createTempDir('config-home-')
+  const file = join(home, 'opencode.json')
+  await writeFile(file, JSON.stringify({
+    instructions: [
+      'AGENTS.md',
+      '~/.config/opencode/rules/*.md',
+    ],
+    theme: 'system',
+  }, null, 2))
+
+  const results = await ensureJsonArrayEntries({
+    file,
+    property: 'instructions',
+    values: ['~/.config/opencode/rules/*.md', 'project-rules/*.md'],
+  })
+
+  assert.deepEqual(results, [{ name: 'instructions', target: file, status: 'updated' }])
+  assert.deepEqual(JSON.parse(await readFile(file, 'utf-8')), {
+    instructions: [
+      'AGENTS.md',
+      '~/.config/opencode/rules/*.md',
+      'project-rules/*.md',
+    ],
+    theme: 'system',
+  })
 })
 
 test('creates the rules target directory when missing', async () => {

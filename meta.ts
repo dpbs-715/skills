@@ -17,21 +17,32 @@ export interface VendorSkillMeta {
 }
 
 export interface ClaudeRule {
-  /** Skill name; also excluded from `~/.claude/skills`. */
+  /** Skill name; also excluded from skill dirs that receive it as a rule. */
   skill: string
-  /** Repo-relative markdown linked into `~/.claude/rules/<skill>.md`. */
+  /** Repo-relative markdown linked into rule targets as `<skill>.md`. */
   source: string
 }
 
-export interface LinkTarget {
+export interface DirectoryLinkTarget {
   dir: string
   kind: 'skill' | 'rule'
   /** Skill names to link into this target. */
   include: readonly string[]
 }
 
-/** Skills rendered from `templates/<name>/SKILL.md` before linking. */
-export const templateSkills: readonly Skill[] = [
+export interface JsonArrayConfigTarget {
+  file: string
+  kind: 'json-array'
+  /** JSON array property to merge configured entries into. */
+  property: string
+  /** Entries that must be present in the configured array. */
+  include: readonly string[]
+}
+
+export type LinkTarget = DirectoryLinkTarget | JsonArrayConfigTarget
+
+/** Repo-owned source skills rendered into `generated/<name>/` before linking. */
+export const sourceSkills: readonly Skill[] = [
   Skill.EngineeringRules,
   Skill.PersonalKnowledge,
   Skill.ProblemSolvingRules,
@@ -45,11 +56,9 @@ export const linkedSkills: readonly Skill[] = [
 ]
 
 /**
- * Skills that, for Claude only, are linked as markdown rule files into
- * `~/.claude/rules/` instead of as skills in `~/.claude/skills/`. Claude
- * auto-loads `.claude/rules/*.md` into context every session, so these always
- * apply without relying on model-discretion skill invocation. Other agents
- * (Codex, Agents) still receive them as skills via {@link linkedSkills}.
+ * Skills that are promoted into always-loaded markdown rule files for agents
+ * with rule targets. Other agents can still receive them as skills via
+ * {@link linkedSkills}.
  */
 export const claudeRules: readonly ClaudeRule[] = [
   { skill: Skill.EngineeringRules, source: 'rules/engineering/RULES.md' },
@@ -61,18 +70,23 @@ const ruleSkillNames: readonly string[] = claudeRules.map(rule => rule.skill)
 /**
  * Link configuration — every destination and what it receives. Single source of
  * truth consumed by the generic linker in `scripts/commands/link.ts`. Codex and
- * Agents get the full skill set; Claude's skill directory excludes rule-promoted
- * skills, which instead land as markdown under `~/.claude/rules`. Only the
- * `~/.claude/*` rows differ from legacy behavior.
+ * Agents get the full skill set; Claude and opencode skill directories exclude
+ * rule-promoted skills, which instead land as markdown rule files.
  */
 export const linkTargets: readonly LinkTarget[] = [
   { dir: '~/.codex/skills', kind: 'skill', include: linkedSkills },
   {
-      dir: '~/.config/opencode/skills',
-      kind: 'skill',
-      include: linkedSkills.filter(name => !ruleSkillNames.includes(name)),
+    dir: '~/.config/opencode/skills',
+    kind: 'skill',
+    include: linkedSkills.filter(name => !ruleSkillNames.includes(name)),
   },
   { dir: '~/.config/opencode/rules', kind: 'rule', include: ruleSkillNames },
+  {
+    file: '~/.config/opencode/opencode.json',
+    kind: 'json-array',
+    property: 'instructions',
+    include: ['~/.config/opencode/rules/*.md'],
+  },
   { dir: '~/.agents/skills', kind: 'skill', include: linkedSkills },
   {
     dir: '~/.claude/skills',

@@ -6,15 +6,16 @@ import {
   type LinkTarget,
   linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
+import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
-import { createSkillLinks, removeSkillLinks, renderSkillTemplates } from '../lib/skillLinks.ts'
+import { createSkillLinks, removeSkillLinks, renderSkillSources } from '../lib/skillLinks.ts'
 import { homePath, type LinkResult } from '../lib/symlink.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
 interface OrchestrateOptions {
   root?: string
   targets?: readonly LinkTarget[]
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
 }
 
 /** Resolve a skill name to its configured rule (source markdown). */
@@ -29,32 +30,44 @@ function resolveRule(skill: string): ClaudeRule {
  * Link every {@link defaultLinkTargets} row to its destination, dispatching on
  * `kind`. Skill directories are only populated when they already exist (the
  * tool is installed); the rule directory is created when its parent (e.g.
- * `~/.claude`) exists. Templates are rendered once up front so the per-target
- * skill linking below skips re-rendering.
+ * `~/.claude`) exists. Source skills are rendered once up front so the
+ * per-target skill linking below skips re-rendering.
  */
 export async function linkAll({
   root = repoRoot(),
   targets = defaultLinkTargets,
-  templateSkills,
+  sourceSkills,
 }: OrchestrateOptions = {}): Promise<LinkResult[]> {
-  await renderSkillTemplates({ root, templateSkills })
+  await renderSkillSources({ root, sourceSkills })
   const results: LinkResult[] = []
 
   for (const target of targets) {
-    const dir = homePath(target.dir)
-
     if (target.kind === 'skill') {
+      const dir = homePath(target.dir)
       if (!await pathExists(dir))
         continue
       results.push(...await createSkillLinks({
         root,
         linkedSkills: target.include,
         targets: [dir],
-        templateSkills: [],
+        sourceSkills: [],
       }))
       continue
     }
 
+    if (target.kind === 'json-array') {
+      const file = homePath(target.file)
+      if (!await pathExists(dirname(file)))
+        continue
+      results.push(...await ensureJsonArrayEntries({
+        file,
+        property: target.property,
+        values: target.include,
+      }))
+      continue
+    }
+
+    const dir = homePath(target.dir)
     if (!await pathExists(dirname(dir)))
       continue
     results.push(...await createRuleLinks({
@@ -75,6 +88,9 @@ export async function unlinkAll({
   const results: LinkResult[] = []
 
   for (const target of targets) {
+    if (target.kind === 'json-array')
+      continue
+
     const dir = homePath(target.dir)
     if (target.kind === 'skill')
       results.push(...await removeSkillLinks({ root, targets: [dir] }))
@@ -134,7 +150,7 @@ export async function runUnlink(args: string[]): Promise<void> {
 
   if (targets.length > 0) {
     // An explicit --target carries no `kind`, and a directory may hold skill
-    // links (into repo `skills/`) or rule links (into repo `rules/`) — e.g.
+    // links (into repo `generated/`) or rule links (into repo `rules/`) — e.g.
     // `~/.claude/rules` holds the latter. Prune both: each pruner only removes
     // links it owns, so the absent kind and any foreign links are untouched.
     printResults([

@@ -2,6 +2,7 @@ import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { GENERATED_SKILLS_DIR } from './skillLinks.ts'
 import { execFileText, pathExists, repoRoot } from './utils.ts'
 
 export type { VendorSkillMeta }
@@ -120,7 +121,7 @@ export async function syncVendorSkills({
         continue
       }
 
-      const outputPath = join(root, 'skills', outputSkill)
+      const outputPath = join(root, GENERATED_SKILLS_DIR, outputSkill)
       await rm(outputPath, { recursive: true, force: true })
       await mkdir(outputPath, { recursive: true })
       await cp(sourcePath, outputPath, { recursive: true })

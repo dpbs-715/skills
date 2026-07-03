@@ -4,7 +4,7 @@ import process from 'node:process'
 
 import { pathExists } from './utils.ts'
 
-export type LinkStatus = 'exists' | 'linked' | 'removed'
+export type LinkStatus = 'exists' | 'linked' | 'removed' | 'updated'
 
 export interface LinkResult {
   name: string
@@ -35,11 +35,15 @@ async function safeRealpath(path: string): Promise<string | null> {
 }
 
 /**
- * Create `linkPath` as a symlink to `source`. Returns `linked` for a new link,
- * `exists` when the correct link is already present, and refuses to clobber a
- * non-symlink or a symlink that points somewhere else.
+ * Create `linkPath` as a symlink to `source`. Repo-owned symlinks may be
+ * retargeted during migrations; non-symlinks and foreign symlinks are left
+ * untouched.
  */
-export async function ensureLink(source: string, linkPath: string): Promise<'exists' | 'linked'> {
+export async function ensureLink(
+  source: string,
+  linkPath: string,
+  options: { replaceFrom?: readonly string[] } = {},
+): Promise<'exists' | 'linked' | 'updated'> {
   if (!await pathExists(linkPath)) {
     await symlink(source, linkPath)
     return 'linked'
@@ -53,6 +57,14 @@ export async function ensureLink(source: string, linkPath: string): Promise<'exi
   const expected = await realpath(source)
   if (existing === expected)
     return 'exists'
+
+  for (const dir of options.replaceFrom ?? []) {
+    if (await pointsIntoDir(linkPath, dir)) {
+      await unlink(linkPath)
+      await symlink(source, linkPath)
+      return 'updated'
+    }
+  }
 
   throw new Error(`Refusing to replace symlink with different target: ${linkPath}`)
 }

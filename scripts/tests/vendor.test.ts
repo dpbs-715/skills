@@ -21,7 +21,7 @@ async function createVendorSkill(root: string, vendor: string, skill: string): P
   await writeFile(join(skillDir, 'notes.md'), `# ${skill}\n`)
 }
 
-test('syncs configured vendor skills into the skills directory', async () => {
+test('syncs configured vendor skills into the generated directory', async () => {
   const root = await createTempDir('skills-repo-')
   await createVendorSkill(root, 'gsap', 'gsap-core')
   await writeFile(join(root, 'vendor', 'gsap', 'LICENSE'), 'MIT\n')
@@ -48,10 +48,10 @@ test('syncs configured vendor skills into the skills directory', async () => {
     outputSkill: 'gsap-core',
     status: 'synced',
   }])
-  assert.match(await readFile(join(root, 'skills', 'gsap-core', 'SKILL.md'), 'utf-8'), /name: gsap-core/)
-  assert.equal(await readFile(join(root, 'skills', 'gsap-core', 'notes.md'), 'utf-8'), '# gsap-core\n')
-  assert.equal(await readFile(join(root, 'skills', 'gsap-core', 'LICENSE.md'), 'utf-8'), 'MIT\n')
-  assert.equal(await readFile(join(root, 'skills', 'gsap-core', 'SYNC.md'), 'utf-8'), `# Sync Info
+  assert.match(await readFile(join(root, 'generated', 'gsap-core', 'SKILL.md'), 'utf-8'), /name: gsap-core/)
+  assert.equal(await readFile(join(root, 'generated', 'gsap-core', 'notes.md'), 'utf-8'), '# gsap-core\n')
+  assert.equal(await readFile(join(root, 'generated', 'gsap-core', 'LICENSE.md'), 'utf-8'), 'MIT\n')
+  assert.equal(await readFile(join(root, 'generated', 'gsap-core', 'SYNC.md'), 'utf-8'), `# Sync Info
 
 - **Source:** \`vendor/gsap/skills/gsap-core\`
 - **Repository:** https://github.com/greensock/gsap-skills
@@ -79,7 +79,7 @@ test('reports missing vendor directories without creating output skills', async 
     outputSkill: 'gsap-core',
     status: 'missing-vendor',
   }])
-  await assert.rejects(() => readFile(join(root, 'skills', 'gsap-core', 'SKILL.md')), /ENOENT/)
+  await assert.rejects(() => readFile(join(root, 'generated', 'gsap-core', 'SKILL.md')), /ENOENT/)
 })
 
 test('reports configured skills that are missing from an existing vendor', async () => {
@@ -122,7 +122,7 @@ test('rejects duplicate output skill mappings before copying', async () => {
     () => syncVendorSkills({ root, vendors }),
     /Duplicate output skill mapping: gsap/,
   )
-  await assert.rejects(() => readFile(join(root, 'skills', 'gsap', 'SKILL.md')), /ENOENT/)
+  await assert.rejects(() => readFile(join(root, 'generated', 'gsap', 'SKILL.md')), /ENOENT/)
 })
 
 test.after(async () => {

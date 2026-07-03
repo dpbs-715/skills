@@ -5,15 +5,13 @@ import {
   type ClaudeRule,
   claudeRules as defaultClaudeRules,
   linkedSkills as defaultLinkedSkills,
-  templateSkills as defaultTemplateSkills,
+  sourceSkills as defaultSourceSkills,
 } from '../../meta.ts'
-import { REPO_ROOT_TOKEN } from './skillLinks.ts'
+import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN, SKILL_FILE, SOURCE_SKILLS_DIR } from './skillLinks.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
-const SKILL_FILE = 'SKILL.md'
-
 export type ValidationIssueCode =
-  | 'missing-template'
+  | 'missing-source-skill'
   | 'missing-generated-skill'
   | 'stale-generated-skill'
   | 'missing-linked-skill'
@@ -38,7 +36,7 @@ export interface ValidationOptions {
   claudeRules?: readonly ClaudeRule[]
   linkedSkills?: readonly string[]
   root?: string
-  templateSkills?: readonly string[]
+  sourceSkills?: readonly string[]
 }
 
 interface Frontmatter {
@@ -55,7 +53,7 @@ function addIssue(
   issues.push({ code, message, path })
 }
 
-function renderTemplate(content: string, root: string): string {
+function renderSourceSkill(content: string, root: string): string {
   return content.replaceAll(REPO_ROOT_TOKEN, root)
 }
 
@@ -88,36 +86,36 @@ async function validateBacktickPaths(
   }
 }
 
-async function validateTemplateSkills(
+async function validateSourceSkills(
   root: string,
-  templateSkills: readonly string[],
+  sourceSkills: readonly string[],
   issues: ValidationIssue[],
 ): Promise<void> {
-  for (const name of templateSkills) {
-    const templateRelPath = join('templates', name, SKILL_FILE)
-    const templatePath = join(root, templateRelPath)
-    const generatedRelPath = join('skills', name, SKILL_FILE)
+  for (const name of sourceSkills) {
+    const sourceRelPath = join(SOURCE_SKILLS_DIR, name, SKILL_FILE)
+    const sourcePath = join(root, sourceRelPath)
+    const generatedRelPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
     const generatedPath = join(root, generatedRelPath)
 
-    if (!await pathExists(templatePath)) {
+    if (!await pathExists(sourcePath)) {
       addIssue(
         issues,
-        'missing-template',
-        templateRelPath,
-        `Missing configured skill template: ${templateRelPath}`,
+        'missing-source-skill',
+        sourceRelPath,
+        `Missing configured source skill: ${sourceRelPath}`,
       )
       continue
     }
 
-    const expected = renderTemplate(await readFile(templatePath, 'utf-8'), root)
-    await validateBacktickPaths(root, templateRelPath, expected, issues)
+    const expected = renderSourceSkill(await readFile(sourcePath, 'utf-8'), root)
+    await validateBacktickPaths(root, sourceRelPath, expected, issues)
 
     if (!await pathExists(generatedPath)) {
       addIssue(
         issues,
         'missing-generated-skill',
         generatedRelPath,
-        `Missing generated skill from template: ${generatedRelPath}`,
+        `Missing generated skill from source: ${generatedRelPath}`,
       )
       continue
     }
@@ -142,7 +140,7 @@ async function validateLinkedSkills(
   issues: ValidationIssue[],
 ): Promise<void> {
   for (const name of linkedSkills) {
-    const relPath = join('skills', name, SKILL_FILE)
+    const relPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
     if (!await pathExists(join(root, relPath))) {
       addIssue(
         issues,
@@ -212,7 +210,7 @@ async function validateSkillFrontmatter(
   root: string,
   issues: ValidationIssue[],
 ): Promise<void> {
-  const skillsDir = join(root, 'skills')
+  const skillsDir = join(root, GENERATED_SKILLS_DIR)
   if (!await pathExists(skillsDir))
     return
 
@@ -223,7 +221,7 @@ async function validateSkillFrontmatter(
     .sort()
 
   for (const name of skillDirs) {
-    const relPath = join('skills', name, SKILL_FILE)
+    const relPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
     const skillPath = join(root, relPath)
     if (!await pathExists(skillPath))
       continue
@@ -272,11 +270,11 @@ export async function validateSkills({
   claudeRules = defaultClaudeRules,
   linkedSkills = defaultLinkedSkills,
   root = repoRoot(),
-  templateSkills = defaultTemplateSkills,
+  sourceSkills = defaultSourceSkills,
 }: ValidationOptions = {}): Promise<ValidationResult> {
   const issues: ValidationIssue[] = []
 
-  await validateTemplateSkills(root, templateSkills, issues)
+  await validateSourceSkills(root, sourceSkills, issues)
   await validateLinkedSkills(root, linkedSkills, issues)
   await validateClaudeRules(root, claudeRules, issues)
   await validateSkillFrontmatter(root, issues)

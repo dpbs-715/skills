@@ -33,7 +33,7 @@ function printSyncResults(results: SyncResult[]): void {
   }
 
   for (const result of results)
-    console.log(`${result.status}: ${result.vendor}/${result.sourceSkill} -> skills/${result.outputSkill}`)
+    console.log(`${result.status}: ${result.vendor}/${result.sourceSkill} -> generated/${result.outputSkill}`)
 }
 
 export async function run(): Promise<void> {
