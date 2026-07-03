@@ -11,6 +11,13 @@ entire codebase.
 Do not edit files unless the user explicitly asks for fixes. Do not produce
 broad refactor advice unless the risk is introduced by the diff.
 
+## Language
+
+Use `-ch` to respond in Chinese and `-en` to respond in English.
+
+If neither flag is provided, respond in the user's language. Keep code symbols,
+file paths, commands, and severity labels unchanged.
+
 ## Review Target
 
 If the user provides a diff, patch, commit, branch, or range, review that target.

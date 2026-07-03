@@ -28,6 +28,15 @@ combining unrelated work into one commit.
 
 Never revert, discard, or overwrite user changes unless the user explicitly asks.
 
+## Language
+
+Use `-ch` to write the commit message subject and body in Chinese.
+Use `-en` to write the commit message subject and body in English.
+
+Keep Conventional Commit tokens such as type, scope, `!`, and
+`BREAKING CHANGE:` in English. If neither flag is provided, use English unless
+the user clearly asks for another language.
+
 ## Commit Message
 
 Use Conventional Commits:
@@ -64,6 +73,8 @@ feat(auth): add token refresh
 fix(report): preserve empty filter values
 docs: clarify skill linking flow
 refactor(api)!: rename order endpoints
+feat(auth): 添加令牌刷新
+fix(report): 保留空筛选值
 ```
 
 ## Output
