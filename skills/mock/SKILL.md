@@ -11,7 +11,7 @@ When the user enters `/mock <task>` or asks to simulate a request, follow this w
 
 Treat `<task>` as a user request that is preparing to modify code. If no task is provided, default to "prepare to change code".
 
-Do not actually invoke any tools or modify any files. Only output the simulated plan.
+Do not actually modify any files or execute code. Only read project instruction files as needed to list referenced docs, and only output the simulated plan.
 
 ## Language
 
@@ -26,7 +26,10 @@ Read the following lists and files from the current system context:
 - `available_tools`: the currently available tools
 - `available_skills`: the currently available skills
 - `available_rules`: the currently active rules
-- `AGENTS.md` / project instructions: project-specific notes and conventions loaded by the active agent (opencode reads `AGENTS.md`, Claude Code reads `CLAUDE.md`, Cursor reads `.cursorrules`, GitHub Copilot reads `copilot-instructions.md`, etc.)
+- Project instruction files: `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `copilot-instructions.md`, and other project-level docs loaded by the active agent
+- Documents referenced or imported by `AGENTS.md` and `CLAUDE.md` (for example, topic files linked under `rules/` or `topics/`, global rules mentioned in `AGENTS.md`, etc.)
+
+Only recursively list referenced docs for `AGENTS.md` and `CLAUDE.md`. For other instruction files, just note whether they are present and loaded.
 
 ## Output Format
 
@@ -52,13 +55,12 @@ Output four Markdown tables.
 
 ### Project Instructions / Agent Context
 
-Common project-level instruction files. Mark which ones are present and which ones the current agent actually loads.
+Common project-level instruction files. For `AGENTS.md` and `CLAUDE.md`, read them if present and list the documents they reference or import. For other files, only mark presence and whether the current agent loads them.
 
-| Source | Present | Loaded by current agent | Reason |
-|--------|---------|-------------------------|--------|
-| `AGENTS.md` | Yes / No | Yes / No | opencode default |
-| `CLAUDE.md` | Yes / No | Yes / No | Claude Code default |
-| Other project docs (README, CONTRIBUTING, etc.) | Yes / No | Maybe | Read on demand for context |
+| Source | Present | Loaded by current agent | Included / Referenced docs | Reason |
+|--------|---------|-------------------------|----------------------------|--------|
+| `AGENTS.md` | Yes / No | Yes / No | `...` | opencode default; recurse into references |
+| `CLAUDE.md` | Yes / No | Yes / No | `...` | Claude Code default; recurse into references |
 
 ## Invocation Rules
 
