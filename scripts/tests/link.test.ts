@@ -8,11 +8,12 @@ import { linkTargets } from '../../meta.ts'
 import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
 import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
+import type { LocalSkillSource } from '../lib/metaTypes.ts'
 import {
   createSkillLinks,
   discoverSkills,
   removeSkillLinks,
-  renderSkillSources,
+  renderLocalSkillSources,
   REPO_ROOT_TOKEN,
 } from '../lib/skillLinks.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
@@ -41,6 +42,22 @@ async function createSourceSkill(root: string, name: string): Promise<void> {
   )
 }
 
+function directorySource(name: string): LocalSkillSource {
+  return { kind: 'directory', name, path: `skills/${name}` }
+}
+
+function documentSource(name: string, source: string): LocalSkillSource {
+  return {
+    description: 'Use when testing document-backed skills.',
+    instructions: ['Read only what is relevant for the current task.'],
+    kind: 'document',
+    name,
+    shortDescription: 'document skill',
+    source,
+    title: 'Document Skill',
+  }
+}
+
 async function writeRule(root: string, relSource: string): Promise<string> {
   const source = join(root, relSource)
   await mkdir(dirname(source), { recursive: true })
@@ -48,11 +65,11 @@ async function writeRule(root: string, relSource: string): Promise<string> {
   return source
 }
 
-test('linkTargets excludes Claude rules from Claude skills and links them as rules', () => {
+test('linkTargets excludes always-on instructions from Claude skills and links them as rules', () => {
   const codex = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.codex/skills')
   const claudeSkills = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/skills')
-  const claudeRulesTarget = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/rules')
-  assert.ok(codex && claudeSkills && claudeRulesTarget)
+  const claudeInstructionsTarget = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/rules')
+  assert.ok(codex && claudeSkills && claudeInstructionsTarget)
 
   // Codex keeps the full skill set (unchanged).
   assert.ok(codex.include.includes('engineering-rules'))
@@ -64,10 +81,10 @@ test('linkTargets excludes Claude rules from Claude skills and links them as rul
   assert.ok(!claudeSkills.include.includes('problem-solving-rules'))
   assert.ok(claudeSkills.include.includes('personal-knowledge'))
 
-  // ...and instead appear under the Claude rules target.
-  assert.equal(claudeRulesTarget.kind, 'rule')
+  // ...and instead appear under the Claude rules directory.
+  assert.equal(claudeInstructionsTarget.kind, 'rule')
   assert.deepEqual(
-    [...claudeRulesTarget.include].sort(),
+    [...claudeInstructionsTarget.include].sort(),
     ['engineering-rules', 'problem-solving-rules'],
   )
 })
@@ -95,13 +112,13 @@ test('linkTargets configures opencode rules and instructions together', () => {
   assert.deepEqual(opencodeConfig.include, ['~/.config/opencode/rules/*.md'])
 })
 
-test('renders a source skill into generated/<name>/SKILL.md with the repo root resolved', async () => {
+test('renders a directory source into generated/<name>/SKILL.md with the repo root resolved', async () => {
   const root = await createTempDir('skills-repo-')
   await createSourceSkill(root, 'engineering-rules')
 
-  const rendered = await renderSkillSources({
+  const rendered = await renderLocalSkillSources({
     root,
-    sourceSkills: ['engineering-rules'],
+    localSkillSources: [directorySource('engineering-rules')],
   })
 
   assert.deepEqual(rendered, ['engineering-rules'])
@@ -109,14 +126,29 @@ test('renders a source skill into generated/<name>/SKILL.md with the repo root r
   assert.equal(skill, `Read \`${root}/rules/engineering/RULES.md\`.\n`)
 })
 
-test('renders only configured source skills', async () => {
+test('renders a document source into generated/<name>/SKILL.md', async () => {
+  const root = await createTempDir('skills-repo-')
+  await writeRule(root, 'rules/engineering/RULES.md')
+
+  const rendered = await renderLocalSkillSources({
+    root,
+    localSkillSources: [documentSource('engineering-rules', 'rules/engineering/RULES.md')],
+  })
+
+  assert.deepEqual(rendered, ['engineering-rules'])
+  const skill = await readFile(join(root, 'generated', 'engineering-rules', 'SKILL.md'), 'utf-8')
+  assert.match(skill, /name: engineering-rules/)
+  assert.match(skill, new RegExp(`${root}/rules/engineering/RULES\\.md`))
+})
+
+test('renders only configured local skill sources', async () => {
   const root = await createTempDir('skills-repo-')
   await createSourceSkill(root, 'engineering-rules')
   await createSourceSkill(root, 'personal-knowledge')
 
-  const rendered = await renderSkillSources({
+  const rendered = await renderLocalSkillSources({
     root,
-    sourceSkills: ['engineering-rules'],
+    localSkillSources: [directorySource('engineering-rules')],
   })
 
   assert.deepEqual(rendered, ['engineering-rules'])
@@ -124,15 +156,15 @@ test('renders only configured source skills', async () => {
   assert.equal(await pathExists(join(root, 'generated', 'personal-knowledge', 'SKILL.md')), false)
 })
 
-test('throws when a configured source skill is missing', async () => {
+test('throws when a configured directory source is missing', async () => {
   const root = await createTempDir('skills-repo-')
 
   await assert.rejects(
-    () => renderSkillSources({
+    () => renderLocalSkillSources({
       root,
-      sourceSkills: ['engineering-rules'],
+      localSkillSources: [directorySource('engineering-rules')],
     }),
-    /Missing configured source skill/,
+    /Missing configured directory skill/,
   )
 })
 
@@ -142,9 +174,9 @@ test('copies bundled resources while rendering the generated SKILL.md', async ()
   await mkdir(join(root, 'skills', 'engineering-rules', 'references'), { recursive: true })
   await writeFile(join(root, 'skills', 'engineering-rules', 'references', 'notes.md'), '# Notes\n')
 
-  await renderSkillSources({
+  await renderLocalSkillSources({
     root,
-    sourceSkills: ['engineering-rules'],
+    localSkillSources: [directorySource('engineering-rules')],
   })
 
   assert.equal(
@@ -154,16 +186,16 @@ test('copies bundled resources while rendering the generated SKILL.md', async ()
   assert.equal(await pathExists(join(root, 'generated', 'engineering-rules', 'SKILL.md')), true)
 })
 
-test('links a source skill by rendering it first', async () => {
+test('links an installable skill by rendering it first', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
   await createSourceSkill(root, 'engineering-rules')
 
   const results = await createSkillLinks({
     root,
-    linkedSkills: ['engineering-rules'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [directorySource('engineering-rules')],
     targets: [target],
-    sourceSkills: ['engineering-rules'],
   })
 
   const source = join(root, 'generated', 'engineering-rules')
@@ -184,7 +216,7 @@ test('discovers directories that contain SKILL.md', async () => {
   assert.equal(skills[0].source, join(root, 'generated', 'engineering-rules'))
 })
 
-test('creates symlinks for each configured linked skill in each target', async () => {
+test('creates symlinks for each configured installable skill in each target', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
   const source = await createGeneratedSkill(root, 'engineering-rules')
@@ -192,9 +224,9 @@ test('creates symlinks for each configured linked skill in each target', async (
 
   const results = await createSkillLinks({
     root,
-    linkedSkills: ['engineering-rules'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [],
     targets: [target],
-    sourceSkills: [],
   })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'linked' }])
@@ -202,22 +234,22 @@ test('creates symlinks for each configured linked skill in each target', async (
   assert.equal(await pathExists(join(target, 'personal-knowledge')), false)
 })
 
-test('throws when a configured linked skill is missing', async () => {
+test('throws when a configured installable skill is missing', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
 
   await assert.rejects(
     () => createSkillLinks({
       root,
-      linkedSkills: ['engineering-rules'],
+      installableSkills: ['engineering-rules'],
+      localSkillSources: [],
       targets: [target],
-      sourceSkills: [],
     }),
-    /Missing configured linked skill/,
+    /Missing configured installable skill/,
   )
 })
 
-test('linkAll links existing skill dirs, skips missing ones, and writes Claude rules', async () => {
+test('linkAll links existing skill dirs, skips missing ones, and writes always-on instructions', async () => {
   const root = await createTempDir('skills-repo-')
   const home = await createTempDir('skills-home-')
   await createGeneratedSkill(root, 'engineering-rules')
@@ -226,7 +258,7 @@ test('linkAll links existing skill dirs, skips missing ones, and writes Claude r
 
   const codexSkills = join(home, '.codex', 'skills')
   const claudeSkills = join(home, '.claude', 'skills')
-  const claudeRulesDir = join(home, '.claude', 'rules')
+  const claudeInstructionsDir = join(home, '.claude', 'rules')
   const agentsSkills = join(home, '.agents', 'skills')
   await mkdir(codexSkills, { recursive: true })
   await mkdir(claudeSkills, { recursive: true })
@@ -236,10 +268,14 @@ test('linkAll links existing skill dirs, skips missing ones, and writes Claude r
     { dir: codexSkills, kind: 'skill' as const, include: ['engineering-rules', 'personal-knowledge'] },
     { dir: agentsSkills, kind: 'skill' as const, include: ['engineering-rules', 'personal-knowledge'] },
     { dir: claudeSkills, kind: 'skill' as const, include: ['personal-knowledge'] },
-    { dir: claudeRulesDir, kind: 'rule' as const, include: ['engineering-rules'] },
+    { dir: claudeInstructionsDir, kind: 'rule' as const, include: ['engineering-rules'] },
   ]
 
-  await linkAll({ root, targets, sourceSkills: [] })
+  await linkAll({
+    root,
+    targets,
+    localSkillSources: [documentSource('engineering-rules', 'rules/engineering/RULES.md')],
+  })
 
   // Codex keeps the full set.
   assert.equal(await pathExists(join(codexSkills, 'engineering-rules')), true)
@@ -251,7 +287,7 @@ test('linkAll links existing skill dirs, skips missing ones, and writes Claude r
   assert.equal(await pathExists(join(claudeSkills, 'engineering-rules')), false)
   // ...and lands as a rule markdown instead.
   assert.equal(
-    await readlink(join(claudeRulesDir, 'engineering-rules.md')),
+    await readlink(join(claudeInstructionsDir, 'engineering-rules.md')),
     join(root, 'rules', 'engineering', 'RULES.md'),
   )
 })
@@ -272,7 +308,7 @@ test('linkAll writes configured JSON array entries when the config parent exists
     },
   ]
 
-  await linkAll({ root, targets, sourceSkills: [] })
+  await linkAll({ root, targets, localSkillSources: [] })
 
   const config = JSON.parse(await readFile(configFile, 'utf-8')) as {
     $schema: string
@@ -288,21 +324,21 @@ test('unlinkAll removes skill and rule links from their targets', async () => {
   const skillSource = await createGeneratedSkill(root, 'personal-knowledge')
   const ruleSource = await writeRule(root, 'rules/engineering/RULES.md')
   const claudeSkills = join(home, '.claude', 'skills')
-  const claudeRulesDir = join(home, '.claude', 'rules')
+  const claudeInstructionsDir = join(home, '.claude', 'rules')
   await mkdir(claudeSkills, { recursive: true })
-  await mkdir(claudeRulesDir, { recursive: true })
+  await mkdir(claudeInstructionsDir, { recursive: true })
   await symlink(skillSource, join(claudeSkills, 'personal-knowledge'))
-  await symlink(ruleSource, join(claudeRulesDir, 'engineering-rules.md'))
+  await symlink(ruleSource, join(claudeInstructionsDir, 'engineering-rules.md'))
 
   const targets = [
     { dir: claudeSkills, kind: 'skill' as const, include: ['personal-knowledge'] },
-    { dir: claudeRulesDir, kind: 'rule' as const, include: ['engineering-rules'] },
+    { dir: claudeInstructionsDir, kind: 'rule' as const, include: ['engineering-rules'] },
   ]
 
   await unlinkAll({ root, targets })
 
   assert.equal(await pathExists(join(claudeSkills, 'personal-knowledge')), false)
-  assert.equal(await pathExists(join(claudeRulesDir, 'engineering-rules.md')), false)
+  assert.equal(await pathExists(join(claudeInstructionsDir, 'engineering-rules.md')), false)
 })
 
 test('runUnlink --target prunes both skill and rule links from one directory', async () => {
@@ -329,9 +365,9 @@ test('keeps an existing correct symlink', async () => {
 
   const results = await createSkillLinks({
     root,
-    linkedSkills: ['engineering-rules'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [],
     targets: [target],
-    sourceSkills: [],
   })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'exists' }])
@@ -346,9 +382,9 @@ test('updates repo-owned symlinks that point at the old source directory', async
 
   const results = await createSkillLinks({
     root,
-    linkedSkills: ['engineering-rules'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [],
     targets: [target],
-    sourceSkills: [],
   })
 
   assert.deepEqual(results, [{ name: 'engineering-rules', target, status: 'updated' }])
@@ -364,9 +400,9 @@ test('does not overwrite non-symlink entries', async () => {
   await assert.rejects(
     () => createSkillLinks({
       root,
-      linkedSkills: ['engineering-rules'],
+      installableSkills: ['engineering-rules'],
+      localSkillSources: [],
       targets: [target],
-      sourceSkills: [],
     }),
     /Refusing to replace non-symlink/,
   )
@@ -407,9 +443,9 @@ test('prunes dangling links for deleted skills when linking', async () => {
 
   const results = await createSkillLinks({
     root,
-    linkedSkills: ['engineering-rules'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [],
     targets: [target],
-    sourceSkills: [],
   })
 
   assert.deepEqual(results, [
@@ -420,14 +456,14 @@ test('prunes dangling links for deleted skills when linking', async () => {
   await assert.rejects(() => readlink(join(target, 'gsap-core')), /ENOENT/)
 })
 
-test('links configured Claude rules as markdown into the rules target', async () => {
+test('links configured always-on instructions as markdown into the rules target', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('rules-target-')
   const source = await writeRule(root, 'rules/engineering/RULES.md')
 
   const results = await createRuleLinks({
+    instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     root,
-    rules: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     targets: [target],
   })
 
@@ -470,8 +506,8 @@ test('creates the rules target directory when missing', async () => {
   await writeRule(root, 'rules/engineering/RULES.md')
 
   await createRuleLinks({
+    instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     root,
-    rules: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     targets: [target],
   })
 
@@ -484,11 +520,11 @@ test('throws when a configured rule source is missing', async () => {
 
   await assert.rejects(
     () => createRuleLinks({
+      instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
       root,
-      rules: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
       targets: [target],
     }),
-    /Missing configured rule source/,
+    /Missing configured instruction source/,
   )
 })
 
@@ -502,8 +538,8 @@ test('prunes stale rule links but leaves foreign links', async () => {
   await symlink('/tmp/elsewhere.md', join(target, 'foreign.md'))
 
   const results = await createRuleLinks({
+    instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     root,
-    rules: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     targets: [target],
   })
 

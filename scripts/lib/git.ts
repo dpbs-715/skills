@@ -1,7 +1,8 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
-import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { vendors as defaultVendors } from '../../meta.ts'
+import type { VendorSkillMeta } from './metaTypes.ts'
 import { execFileText, pathExists } from './utils.ts'
 
 export type RunGit = (args: string[]) => Promise<string>

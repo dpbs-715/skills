@@ -2,9 +2,10 @@ import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import {
-  linkedSkills as defaultLinkedSkills,
-  sourceSkills as defaultSourceSkills,
+  installableSkills as defaultInstallableSkills,
+  localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
+import type { DocumentSkillSource, LocalSkillSource } from './metaTypes.ts'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
@@ -20,46 +21,97 @@ export interface Skill {
 }
 
 interface SkillLinkOptions {
-  linkedSkills?: readonly string[]
+  installableSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
   targets: string[]
-  sourceSkills?: readonly string[]
 }
 
-interface SourceOptions {
+interface LocalSourceOptions {
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
-  sourceSkills?: readonly string[]
 }
 
-export async function renderSkillSources({
-  root = repoRoot(),
-  sourceSkills = defaultSourceSkills,
-}: SourceOptions = {}): Promise<string[]> {
-  const sourceSkillsDir = join(root, SOURCE_SKILLS_DIR)
-  if (sourceSkills.length === 0)
-    return []
-  if (!await pathExists(sourceSkillsDir))
-    throw new Error(`Missing configured source skill: ${SOURCE_SKILLS_DIR}/${sourceSkills[0]}/${SKILL_FILE}`)
+function renderDocumentSkill(source: DocumentSkillSource): string {
+  const metadata = source.shortDescription
+    ? `metadata:\n  short-description: ${source.shortDescription}\n`
+    : ''
+  const instructions = source.instructions.join('\n\n')
 
-  const entries = await readdir(sourceSkillsDir, { withFileTypes: true })
-  const available = new Set(entries
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name))
+  return `---
+name: ${source.name}
+description: ${source.description}
+${metadata}---
+
+# ${source.title}
+
+Read [${source.source}](../../${source.source}) at \`${REPO_ROOT_TOKEN}/${source.source}\`.
+
+${instructions}
+`
+}
+
+async function renderDirectorySkill(root: string, source: LocalSkillSource): Promise<void> {
+  if (source.kind !== 'directory')
+    throw new Error(`Expected directory skill source: ${source.name}`)
+
+  const sourceDir = join(root, source.path)
+  const sourcePath = join(sourceDir, SKILL_FILE)
+  if (!await pathExists(sourcePath))
+    throw new Error(`Missing configured directory skill: ${source.path}/${SKILL_FILE}`)
+
+  const content = (await readFile(sourcePath, 'utf-8')).replaceAll(REPO_ROOT_TOKEN, root)
+  const skillDir = join(root, GENERATED_SKILLS_DIR, source.name)
+  await rm(skillDir, { recursive: true, force: true })
+  await cp(sourceDir, skillDir, { recursive: true })
+  await writeFile(join(skillDir, SKILL_FILE), content)
+}
+
+async function renderDocumentSkillSource(root: string, source: LocalSkillSource): Promise<void> {
+  if (source.kind !== 'document')
+    throw new Error(`Expected document skill source: ${source.name}`)
+
+  if (!await pathExists(join(root, source.source)))
+    throw new Error(`Missing configured document source: ${source.source}`)
+
+  const skillDir = join(root, GENERATED_SKILLS_DIR, source.name)
+  await rm(skillDir, { recursive: true, force: true })
+  await mkdir(skillDir, { recursive: true })
+  await writeFile(
+    join(skillDir, SKILL_FILE),
+    renderDocumentSkill(source).replaceAll(REPO_ROOT_TOKEN, root),
+  )
+}
+
+export function resolveAlwaysOnInstructionSources(
+  localSkillSources: readonly LocalSkillSource[],
+  skillNames: readonly string[],
+): Array<{ skill: string, source: string }> {
+  const byName = new Map(localSkillSources.map(source => [source.name, source]))
+
+  return skillNames.map((skill) => {
+    const source = byName.get(skill)
+    if (!source)
+      throw new Error(`Missing configured instruction skill: ${skill}`)
+    if (source.kind !== 'document')
+      throw new Error(`Instruction skill must be document-backed: ${skill}`)
+    return { skill, source: source.source }
+  })
+}
+
+export async function renderLocalSkillSources({
+  root = repoRoot(),
+  localSkillSources = defaultLocalSkillSources,
+}: LocalSourceOptions = {}): Promise<string[]> {
   const rendered: string[] = []
 
-  for (const name of sourceSkills) {
-    const sourceDir = join(sourceSkillsDir, name)
-    const sourcePath = join(sourceDir, SKILL_FILE)
-    if (!available.has(name) || !await pathExists(sourcePath))
-      throw new Error(`Missing configured source skill: ${SOURCE_SKILLS_DIR}/${name}/${SKILL_FILE}`)
+  for (const source of localSkillSources) {
+    if (source.kind === 'directory')
+      await renderDirectorySkill(root, source)
+    else
+      await renderDocumentSkillSource(root, source)
 
-    const source = await readFile(sourcePath, 'utf-8')
-    const content = source.replaceAll(REPO_ROOT_TOKEN, root)
-    const skillDir = join(root, GENERATED_SKILLS_DIR, name)
-    await rm(skillDir, { recursive: true, force: true })
-    await cp(sourceDir, skillDir, { recursive: true })
-    await writeFile(join(skillDir, SKILL_FILE), content)
-    rendered.push(name)
+    rendered.push(source.name)
   }
 
   return rendered.sort((left, right) => left.localeCompare(right))
@@ -86,15 +138,15 @@ export async function discoverSkills(root = repoRoot()): Promise<Skill[]> {
   return skills.sort((left, right) => left.name.localeCompare(right.name))
 }
 
-async function discoverLinkedSkills(root: string, linkedSkills: readonly string[]): Promise<Skill[]> {
+async function discoverInstallableSkills(root: string, installableSkills: readonly string[]): Promise<Skill[]> {
   const skills = await discoverSkills(root)
   const byName = new Map(skills.map(skill => [skill.name, skill]))
 
-  return linkedSkills
+  return installableSkills
     .map((name) => {
       const skill = byName.get(name)
       if (!skill)
-        throw new Error(`Missing configured linked skill: ${GENERATED_SKILLS_DIR}/${name}/${SKILL_FILE}`)
+        throw new Error(`Missing configured installable skill: ${GENERATED_SKILLS_DIR}/${name}/${SKILL_FILE}`)
       return skill
     })
     .sort((left, right) => left.name.localeCompare(right.name))
@@ -105,13 +157,13 @@ async function discoverLinkedSkills(root: string, linkedSkills: readonly string[
  * repo's generated tree are pruned, so removed skills clean themselves up.
  */
 export async function createSkillLinks({
-  linkedSkills = defaultLinkedSkills,
+  installableSkills = defaultInstallableSkills,
+  localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
   targets,
-  sourceSkills = defaultSourceSkills,
 }: SkillLinkOptions): Promise<LinkResult[]> {
-  await renderSkillSources({ root, sourceSkills })
-  const skills = await discoverLinkedSkills(root, linkedSkills)
+  await renderLocalSkillSources({ root, localSkillSources })
+  const skills = await discoverInstallableSkills(root, installableSkills)
   const skillsDir = join(root, GENERATED_SKILLS_DIR)
   const replaceFrom = [join(root, SOURCE_SKILLS_DIR), skillsDir]
   const current = new Set(skills.map(skill => skill.name))

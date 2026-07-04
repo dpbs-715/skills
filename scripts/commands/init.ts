@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { vendors as defaultVendors } from '../../meta.ts'
 import {
   createGitRunner,
   getProjects,
@@ -12,6 +12,7 @@ import {
   type RunGit,
   submoduleExists,
 } from '../lib/git.ts'
+import type { VendorSkillMeta } from '../lib/metaTypes.ts'
 import { repoRoot } from '../lib/utils.ts'
 
 export interface InitResult {

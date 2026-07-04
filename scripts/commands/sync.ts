@@ -1,7 +1,8 @@
 import process from 'node:process'
 
-import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { vendors as defaultVendors } from '../../meta.ts'
 import { createGitRunner, type RunGit } from '../lib/git.ts'
+import type { VendorSkillMeta } from '../lib/metaTypes.ts'
 import { repoRoot } from '../lib/utils.ts'
 import {
   syncVendorSkills as defaultSyncVendorSkills,

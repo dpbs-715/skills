@@ -12,7 +12,7 @@ import { initSubmodules } from '../commands/init.ts'
 import { collectStatus } from '../commands/status.ts'
 import { syncSubmodules } from '../commands/sync.ts'
 import { getProjects, type RunGit } from '../lib/git.ts'
-import type { VendorSkillMeta } from '../../meta.ts'
+import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
 
 const temporaryPaths: string[] = []
 const execFileAsync = promisify(execFile)
@@ -45,6 +45,10 @@ const vendors: Record<string, VendorSkillMeta> = {
       'gsap-core': 'gsap-core',
     },
   },
+}
+
+function localSource(name: string): LocalSkillSource {
+  return { kind: 'directory', name, path: `skills/${name}` }
 }
 
 test('builds vendor projects from metadata', () => {
@@ -376,15 +380,15 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
 
   const status = await collectStatus({
     root,
-    linkedSkills: ['engineering-rules', 'personal-knowledge'],
-    sourceSkills: ['personal-knowledge'],
+    installableSkills: ['engineering-rules', 'personal-knowledge'],
+    localSkillSources: [localSource('personal-knowledge')],
     vendors,
   })
 
   assert.deepEqual(status.skills, [
-    { name: 'engineering-rules', present: false, roles: ['linked'] },
+    { name: 'engineering-rules', present: false, roles: ['installable'] },
     { name: 'gsap-core', present: true, roles: ['vendor'] },
-    { name: 'personal-knowledge', present: true, roles: ['source', 'linked'] },
+    { name: 'personal-knowledge', present: true, roles: ['local', 'installable'] },
   ])
   assert.deepEqual(status.extraSkills, ['orphan'])
   assert.deepEqual(status.projects, [{
@@ -400,8 +404,8 @@ test('status marks configured submodules that are not checked out', async () => 
 
   const status = await collectStatus({
     root,
-    linkedSkills: [],
-    sourceSkills: [],
+    installableSkills: [],
+    localSkillSources: [],
     vendors,
   })
 
@@ -426,8 +430,8 @@ test('cleanup removes extra skills only when confirmed', async () => {
 
   const dryRun = await cleanupUnusedEntries({
     root,
-    linkedSkills: ['engineering-rules'],
-    sourceSkills: ['personal-knowledge'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [localSource('personal-knowledge')],
     vendors,
     yes: false,
   })
@@ -436,8 +440,8 @@ test('cleanup removes extra skills only when confirmed', async () => {
 
   const confirmed = await cleanupUnusedEntries({
     root,
-    linkedSkills: ['engineering-rules'],
-    sourceSkills: ['personal-knowledge'],
+    installableSkills: ['engineering-rules'],
+    localSkillSources: [localSource('personal-knowledge')],
     vendors,
     yes: true,
   })

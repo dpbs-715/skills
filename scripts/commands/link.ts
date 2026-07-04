@@ -1,44 +1,43 @@
 import { dirname } from 'node:path'
 
 import {
-  type ClaudeRule,
-  claudeRules as defaultClaudeRules,
-  type LinkTarget,
+  alwaysOnInstructionSkills as defaultAlwaysOnInstructionSkills,
+  localSkillSources as defaultLocalSkillSources,
   linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
 import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
-import { createSkillLinks, removeSkillLinks, renderSkillSources } from '../lib/skillLinks.ts'
+import type { LinkTarget, LocalSkillSource } from '../lib/metaTypes.ts'
+import {
+  createSkillLinks,
+  removeSkillLinks,
+  renderLocalSkillSources,
+  resolveAlwaysOnInstructionSources,
+} from '../lib/skillLinks.ts'
 import { homePath, type LinkResult } from '../lib/symlink.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
 interface OrchestrateOptions {
+  alwaysOnInstructionSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
   targets?: readonly LinkTarget[]
-  sourceSkills?: readonly string[]
-}
-
-/** Resolve a skill name to its configured rule (source markdown). */
-function resolveRule(skill: string): ClaudeRule {
-  const rule = defaultClaudeRules.find(entry => entry.skill === skill)
-  if (!rule)
-    throw new Error(`Unknown Claude rule: ${skill}`)
-  return rule
 }
 
 /**
  * Link every {@link defaultLinkTargets} row to its destination, dispatching on
  * `kind`. Skill directories are only populated when they already exist (the
- * tool is installed); the rule directory is created when its parent (e.g.
- * `~/.claude`) exists. Source skills are rendered once up front so the
- * per-target skill linking below skips re-rendering.
+ * tool is installed); the rule directory is created when its parent exists.
+ * Local skill sources are rendered once up front so the per-target skill
+ * linking below skips re-rendering.
  */
 export async function linkAll({
+  alwaysOnInstructionSkills = defaultAlwaysOnInstructionSkills,
+  localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
   targets = defaultLinkTargets,
-  sourceSkills,
 }: OrchestrateOptions = {}): Promise<LinkResult[]> {
-  await renderSkillSources({ root, sourceSkills })
+  await renderLocalSkillSources({ root, localSkillSources })
   const results: LinkResult[] = []
 
   for (const target of targets) {
@@ -48,9 +47,9 @@ export async function linkAll({
         continue
       results.push(...await createSkillLinks({
         root,
-        linkedSkills: target.include,
+        installableSkills: target.include,
+        localSkillSources: [],
         targets: [dir],
-        sourceSkills: [],
       }))
       continue
     }
@@ -71,8 +70,11 @@ export async function linkAll({
     if (!await pathExists(dirname(dir)))
       continue
     results.push(...await createRuleLinks({
+      instructions: resolveAlwaysOnInstructionSources(
+        localSkillSources,
+        target.include.length > 0 ? target.include : alwaysOnInstructionSkills,
+      ),
       root,
-      rules: target.include.map(resolveRule),
       targets: [dir],
     }))
   }

@@ -1,7 +1,8 @@
 import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { vendors as defaultVendors, type VendorSkillMeta } from '../../meta.ts'
+import { vendors as defaultVendors } from '../../meta.ts'
+import type { VendorSkillMeta } from './metaTypes.ts'
 import { GENERATED_SKILLS_DIR } from './skillLinks.ts'
 import { execFileText, pathExists, repoRoot } from './utils.ts'
 

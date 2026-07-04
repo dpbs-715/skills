@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
 
-import type { ClaudeRule } from '../../meta.ts'
 import { run as runValidate } from '../commands/validate.ts'
+import type { LocalSkillSource } from '../lib/metaTypes.ts'
 import { REPO_ROOT_TOKEN } from '../lib/skillLinks.ts'
 import { type ValidationOptions, validateSkills } from '../lib/validation.ts'
 
@@ -38,11 +38,11 @@ Read \`${REPO_ROOT_TOKEN}/${ruleSource}\`.
 }
 
 async function createValidRepo({
-  claudeRules = [{ skill: skillName, source: defaultRuleSource }],
+  localSkillSources,
   ruleSource = defaultRuleSource,
   writeRule = true,
 }: {
-  claudeRules?: readonly ClaudeRule[]
+  localSkillSources?: readonly LocalSkillSource[]
   ruleSource?: string
   writeRule?: boolean
 } = {}): Promise<{ options: ValidationOptions, root: string }> {
@@ -61,10 +61,13 @@ async function createValidRepo({
   return {
     root,
     options: {
-      claudeRules,
-      linkedSkills: [skillName],
+      installableSkills: [skillName],
+      localSkillSources: localSkillSources ?? [{
+        kind: 'directory',
+        name: skillName,
+        path: join('skills', skillName),
+      }],
       root,
-      sourceSkills: [skillName],
     },
   }
 }
@@ -106,14 +109,14 @@ test('run prints a clear success message', async () => {
   assert.deepEqual(logs, ['Validation passed.'])
 })
 
-test('reports a missing configured source skill', async () => {
+test('reports a missing configured directory skill', async () => {
   const { options, root } = await createValidRepo()
   await rm(join(root, 'skills', skillName, 'SKILL.md'), { force: true })
 
   const result = await validateSkills(options)
 
   assert.equal(result.ok, false)
-  assert.deepEqual(issueCodes(result), ['missing-source-skill'])
+  assert.deepEqual(issueCodes(result), ['missing-directory-skill'])
   assert.equal(result.issues[0].path, join('skills', skillName, 'SKILL.md'))
 })
 
@@ -151,45 +154,49 @@ description: Use when testing validation.
   )
 
   const result = await validateSkills({
-    claudeRules: [],
-    linkedSkills: [],
+    installableSkills: [],
+    localSkillSources: [],
     root,
-    sourceSkills: [],
   })
 
   assert.equal(result.ok, false)
   assert.deepEqual(issueCodes(result), ['missing-frontmatter', 'skill-name-mismatch'])
 })
 
-test('reports a missing configured Claude rule source', async () => {
+test('reports a missing configured document source', async () => {
   const { options } = await createValidRepo({
-    claudeRules: [{ skill: skillName, source: 'rules/missing/RULES.md' }],
+    localSkillSources: [{
+      description: 'Use when testing validation.',
+      instructions: ['Read only relevant details.'],
+      kind: 'document',
+      name: skillName,
+      source: 'rules/missing/RULES.md',
+      title: 'Missing Rules',
+    }],
   })
 
   const result = await validateSkills(options)
 
   assert.equal(result.ok, false)
-  assert.deepEqual(issueCodes(result), ['missing-rule-source'])
+  assert.deepEqual(issueCodes(result), ['missing-document-source'])
   assert.equal(result.issues[0].path, 'rules/missing/RULES.md')
 })
 
-test('reports a missing configured linked skill', async () => {
+test('reports a missing configured installable skill', async () => {
   const root = await createTempDir('skills-validate-')
 
   const result = await validateSkills({
-    claudeRules: [],
-    linkedSkills: [skillName],
+    installableSkills: [skillName],
+    localSkillSources: [],
     root,
-    sourceSkills: [],
   })
 
   assert.equal(result.ok, false)
-  assert.deepEqual(issueCodes(result), ['missing-linked-skill'])
+  assert.deepEqual(issueCodes(result), ['missing-installable-skill'])
 })
 
 test('reports missing repo absolute paths in source and generated skills', async () => {
   const { options } = await createValidRepo({
-    claudeRules: [],
     ruleSource: 'rules/missing/RULES.md',
     writeRule: false,
   })

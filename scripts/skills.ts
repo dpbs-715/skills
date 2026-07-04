@@ -25,7 +25,7 @@ const COMMANDS: Record<string, Command> = {
   init: { summary: 'Add missing vendor git submodules from meta.ts', run: runInit },
   check: { summary: 'Fetch submodules and report upstream updates', run: runCheck },
   cleanup: { summary: 'Report unused submodules and generated skills; pass --yes to remove', run: runCleanup },
-  validate: { summary: 'Validate source skills, generated skills, rules, and skill metadata', run: runValidate },
+  validate: { summary: 'Validate local sources, generated skills, and skill metadata', run: runValidate },
   note: { summary: 'Manage private knowledge notes: list, reindex, or add', run: runNote },
 }
 

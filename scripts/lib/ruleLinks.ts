@@ -1,7 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { type ClaudeRule, claudeRules as defaultClaudeRules } from '../../meta.ts'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
@@ -11,23 +10,28 @@ interface RuleLink {
 }
 
 interface RuleLinkOptions {
-  rules?: readonly ClaudeRule[]
+  instructions: readonly RuleInstruction[]
   root?: string
   targets: string[]
+}
+
+export interface RuleInstruction {
+  skill: string
+  source: string
 }
 
 /**
  * Resolve each configured rule to an absolute source file and the `<skill>.md`
  * link name. Throws if a configured source is missing, mirroring skill linking.
  */
-async function discoverRuleLinks(root: string, rules: readonly ClaudeRule[]): Promise<RuleLink[]> {
+async function discoverRuleLinks(root: string, instructions: readonly RuleInstruction[]): Promise<RuleLink[]> {
   const links: RuleLink[] = []
 
-  for (const rule of rules) {
-    const source = join(root, rule.source)
+  for (const instruction of instructions) {
+    const source = join(root, instruction.source)
     if (!await pathExists(source))
-      throw new Error(`Missing configured rule source: ${rule.source}`)
-    links.push({ name: `${rule.skill}.md`, source })
+      throw new Error(`Missing configured instruction source: ${instruction.source}`)
+    links.push({ name: `${instruction.skill}.md`, source })
   }
 
   return links.sort((left, right) => left.name.localeCompare(right.name))
@@ -40,11 +44,11 @@ async function discoverRuleLinks(root: string, rules: readonly ClaudeRule[]): Pr
  * pruned, so rules removed from the manifest clean themselves up.
  */
 export async function createRuleLinks({
-  rules = defaultClaudeRules,
+  instructions,
   root = repoRoot(),
   targets,
 }: RuleLinkOptions): Promise<LinkResult[]> {
-  const ruleLinks = await discoverRuleLinks(root, rules)
+  const ruleLinks = await discoverRuleLinks(root, instructions)
   const rulesDir = join(root, 'rules')
   const current = new Set(ruleLinks.map(link => link.name))
   const results: LinkResult[] = []

@@ -2,10 +2,9 @@ import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import {
-  linkedSkills as defaultLinkedSkills,
-  sourceSkills as defaultSourceSkills,
+  installableSkills as defaultInstallableSkills,
+  localSkillSources as defaultLocalSkillSources,
   vendors as defaultVendors,
-  type VendorSkillMeta,
 } from '../../meta.ts'
 import {
   createGitRunner,
@@ -17,6 +16,7 @@ import {
   removeGitmodulesIfNoEntries,
   type RunGit,
 } from '../lib/git.ts'
+import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
 import { GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
 import { listDirectories, repoRoot } from '../lib/utils.ts'
 
@@ -26,26 +26,26 @@ export interface CleanupResult {
 }
 
 interface CleanupOptions {
-  linkedSkills?: readonly string[]
+  installableSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
   runGit?: RunGit
-  sourceSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
   yes?: boolean
 }
 
 function expectedSkillNames({
-  linkedSkills = defaultLinkedSkills,
-  sourceSkills = defaultSourceSkills,
+  installableSkills = defaultInstallableSkills,
+  localSkillSources = defaultLocalSkillSources,
   vendors = defaultVendors,
 }: {
-  linkedSkills?: readonly string[]
-  sourceSkills?: readonly string[]
+  installableSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   vendors?: Record<string, VendorSkillMeta>
 }): Set<string> {
   const expected = new Set<string>([
-    ...sourceSkills,
-    ...linkedSkills,
+    ...localSkillSources.map(source => source.name),
+    ...installableSkills,
   ])
 
   for (const vendor of Object.values(vendors)) {
@@ -57,10 +57,10 @@ function expectedSkillNames({
 }
 
 export async function cleanupUnusedEntries({
-  linkedSkills = defaultLinkedSkills,
+  installableSkills = defaultInstallableSkills,
+  localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
   runGit = createGitRunner(root),
-  sourceSkills = defaultSourceSkills,
   vendors = defaultVendors,
   yes = false,
 }: CleanupOptions = {}): Promise<CleanupResult> {
@@ -71,7 +71,7 @@ export async function cleanupUnusedEntries({
     isManagedSubmodulePath(path) && !expectedSubmodulePaths.has(path),
   )
 
-  const expectedSkills = expectedSkillNames({ linkedSkills, sourceSkills, vendors })
+  const expectedSkills = expectedSkillNames({ installableSkills, localSkillSources, vendors })
   const existingSkills = await listDirectories(join(root, GENERATED_SKILLS_DIR))
   const extraSkills = existingSkills.filter(name => !expectedSkills.has(name))
 

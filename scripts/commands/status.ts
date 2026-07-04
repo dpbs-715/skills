@@ -1,16 +1,16 @@
 import { join } from 'node:path'
 
 import {
-  linkedSkills as defaultLinkedSkills,
-  sourceSkills as defaultSourceSkills,
+  installableSkills as defaultInstallableSkills,
+  localSkillSources as defaultLocalSkillSources,
   vendors as defaultVendors,
-  type VendorSkillMeta,
 } from '../../meta.ts'
 import { getProjects, type Project } from '../lib/git.ts'
+import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
 import { discoverSkills, GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
 import { isDirectoryNonEmpty, repoRoot } from '../lib/utils.ts'
 
-export type SkillRole = 'source' | 'linked' | 'vendor'
+export type SkillRole = 'local' | 'installable' | 'vendor'
 
 export interface SkillStatus {
   name: string
@@ -32,13 +32,13 @@ export interface RepoStatus {
 }
 
 interface StatusOptions {
-  linkedSkills?: readonly string[]
+  installableSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
-  sourceSkills?: readonly string[]
   vendors?: Record<string, VendorSkillMeta>
 }
 
-const SKILL_ROLE_ORDER: SkillRole[] = ['source', 'linked', 'vendor']
+const SKILL_ROLE_ORDER: SkillRole[] = ['local', 'installable', 'vendor']
 
 /**
  * Read-only inventory of what `meta.ts` configures versus what is actually on
@@ -47,9 +47,9 @@ const SKILL_ROLE_ORDER: SkillRole[] = ['source', 'linked', 'vendor']
  * checkout state of configured submodules. Drives `pnpm skills status`.
  */
 export async function collectStatus({
-  linkedSkills = defaultLinkedSkills,
+  installableSkills = defaultInstallableSkills,
+  localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
-  sourceSkills = defaultSourceSkills,
   vendors = defaultVendors,
 }: StatusOptions = {}): Promise<RepoStatus> {
   const roles = new Map<string, Set<SkillRole>>()
@@ -59,10 +59,10 @@ export async function collectStatus({
     roles.set(name, existing)
   }
 
-  for (const name of sourceSkills)
-    addRole(name, 'source')
-  for (const name of linkedSkills)
-    addRole(name, 'linked')
+  for (const source of localSkillSources)
+    addRole(source.name, 'local')
+  for (const name of installableSkills)
+    addRole(name, 'installable')
   for (const vendor of Object.values(vendors)) {
     for (const outputSkill of Object.values(vendor.skills))
       addRole(outputSkill, 'vendor')

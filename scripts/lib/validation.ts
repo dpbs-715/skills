@@ -2,20 +2,19 @@ import { readdir, readFile } from 'node:fs/promises'
 import { isAbsolute, join, relative } from 'node:path'
 
 import {
-  type ClaudeRule,
-  claudeRules as defaultClaudeRules,
-  linkedSkills as defaultLinkedSkills,
-  sourceSkills as defaultSourceSkills,
+  installableSkills as defaultInstallableSkills,
+  localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
-import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN, SKILL_FILE, SOURCE_SKILLS_DIR } from './skillLinks.ts'
+import type { LocalSkillSource } from './metaTypes.ts'
+import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN, SKILL_FILE } from './skillLinks.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
 export type ValidationIssueCode =
-  | 'missing-source-skill'
+  | 'missing-directory-skill'
+  | 'missing-document-source'
   | 'missing-generated-skill'
   | 'stale-generated-skill'
-  | 'missing-linked-skill'
-  | 'missing-rule-source'
+  | 'missing-installable-skill'
   | 'missing-frontmatter'
   | 'missing-frontmatter-field'
   | 'skill-name-mismatch'
@@ -33,10 +32,9 @@ export interface ValidationResult {
 }
 
 export interface ValidationOptions {
-  claudeRules?: readonly ClaudeRule[]
-  linkedSkills?: readonly string[]
+  installableSkills?: readonly string[]
+  localSkillSources?: readonly LocalSkillSource[]
   root?: string
-  sourceSkills?: readonly string[]
 }
 
 interface Frontmatter {
@@ -53,8 +51,30 @@ function addIssue(
   issues.push({ code, message, path })
 }
 
-function renderSourceSkill(content: string, root: string): string {
+function renderSourceContent(content: string, root: string): string {
   return content.replaceAll(REPO_ROOT_TOKEN, root)
+}
+
+function renderDocumentSource(source: LocalSkillSource, root: string): string {
+  if (source.kind !== 'document')
+    throw new Error(`Expected document skill source: ${source.name}`)
+
+  const metadata = source.shortDescription
+    ? `metadata:\n  short-description: ${source.shortDescription}\n`
+    : ''
+  const instructions = source.instructions.join('\n\n')
+
+  return `---
+name: ${source.name}
+description: ${source.description}
+${metadata}---
+
+# ${source.title}
+
+Read [${source.source}](../../${source.source}) at \`${root}/${source.source}\`.
+
+${instructions}
+`
 }
 
 function isRepoPath(root: string, path: string): boolean {
@@ -86,29 +106,46 @@ async function validateBacktickPaths(
   }
 }
 
-async function validateSourceSkills(
+async function validateLocalSkillSources(
   root: string,
-  sourceSkills: readonly string[],
+  localSkillSources: readonly LocalSkillSource[],
   issues: ValidationIssue[],
 ): Promise<void> {
-  for (const name of sourceSkills) {
-    const sourceRelPath = join(SOURCE_SKILLS_DIR, name, SKILL_FILE)
-    const sourcePath = join(root, sourceRelPath)
-    const generatedRelPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
+  for (const source of localSkillSources) {
+    const generatedRelPath = join(GENERATED_SKILLS_DIR, source.name, SKILL_FILE)
     const generatedPath = join(root, generatedRelPath)
+    let expected: string
 
-    if (!await pathExists(sourcePath)) {
-      addIssue(
-        issues,
-        'missing-source-skill',
-        sourceRelPath,
-        `Missing configured source skill: ${sourceRelPath}`,
-      )
-      continue
+    if (source.kind === 'directory') {
+      const sourceRelPath = join(source.path, SKILL_FILE)
+      const sourcePath = join(root, sourceRelPath)
+      if (!await pathExists(sourcePath)) {
+        addIssue(
+          issues,
+          'missing-directory-skill',
+          sourceRelPath,
+          `Missing configured directory skill: ${sourceRelPath}`,
+        )
+        continue
+      }
+
+      expected = renderSourceContent(await readFile(sourcePath, 'utf-8'), root)
+      await validateBacktickPaths(root, sourceRelPath, expected, issues)
     }
+    else {
+      if (!await pathExists(join(root, source.source))) {
+        addIssue(
+          issues,
+          'missing-document-source',
+          source.source,
+          `Missing configured document source: ${source.source}`,
+        )
+        continue
+      }
 
-    const expected = renderSourceSkill(await readFile(sourcePath, 'utf-8'), root)
-    await validateBacktickPaths(root, sourceRelPath, expected, issues)
+      expected = renderDocumentSource(source, root)
+      await validateBacktickPaths(root, source.source, expected, issues)
+    }
 
     if (!await pathExists(generatedPath)) {
       addIssue(
@@ -134,36 +171,19 @@ async function validateSourceSkills(
   }
 }
 
-async function validateLinkedSkills(
+async function validateInstallableSkills(
   root: string,
-  linkedSkills: readonly string[],
+  installableSkills: readonly string[],
   issues: ValidationIssue[],
 ): Promise<void> {
-  for (const name of linkedSkills) {
+  for (const name of installableSkills) {
     const relPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
     if (!await pathExists(join(root, relPath))) {
       addIssue(
         issues,
-        'missing-linked-skill',
+        'missing-installable-skill',
         relPath,
-        `Missing configured linked skill: ${relPath}`,
-      )
-    }
-  }
-}
-
-async function validateClaudeRules(
-  root: string,
-  claudeRules: readonly ClaudeRule[],
-  issues: ValidationIssue[],
-): Promise<void> {
-  for (const rule of claudeRules) {
-    if (!await pathExists(join(root, rule.source))) {
-      addIssue(
-        issues,
-        'missing-rule-source',
-        rule.source,
-        `Missing configured Claude rule source for ${rule.skill}: ${rule.source}`,
+        `Missing configured installable skill: ${relPath}`,
       )
     }
   }
@@ -267,16 +287,14 @@ async function validateSkillFrontmatter(
 }
 
 export async function validateSkills({
-  claudeRules = defaultClaudeRules,
-  linkedSkills = defaultLinkedSkills,
+  installableSkills = defaultInstallableSkills,
+  localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
-  sourceSkills = defaultSourceSkills,
 }: ValidationOptions = {}): Promise<ValidationResult> {
   const issues: ValidationIssue[] = []
 
-  await validateSourceSkills(root, sourceSkills, issues)
-  await validateLinkedSkills(root, linkedSkills, issues)
-  await validateClaudeRules(root, claudeRules, issues)
+  await validateLocalSkillSources(root, localSkillSources, issues)
+  await validateInstallableSkills(root, installableSkills, issues)
   await validateSkillFrontmatter(root, issues)
 
   return {
