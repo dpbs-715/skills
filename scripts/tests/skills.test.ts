@@ -375,6 +375,8 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
   await writeSkill('personal-knowledge')
   await writeSkill('gsap-core')
   await writeSkill('orphan')
+  await mkdir(join(root, 'skills', 'personal-knowledge'), { recursive: true })
+  await writeFile(join(root, 'skills', 'personal-knowledge', 'SKILL.md'), '# personal-knowledge\n')
   await mkdir(join(root, 'vendor', 'gsap'), { recursive: true })
   await writeFile(join(root, 'vendor', 'gsap', 'README.md'), '')
 
@@ -386,9 +388,9 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
   })
 
   assert.deepEqual(status.skills, [
-    { name: 'engineering-rules', present: false, roles: ['installable'] },
-    { name: 'gsap-core', present: true, roles: ['vendor'] },
-    { name: 'personal-knowledge', present: true, roles: ['local', 'installable'] },
+    { estimatedTokens: null, name: 'engineering-rules', present: false, roles: ['installable'] },
+    { estimatedTokens: null, name: 'gsap-core', present: true, roles: ['vendor'] },
+    { estimatedTokens: 6, name: 'personal-knowledge', present: true, roles: ['local', 'installable'] },
   ])
   assert.deepEqual(status.extraSkills, ['orphan'])
   assert.deepEqual(status.projects, [{
@@ -397,6 +399,12 @@ test('status reports skill roles, presence, extra skills, and submodule checkout
     path: 'vendor/gsap',
     type: 'vendor',
   }])
+  assert.deepEqual(status.tokenEstimate, {
+    largest: [
+      { name: 'personal-knowledge', tokens: 6 },
+    ],
+    total: 6,
+  })
 })
 
 test('status marks configured submodules that are not checked out', async () => {
@@ -410,7 +418,7 @@ test('status marks configured submodules that are not checked out', async () => 
   })
 
   assert.deepEqual(status.skills, [
-    { name: 'gsap-core', present: false, roles: ['vendor'] },
+    { estimatedTokens: null, name: 'gsap-core', present: false, roles: ['vendor'] },
   ])
   assert.deepEqual(status.extraSkills, [])
   assert.deepEqual(status.projects, [{
@@ -419,6 +427,7 @@ test('status marks configured submodules that are not checked out', async () => 
     path: 'vendor/gsap',
     type: 'vendor',
   }])
+  assert.deepEqual(status.tokenEstimate, { largest: [], total: 0 })
 })
 
 test('cleanup removes extra skills only when confirmed', async () => {
