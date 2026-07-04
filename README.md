@@ -20,6 +20,7 @@ This repository separates always-on preferences from task-specific skills:
 | Source skill | Commit | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
 | Source skill | Commit and push | [skills/cpush/SKILL.md](skills/cpush/SKILL.md) |
 | Source skill | Diff review | [skills/dcr/SKILL.md](skills/dcr/SKILL.md) |
+| Source skill | Mock | [skills/mock/SKILL.md](skills/mock/SKILL.md) |
 | Source skill | Push | [skills/push/SKILL.md](skills/push/SKILL.md) |
 
 Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each generated bundle is present in `generated/`, any undeclared generated skill directories, and submodule checkout state.
