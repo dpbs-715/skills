@@ -6,6 +6,7 @@ export const Skill = {
   Commit: 'commit',
   Dcr: 'dcr',
   EngineeringRules: 'engineering-rules',
+  Mock: 'mock',
   PersonalKnowledge: 'personal-knowledge',
   ProblemSolvingRules: 'problem-solving-rules',
   Push: 'push',
@@ -15,6 +16,7 @@ export const localSkillSources = [
   { kind: 'directory', name: Skill.Cpush, path: 'skills/cpush' },
   { kind: 'directory', name: Skill.Commit, path: 'skills/commit' },
   { kind: 'directory', name: Skill.Dcr, path: 'skills/dcr' },
+  { kind: 'directory', name: Skill.Mock, path: 'skills/mock' },
   {
     description: 'Use when writing, modifying, or reviewing code.',
     instructions: [
