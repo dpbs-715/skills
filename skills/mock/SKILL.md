@@ -26,7 +26,7 @@ Read the following lists and files from the current system context:
 - `available_tools`: the currently available tools
 - `available_skills`: the currently available skills
 - `available_rules`: the currently active rules
-- Project instruction files: `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `copilot-instructions.md`, and other project-level docs loaded by the active agent
+- Project instruction files: `AGENTS.md`, `CLAUDE.md` and other project-level docs loaded by the active agent
 - Documents referenced or imported by `AGENTS.md` and `CLAUDE.md` (for example, topic files linked under `rules/` or `topics/`, global rules mentioned in `AGENTS.md`, etc.)
 
 Only recursively list referenced docs for `AGENTS.md` and `CLAUDE.md`. For other instruction files, just note whether they are present and loaded.
