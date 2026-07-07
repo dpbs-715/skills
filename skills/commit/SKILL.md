@@ -32,6 +32,7 @@ Never revert, discard, or overwrite user changes unless the user explicitly asks
 
 Use `-ch` to write the commit message subject and body in Chinese.
 Use `-en` to write the commit message subject and body in English.
+Apply the selected language to every split commit in the same request.
 
 Keep Conventional Commit tokens such as type, scope, `!`, and
 `BREAKING CHANGE:` in English. If neither flag is provided, use English unless

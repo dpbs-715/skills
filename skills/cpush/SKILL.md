@@ -41,6 +41,7 @@ Forward language flags to both phases:
 - `-ch`: use Chinese for the commit message content and final response.
 - `-en`: use English for the commit message content and final response.
 
+Apply the selected language to every commit created during the commit phase.
 Keep Conventional Commit tokens such as `feat`, `fix`, scopes, `!`, and
 `BREAKING CHANGE:` in English.
 
