@@ -6,7 +6,7 @@ import test from 'node:test'
 
 import { linkTargets } from '../../meta.ts'
 import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
-import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
+import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
 import type { LocalSkillSource } from '../lib/metaTypes.ts'
 import {
@@ -66,10 +66,12 @@ async function writeRule(root: string, relSource: string): Promise<string> {
 }
 
 test('linkTargets excludes always-on instructions from Claude skills and links them as rules', () => {
-  const codex = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.codex/skills')
-  const claudeSkills = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/skills')
-  const claudeInstructionsTarget = linkTargets.find(target => target.kind !== 'json-array' && target.dir === '~/.claude/rules')
+  const codex = linkTargets.find(target => target.kind === 'skill' && target.dir === '~/.codex/skills')
+  const claudeSkills = linkTargets.find(target => target.kind === 'skill' && target.dir === '~/.claude/skills')
+  const claudeInstructionsTarget = linkTargets.find(target => target.kind === 'rule' && target.dir === '~/.claude/rules')
   assert.ok(codex && claudeSkills && claudeInstructionsTarget)
+  if (codex.kind !== 'skill' || claudeSkills.kind !== 'skill' || claudeInstructionsTarget.kind !== 'rule')
+    assert.fail('Expected directory link targets')
 
   // Codex keeps the full skill set (unchanged).
   assert.ok(codex.include.includes('engineering-rules'))
@@ -91,25 +93,37 @@ test('linkTargets excludes always-on instructions from Claude skills and links t
 
 test('linkTargets configures opencode rules and instructions together', () => {
   const opencodeSkills = linkTargets.find(
-    target => target.kind !== 'json-array' && target.dir === '~/.config/opencode/skills',
+    target => target.kind === 'skill' && target.dir === '~/.config/opencode/skills',
   )
   const opencodeRules = linkTargets.find(
-    target => target.kind !== 'json-array' && target.dir === '~/.config/opencode/rules',
+    target => target.kind === 'rule' && target.dir === '~/.config/opencode/rules',
   )
-  const opencodeConfig = linkTargets.find(
+  const opencodeInstructions = linkTargets.find(
     target => target.kind === 'json-array' && target.file === '~/.config/opencode/opencode.json',
   )
-  assert.ok(opencodeSkills && opencodeRules && opencodeConfig)
-  if (opencodeConfig.kind !== 'json-array')
+  const opencodePermissions = linkTargets.find(
+    target => target.kind === 'json-object' && target.file === '~/.config/opencode/opencode.json',
+  )
+  assert.ok(opencodeSkills && opencodeRules && opencodeInstructions && opencodePermissions)
+  if (opencodeSkills.kind !== 'skill' || opencodeRules.kind !== 'rule')
+    assert.fail('Expected opencode directory targets')
+  if (opencodeInstructions.kind !== 'json-array')
     assert.fail('Expected opencode config target')
+  if (opencodePermissions.kind !== 'json-object')
+    assert.fail('Expected opencode permission config target')
 
   assert.ok(!opencodeSkills.include.includes('engineering-rules'))
   assert.deepEqual(
     [...opencodeRules.include].sort(),
     ['engineering-rules', 'problem-solving-rules'],
   )
-  assert.equal(opencodeConfig.property, 'instructions')
-  assert.deepEqual(opencodeConfig.include, ['~/.config/opencode/rules/*.md'])
+  assert.equal(opencodeInstructions.property, 'instructions')
+  assert.deepEqual(opencodeInstructions.include, ['~/.config/opencode/rules/*.md'])
+  assert.deepEqual(opencodePermissions.path, ['permission', 'external_directory'])
+  assert.deepEqual(opencodePermissions.entries, [
+    { key: '*', value: 'ask' },
+    { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+  ])
 })
 
 test('renders a directory source into generated/<name>/SKILL.md with the repo root resolved', async () => {
@@ -306,6 +320,15 @@ test('linkAll writes configured JSON array entries when the config parent exists
       property: 'instructions',
       include: ['~/.config/opencode/rules/*.md'],
     },
+    {
+      entries: [
+        { key: '*', value: 'ask' },
+        { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+      ],
+      file: configFile,
+      kind: 'json-object' as const,
+      path: ['permission', 'external_directory'],
+    },
   ]
 
   await linkAll({ root, targets, localSkillSources: [] })
@@ -313,9 +336,47 @@ test('linkAll writes configured JSON array entries when the config parent exists
   const config = JSON.parse(await readFile(configFile, 'utf-8')) as {
     $schema: string
     instructions: string[]
+    permission: {
+      external_directory: Record<string, string>
+    }
   }
   assert.equal(config.$schema, 'https://opencode.ai/config.json')
   assert.deepEqual(config.instructions, ['~/.config/opencode/rules/*.md'])
+  assert.deepEqual(config.permission.external_directory, {
+    '*': 'ask',
+    [`${root}/skills/**`]: 'allow',
+  })
+})
+
+test('linkAll writes repo-root JSON object keys relative to home when possible', async () => {
+  const home = process.env.HOME
+  assert.ok(home)
+  const root = join(home, 'repo-under-home')
+  const configHome = await createTempDir('skills-home-')
+  const configFile = join(configHome, '.config', 'opencode', 'opencode.json')
+  await mkdir(dirname(configFile), { recursive: true })
+
+  await linkAll({
+    root,
+    targets: [
+      {
+        entries: [{ key: '{{REPO_ROOT}}/skills/**', value: 'allow' }],
+        file: configFile,
+        kind: 'json-object',
+        path: ['permission', 'external_directory'],
+      },
+    ],
+    localSkillSources: [],
+  })
+
+  const config = JSON.parse(await readFile(configFile, 'utf-8')) as {
+    permission: {
+      external_directory: Record<string, string>
+    }
+  }
+  assert.deepEqual(config.permission.external_directory, {
+    '~/repo-under-home/skills/**': 'allow',
+  })
 })
 
 test('unlinkAll removes skill and rule links from their targets', async () => {
@@ -495,6 +556,42 @@ test('merges JSON array config entries without duplicating existing values', asy
       '~/.config/opencode/rules/*.md',
       'project-rules/*.md',
     ],
+    theme: 'system',
+  })
+})
+
+test('merges JSON object config entries without disturbing unrelated keys', async () => {
+  const home = await createTempDir('config-home-')
+  const file = join(home, 'opencode.json')
+  await writeFile(file, JSON.stringify({
+    permission: {
+      external_directory: {
+        '/tmp/project/**': 'allow',
+      },
+    },
+    provider: {},
+    theme: 'system',
+  }, null, 2))
+
+  const results = await ensureJsonObjectEntries({
+    entries: [
+      { key: '*', value: 'ask' },
+      { key: '/Users/me/skills/skills/**', value: 'allow' },
+    ],
+    file,
+    path: ['permission', 'external_directory'],
+  })
+
+  assert.deepEqual(results, [{ name: 'permission.external_directory', target: file, status: 'updated' }])
+  assert.deepEqual(JSON.parse(await readFile(file, 'utf-8')), {
+    permission: {
+      external_directory: {
+        '/tmp/project/**': 'allow',
+        '*': 'ask',
+        '/Users/me/skills/skills/**': 'allow',
+      },
+    },
+    provider: {},
     theme: 'system',
   })
 })

@@ -1,17 +1,18 @@
-import { dirname } from 'node:path'
+import { dirname, isAbsolute, relative, sep } from 'node:path'
 
 import {
   alwaysOnInstructionSkills as defaultAlwaysOnInstructionSkills,
   localSkillSources as defaultLocalSkillSources,
   linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
-import { ensureJsonArrayEntries } from '../lib/jsonConfig.ts'
+import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
 import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
 import type { LinkTarget, LocalSkillSource } from '../lib/metaTypes.ts'
 import {
   createSkillLinks,
   removeSkillLinks,
   renderLocalSkillSources,
+  REPO_ROOT_TOKEN,
   resolveAlwaysOnInstructionSources,
 } from '../lib/skillLinks.ts'
 import { homePath, type LinkResult } from '../lib/symlink.ts'
@@ -22,6 +23,29 @@ interface OrchestrateOptions {
   localSkillSources?: readonly LocalSkillSource[]
   root?: string
   targets?: readonly LinkTarget[]
+}
+
+function homeRelativePath(path: string): string {
+  const home = homePath('~')
+  const relativePath = relative(home, path)
+
+  if (relativePath === '')
+    return '~'
+  if (relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath))
+    return `~/${relativePath.split(sep).join('/')}`
+  return path
+}
+
+function resolveJsonObjectEntries(
+  entries: readonly { key: string, value: string }[],
+  root: string,
+): Array<{ key: string, value: string }> {
+  return entries.map(entry => ({
+    key: entry.key.includes(REPO_ROOT_TOKEN)
+      ? homeRelativePath(entry.key.replaceAll(REPO_ROOT_TOKEN, root))
+      : entry.key,
+    value: entry.value,
+  }))
 }
 
 /**
@@ -66,6 +90,18 @@ export async function linkAll({
       continue
     }
 
+    if (target.kind === 'json-object') {
+      const file = homePath(target.file)
+      if (!await pathExists(dirname(file)))
+        continue
+      results.push(...await ensureJsonObjectEntries({
+        entries: resolveJsonObjectEntries(target.entries, root),
+        file,
+        path: target.path,
+      }))
+      continue
+    }
+
     const dir = homePath(target.dir)
     if (!await pathExists(dirname(dir)))
       continue
@@ -90,7 +126,7 @@ export async function unlinkAll({
   const results: LinkResult[] = []
 
   for (const target of targets) {
-    if (target.kind === 'json-array')
+    if (target.kind === 'json-array' || target.kind === 'json-object')
       continue
 
     const dir = homePath(target.dir)

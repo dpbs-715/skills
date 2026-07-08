@@ -34,4 +34,16 @@ export interface JsonArrayConfigTarget {
   include: readonly string[]
 }
 
-export type LinkTarget = DirectoryLinkTarget | JsonArrayConfigTarget
+export interface JsonObjectEntry {
+  key: string
+  value: string
+}
+
+export interface JsonObjectConfigTarget {
+  entries: readonly JsonObjectEntry[]
+  file: string
+  kind: 'json-object'
+  path: readonly string[]
+}
+
+export type LinkTarget = DirectoryLinkTarget | JsonArrayConfigTarget | JsonObjectConfigTarget

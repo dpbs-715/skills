@@ -78,6 +78,15 @@ export const linkTargets: readonly LinkTarget[] = [
     property: 'instructions',
     include: ['~/.config/opencode/rules/*.md'],
   },
+  {
+    entries: [
+      { key: '*', value: 'ask' },
+      { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+    ],
+    file: '~/.config/opencode/opencode.json',
+    kind: 'json-object',
+    path: ['permission', 'external_directory'],
+  },
   { dir: '~/.agents/skills', kind: 'skill', include: installableSkills },
   {
     dir: '~/.claude/skills',
