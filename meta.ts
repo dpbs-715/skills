@@ -82,6 +82,7 @@ export const linkTargets: readonly LinkTarget[] = [
     entries: [
       { key: '*', value: 'ask' },
       { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+      { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
     ],
     file: '~/.config/opencode/opencode.json',
     kind: 'json-object',
