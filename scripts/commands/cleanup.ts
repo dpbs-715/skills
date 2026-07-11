@@ -17,7 +17,7 @@ import {
   type RunGit,
 } from '../lib/git.ts'
 import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
-import { GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
+import { GENERATED_SKILLS_DIR } from '../lib/skillRendering.ts'
 import { listDirectories, repoRoot } from '../lib/utils.ts'
 
 export interface CleanupResult {

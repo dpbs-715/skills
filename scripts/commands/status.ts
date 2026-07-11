@@ -8,7 +8,8 @@ import {
 } from '../../meta.ts'
 import { getProjects, type Project } from '../lib/git.ts'
 import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
-import { discoverSkills, GENERATED_SKILLS_DIR } from '../lib/skillLinks.ts'
+import { discoverSkills } from '../lib/skillLinks.ts'
+import { GENERATED_SKILLS_DIR } from '../lib/skillRendering.ts'
 import { isDirectoryNonEmpty, pathExists, repoRoot } from '../lib/utils.ts'
 
 export type SkillRole = 'local' | 'installable' | 'vendor'

@@ -6,15 +6,17 @@ import {
   linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
-import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
+import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'
 import type { LinkTarget, LocalSkillSource } from '../lib/metaTypes.ts'
 import {
   createSkillLinks,
   removeSkillLinks,
+} from '../lib/skillLinks.ts'
+import {
   renderLocalSkillSources,
   REPO_ROOT_TOKEN,
-  resolveAlwaysOnInstructionSources,
-} from '../lib/skillLinks.ts'
+  resolveRenderedInstructionSources,
+} from '../lib/skillRendering.ts'
 import { homePath, type LinkResult } from '../lib/symlink.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
@@ -72,7 +74,6 @@ export async function linkAll({
       results.push(...await createSkillLinks({
         root,
         installableSkills: target.include,
-        localSkillSources: [],
         targets: [dir],
       }))
       continue
@@ -105,8 +106,8 @@ export async function linkAll({
     const dir = homePath(target.dir)
     if (!await pathExists(dirname(dir)))
       continue
-    results.push(...await createRuleLinks({
-      instructions: resolveAlwaysOnInstructionSources(
+    results.push(...await createInstructionLinks({
+      instructions: resolveRenderedInstructionSources(
         localSkillSources,
         target.include.length > 0 ? target.include : alwaysOnInstructionSkills,
       ),
@@ -133,7 +134,7 @@ export async function unlinkAll({
     if (target.kind === 'skill')
       results.push(...await removeSkillLinks({ root, targets: [dir] }))
     else
-      results.push(...await removeRuleLinks({ root, targets: [dir] }))
+      results.push(...await removeInstructionLinks({ root, targets: [dir] }))
   }
 
   return results
@@ -176,6 +177,7 @@ export async function runLink(args: string[]): Promise<void> {
   // Explicit --target keeps the legacy behavior: link the full skill set into
   // the given directories (no per-target filtering, no rule linking).
   if (targets.length > 0) {
+    await renderLocalSkillSources()
     printResults(await createSkillLinks({ targets }))
     return
   }
@@ -193,7 +195,7 @@ export async function runUnlink(args: string[]): Promise<void> {
     // links it owns, so the absent kind and any foreign links are untouched.
     printResults([
       ...await removeSkillLinks({ targets }),
-      ...await removeRuleLinks({ targets }),
+      ...await removeInstructionLinks({ targets }),
     ])
     return
   }

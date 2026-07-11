@@ -11,7 +11,7 @@ import {
   renderDocumentSkill,
   REPO_ROOT_TOKEN,
   SKILL_FILE,
-} from './skillLinks.ts'
+} from './skillRendering.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
 export type ValidationIssueCode =

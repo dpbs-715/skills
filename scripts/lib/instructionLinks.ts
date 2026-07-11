@@ -4,18 +4,18 @@ import { join } from 'node:path'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
-interface RuleLink {
+interface InstructionLink {
   name: string
   source: string
 }
 
-interface RuleLinkOptions {
-  instructions: readonly RuleInstruction[]
+interface InstructionLinkOptions {
+  instructions: readonly InstructionSource[]
   root?: string
   targets: string[]
 }
 
-export interface RuleInstruction {
+export interface InstructionSource {
   skill: string
   source: string
 }
@@ -24,8 +24,8 @@ export interface RuleInstruction {
  * Resolve each configured rule to an absolute source file and the `<skill>.md`
  * link name. Throws if a configured source is missing, mirroring skill linking.
  */
-async function discoverRuleLinks(root: string, instructions: readonly RuleInstruction[]): Promise<RuleLink[]> {
-  const links: RuleLink[] = []
+async function discoverInstructionLinks(root: string, instructions: readonly InstructionSource[]): Promise<InstructionLink[]> {
+  const links: InstructionLink[] = []
 
   for (const instruction of instructions) {
     const source = join(root, instruction.source)
@@ -43,20 +43,20 @@ async function discoverRuleLinks(root: string, instructions: readonly RuleInstru
  * exist by default. Stale links pointing into the repo's `rules/` tree are
  * pruned, so rules removed from the manifest clean themselves up.
  */
-export async function createRuleLinks({
+export async function createInstructionLinks({
   instructions,
   root = repoRoot(),
   targets,
-}: RuleLinkOptions): Promise<LinkResult[]> {
-  const ruleLinks = await discoverRuleLinks(root, instructions)
+}: InstructionLinkOptions): Promise<LinkResult[]> {
+  const instructionLinks = await discoverInstructionLinks(root, instructions)
   const ownedDirs = [join(root, 'rules'), join(root, 'generated')]
-  const current = new Set(ruleLinks.map(link => link.name))
+  const current = new Set(instructionLinks.map(link => link.name))
   const results: LinkResult[] = []
 
   for (const target of targets) {
     await mkdir(target, { recursive: true })
 
-    for (const link of ruleLinks) {
+    for (const link of instructionLinks) {
       const status = await ensureLink(link.source, join(target, link.name), {
         replaceFrom: ownedDirs,
       })
@@ -70,7 +70,7 @@ export async function createRuleLinks({
   return results
 }
 
-export async function removeRuleLinks({
+export async function removeInstructionLinks({
   root = repoRoot(),
   targets,
 }: {

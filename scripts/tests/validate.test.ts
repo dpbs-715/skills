@@ -6,7 +6,7 @@ import test from 'node:test'
 
 import { run as runValidate } from '../commands/validate.ts'
 import type { LocalSkillSource } from '../lib/metaTypes.ts'
-import { REPO_ROOT_TOKEN } from '../lib/skillLinks.ts'
+import { REPO_ROOT_TOKEN } from '../lib/skillRendering.ts'
 import { type ValidationOptions, validateSkills } from '../lib/validation.ts'
 
 const temporaryPaths: string[] = []

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { vendors as defaultVendors } from '../../meta.ts'
 import type { VendorSkillMeta } from './metaTypes.ts'
-import { GENERATED_SKILLS_DIR } from './skillLinks.ts'
+import { GENERATED_SKILLS_DIR } from './skillRendering.ts'
 import { execFileText, pathExists, repoRoot } from './utils.ts'
 
 export type { VendorSkillMeta }

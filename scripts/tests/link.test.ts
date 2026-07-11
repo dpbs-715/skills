@@ -7,15 +7,17 @@ import test from 'node:test'
 import { linkTargets } from '../../meta.ts'
 import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
-import { createRuleLinks, removeRuleLinks } from '../lib/ruleLinks.ts'
+import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'
 import type { LocalSkillSource } from '../lib/metaTypes.ts'
 import {
   createSkillLinks,
   discoverSkills,
   removeSkillLinks,
+} from '../lib/skillLinks.ts'
+import {
   renderLocalSkillSources,
   REPO_ROOT_TOKEN,
-} from '../lib/skillLinks.ts'
+} from '../lib/skillRendering.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
 const temporaryPaths: string[] = []
@@ -208,15 +210,18 @@ test('copies bundled resources while rendering the generated SKILL.md', async ()
   assert.equal(await pathExists(join(root, 'generated', 'engineering-rules', 'SKILL.md')), true)
 })
 
-test('links an installable skill by rendering it first', async () => {
+test('links an installable skill after rendering', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('skills-target-')
   await createSourceSkill(root, 'engineering-rules')
 
+  await renderLocalSkillSources({
+    root,
+    localSkillSources: [directorySource('engineering-rules')],
+  })
   const results = await createSkillLinks({
     root,
     installableSkills: ['engineering-rules'],
-    localSkillSources: [directorySource('engineering-rules')],
     targets: [target],
   })
 
@@ -247,7 +252,6 @@ test('creates symlinks for each configured installable skill in each target', as
   const results = await createSkillLinks({
     root,
     installableSkills: ['engineering-rules'],
-    localSkillSources: [],
     targets: [target],
   })
 
@@ -264,7 +268,6 @@ test('throws when a configured installable skill is missing', async () => {
     () => createSkillLinks({
       root,
       installableSkills: ['engineering-rules'],
-      localSkillSources: [],
       targets: [target],
     }),
     /Missing configured installable skill/,
@@ -435,7 +438,6 @@ test('keeps an existing correct symlink', async () => {
   const results = await createSkillLinks({
     root,
     installableSkills: ['engineering-rules'],
-    localSkillSources: [],
     targets: [target],
   })
 
@@ -452,7 +454,6 @@ test('updates repo-owned symlinks that point at the old source directory', async
   const results = await createSkillLinks({
     root,
     installableSkills: ['engineering-rules'],
-    localSkillSources: [],
     targets: [target],
   })
 
@@ -470,7 +471,6 @@ test('does not overwrite non-symlink entries', async () => {
     () => createSkillLinks({
       root,
       installableSkills: ['engineering-rules'],
-      localSkillSources: [],
       targets: [target],
     }),
     /Refusing to replace non-symlink/,
@@ -513,7 +513,6 @@ test('prunes dangling links for deleted skills when linking', async () => {
   const results = await createSkillLinks({
     root,
     installableSkills: ['engineering-rules'],
-    localSkillSources: [],
     targets: [target],
   })
 
@@ -533,7 +532,7 @@ test('migrates always-on instructions from source rules to rendered markdown', a
   const source = join(generatedDir, 'SKILL.md')
   await symlink(oldSource, join(target, 'engineering-rules.md'))
 
-  const results = await createRuleLinks({
+  const results = await createInstructionLinks({
     instructions: [{ skill: 'engineering-rules', source: 'generated/engineering-rules/SKILL.md' }],
     root,
     targets: [target],
@@ -613,7 +612,7 @@ test('creates the rules target directory when missing', async () => {
   const target = join(home, 'rules')
   await writeRule(root, 'rules/engineering/RULES.md')
 
-  await createRuleLinks({
+  await createInstructionLinks({
     instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     root,
     targets: [target],
@@ -627,7 +626,7 @@ test('throws when a configured rule source is missing', async () => {
   const target = await createTempDir('rules-target-')
 
   await assert.rejects(
-    () => createRuleLinks({
+    () => createInstructionLinks({
       instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
       root,
       targets: [target],
@@ -645,7 +644,7 @@ test('prunes stale rule links but leaves foreign links', async () => {
   // Foreign link outside repo rules must be left untouched.
   await symlink('/tmp/elsewhere.md', join(target, 'foreign.md'))
 
-  const results = await createRuleLinks({
+  const results = await createInstructionLinks({
     instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
     root,
     targets: [target],
@@ -667,7 +666,7 @@ test('removes only rule links that point into repo rules', async () => {
   await symlink(source, join(target, 'engineering-rules.md'))
   await symlink('/tmp/elsewhere.md', join(target, 'foreign.md'))
 
-  const results = await removeRuleLinks({ root, targets: [target] })
+  const results = await removeInstructionLinks({ root, targets: [target] })
 
   assert.deepEqual(results, [{ name: 'engineering-rules.md', target, status: 'removed' }])
   await assert.rejects(() => readlink(join(target, 'engineering-rules.md')), /ENOENT/)
