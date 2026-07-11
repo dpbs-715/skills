@@ -79,11 +79,11 @@ Rule sets use `RULES.md` as the entry file and keep focused topic documents in `
 
 Hand-written repo-owned skills should use the standard `SKILL.md` layout under `skills/<name>/`.
 
-Document-backed skills, such as rule wrappers or the personal knowledge index wrapper, are declared in `localSkillSources` in `meta.ts`. Their source content stays in `rules/` or `knowledge/`; `pnpm skills link` renders the installable wrapper into gitignored `generated/<name>/SKILL.md` files with this checkout's absolute path.
+Document-backed skills, such as rule wrappers or the personal knowledge index wrapper, are declared in `localSkillSources` in `meta.ts`. Their source content stays in `rules/` or `knowledge/`; `pnpm skills link` renders it into gitignored `generated/<name>/SKILL.md` files and resolves relative document links to absolute paths in this checkout.
 
 A directory skill that must reference files outside its own folder can still use the `{{REPO_ROOT}}` placeholder. Edit `skills/<name>/SKILL.md`, never the generated copy, and re-run `pnpm skills link` to regenerate.
 
-Add a skill name to `installableSkills` in `meta.ts` when its generated bundle should be symlinked into local agent skill directories. Add it to `alwaysOnInstructionSkills` when it should also reach Claude or opencode as an always-loaded markdown instruction under their rule directories.
+Add a skill name to `installableSkills` in `meta.ts` when its generated bundle should be symlinked into local agent skill directories. Add it to `alwaysOnInstructionSkills` when its rendered `generated/<name>/SKILL.md` should also reach Claude or opencode as an always-loaded markdown instruction under their rule directories.
 
 ## Knowledge Notes
 
