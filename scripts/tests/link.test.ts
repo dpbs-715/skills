@@ -123,6 +123,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
   assert.deepEqual(opencodePermissions.entries, [
     { key: '*', value: 'ask' },
     { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+    { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
   ])
 })
 
@@ -143,6 +144,11 @@ test('renders a directory source into generated/<name>/SKILL.md with the repo ro
 test('renders a document source into generated/<name>/SKILL.md', async () => {
   const root = await createTempDir('skills-repo-')
   await writeRule(root, 'rules/engineering/RULES.md')
+  await writeFile(
+    join(root, 'rules', 'engineering', 'RULES.md'),
+    '# Engineering Rules\n\n- Read [naming](topics/naming.md).\n',
+  )
+  await writeRule(root, 'rules/engineering/topics/naming.md')
 
   const rendered = await renderLocalSkillSources({
     root,
@@ -153,6 +159,8 @@ test('renders a document source into generated/<name>/SKILL.md', async () => {
   const skill = await readFile(join(root, 'generated', 'engineering-rules', 'SKILL.md'), 'utf-8')
   assert.match(skill, /name: engineering-rules/)
   assert.match(skill, new RegExp(`${root}/rules/engineering/RULES\\.md`))
+  assert.match(skill, new RegExp(`${root}/rules/engineering/topics/naming\\.md`))
+  assert.doesNotMatch(skill, /\]\(topics\/naming\.md\)/)
 })
 
 test('renders only configured local skill sources', async () => {
@@ -302,7 +310,7 @@ test('linkAll links existing skill dirs, skips missing ones, and writes always-o
   // ...and lands as a rule markdown instead.
   assert.equal(
     await readlink(join(claudeInstructionsDir, 'engineering-rules.md')),
-    join(root, 'rules', 'engineering', 'RULES.md'),
+    join(root, 'generated', 'engineering-rules', 'SKILL.md'),
   )
 })
 
@@ -517,18 +525,21 @@ test('prunes dangling links for deleted skills when linking', async () => {
   await assert.rejects(() => readlink(join(target, 'gsap-core')), /ENOENT/)
 })
 
-test('links configured always-on instructions as markdown into the rules target', async () => {
+test('migrates always-on instructions from source rules to rendered markdown', async () => {
   const root = await createTempDir('skills-repo-')
   const target = await createTempDir('rules-target-')
-  const source = await writeRule(root, 'rules/engineering/RULES.md')
+  const oldSource = await writeRule(root, 'rules/engineering/RULES.md')
+  const generatedDir = await createGeneratedSkill(root, 'engineering-rules')
+  const source = join(generatedDir, 'SKILL.md')
+  await symlink(oldSource, join(target, 'engineering-rules.md'))
 
   const results = await createRuleLinks({
-    instructions: [{ skill: 'engineering-rules', source: 'rules/engineering/RULES.md' }],
+    instructions: [{ skill: 'engineering-rules', source: 'generated/engineering-rules/SKILL.md' }],
     root,
     targets: [target],
   })
 
-  assert.deepEqual(results, [{ name: 'engineering-rules.md', target, status: 'linked' }])
+  assert.deepEqual(results, [{ name: 'engineering-rules.md', target, status: 'updated' }])
   assert.equal(await readlink(join(target, 'engineering-rules.md')), source)
 })
 

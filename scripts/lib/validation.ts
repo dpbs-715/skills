@@ -6,7 +6,12 @@ import {
   localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
 import type { LocalSkillSource } from './metaTypes.ts'
-import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN, SKILL_FILE } from './skillLinks.ts'
+import {
+  GENERATED_SKILLS_DIR,
+  renderDocumentSkill,
+  REPO_ROOT_TOKEN,
+  SKILL_FILE,
+} from './skillLinks.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
 export type ValidationIssueCode =
@@ -53,28 +58,6 @@ function addIssue(
 
 function renderSourceContent(content: string, root: string): string {
   return content.replaceAll(REPO_ROOT_TOKEN, root)
-}
-
-function renderDocumentSource(source: LocalSkillSource, root: string): string {
-  if (source.kind !== 'document')
-    throw new Error(`Expected document skill source: ${source.name}`)
-
-  const metadata = source.shortDescription
-    ? `metadata:\n  short-description: ${source.shortDescription}\n`
-    : ''
-  const instructions = source.instructions.join('\n\n')
-
-  return `---
-name: ${source.name}
-description: ${source.description}
-${metadata}---
-
-# ${source.title}
-
-Read [${source.source}](../../${source.source}) at \`${root}/${source.source}\`.
-
-${instructions}
-`
 }
 
 function isRepoPath(root: string, path: string): boolean {
@@ -133,7 +116,8 @@ async function validateLocalSkillSources(
       await validateBacktickPaths(root, sourceRelPath, expected, issues)
     }
     else {
-      if (!await pathExists(join(root, source.source))) {
+      const sourcePath = join(root, source.source)
+      if (!await pathExists(sourcePath)) {
         addIssue(
           issues,
           'missing-document-source',
@@ -143,7 +127,7 @@ async function validateLocalSkillSources(
         continue
       }
 
-      expected = renderDocumentSource(source, root)
+      expected = renderDocumentSkill(source, await readFile(sourcePath, 'utf-8'), root)
       await validateBacktickPaths(root, source.source, expected, issues)
     }
 

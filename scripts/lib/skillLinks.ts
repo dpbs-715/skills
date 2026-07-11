@@ -1,5 +1,5 @@
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 import {
   installableSkills as defaultInstallableSkills,
@@ -32,11 +32,37 @@ interface LocalSourceOptions {
   root?: string
 }
 
-function renderDocumentSkill(source: DocumentSkillSource): string {
+function resolveDocumentLinks(content: string, root: string, sourcePath: string): string {
+  const sourceDir = dirname(join(root, sourcePath))
+
+  return content
+    .replaceAll(REPO_ROOT_TOKEN, root)
+    .replace(/\]\(([^)]+)\)/g, (link, target: string) => {
+      const trimmedTarget = target.trim()
+      if (
+        isAbsolute(trimmedTarget)
+        || trimmedTarget.startsWith('#')
+        || /^[a-z][a-z\d+.-]*:/i.test(trimmedTarget)
+      )
+        return link
+
+      const absoluteTarget = resolve(sourceDir, trimmedTarget)
+      return `](${absoluteTarget.includes(' ') ? `<${absoluteTarget}>` : absoluteTarget})`
+    })
+}
+
+export function renderDocumentSkill(
+  source: DocumentSkillSource,
+  sourceContent: string,
+  root: string,
+): string {
   const metadata = source.shortDescription
     ? `metadata:\n  short-description: ${source.shortDescription}\n`
     : ''
   const instructions = source.instructions.join('\n\n')
+  const documentBody = resolveDocumentLinks(sourceContent, root, source.source)
+    .replace(/^# [^\n]+\n+/, '')
+    .trim()
 
   return `---
 name: ${source.name}
@@ -45,9 +71,11 @@ ${metadata}---
 
 # ${source.title}
 
-Read [${source.source}](../../${source.source}) at \`${REPO_ROOT_TOKEN}/${source.source}\`.
+Source: \`${join(root, source.source)}\`.
 
 ${instructions}
+
+${documentBody}
 `
 }
 
@@ -77,9 +105,10 @@ async function renderDocumentSkillSource(root: string, source: LocalSkillSource)
   const skillDir = join(root, GENERATED_SKILLS_DIR, source.name)
   await rm(skillDir, { recursive: true, force: true })
   await mkdir(skillDir, { recursive: true })
+  const sourceContent = await readFile(join(root, source.source), 'utf-8')
   await writeFile(
     join(skillDir, SKILL_FILE),
-    renderDocumentSkill(source).replaceAll(REPO_ROOT_TOKEN, root),
+    renderDocumentSkill(source, sourceContent, root),
   )
 }
 
@@ -95,7 +124,7 @@ export function resolveAlwaysOnInstructionSources(
       throw new Error(`Missing configured instruction skill: ${skill}`)
     if (source.kind !== 'document')
       throw new Error(`Instruction skill must be document-backed: ${skill}`)
-    return { skill, source: source.source }
+    return { skill, source: join(GENERATED_SKILLS_DIR, skill, SKILL_FILE) }
   })
 }
 

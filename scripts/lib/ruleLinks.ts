@@ -49,7 +49,7 @@ export async function createRuleLinks({
   targets,
 }: RuleLinkOptions): Promise<LinkResult[]> {
   const ruleLinks = await discoverRuleLinks(root, instructions)
-  const rulesDir = join(root, 'rules')
+  const ownedDirs = [join(root, 'rules'), join(root, 'generated')]
   const current = new Set(ruleLinks.map(link => link.name))
   const results: LinkResult[] = []
 
@@ -57,11 +57,14 @@ export async function createRuleLinks({
     await mkdir(target, { recursive: true })
 
     for (const link of ruleLinks) {
-      const status = await ensureLink(link.source, join(target, link.name))
+      const status = await ensureLink(link.source, join(target, link.name), {
+        replaceFrom: ownedDirs,
+      })
       results.push({ name: link.name, target, status })
     }
 
-    results.push(...await pruneLinks(target, current, rulesDir))
+    for (const ownedDir of ownedDirs)
+      results.push(...await pruneLinks(target, current, ownedDir))
   }
 
   return results
@@ -74,11 +77,12 @@ export async function removeRuleLinks({
   root?: string
   targets: string[]
 }): Promise<LinkResult[]> {
-  const rulesDir = join(root, 'rules')
+  const ownedDirs = [join(root, 'rules'), join(root, 'generated')]
   const results: LinkResult[] = []
 
   for (const target of targets) {
-    results.push(...await pruneLinks(target, new Set(), rulesDir))
+    for (const ownedDir of ownedDirs)
+      results.push(...await pruneLinks(target, new Set(), ownedDir))
   }
 
   return results
