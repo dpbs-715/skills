@@ -81,6 +81,7 @@ export const linkTargets: readonly LinkTarget[] = [
   {
     entries: [
       { key: '*', value: 'ask' },
+      { key: '~/.config/opencode/**', value: 'allow' },
       { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
       { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
     ],
