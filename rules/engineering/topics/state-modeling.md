@@ -2,6 +2,14 @@
 
 Choose the representation after understanding the state relationship.
 
+## Ownership And Transitions
+
+- Keep each state owner responsible for one cohesive domain.
+- Keep source state minimal and derive views from it instead of synchronizing duplicate representations.
+- Model mutually exclusive states with one discriminator rather than several booleans that can contradict each other.
+- When transitions preserve invariants, expose readonly state and mutate it through named domain actions.
+- Split state owners when their data, transitions, and consumers form independent responsibilities.
+
 ## Bit Flags
 
 Use when multiple states can exist together and be freely composed.
