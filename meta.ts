@@ -66,6 +66,7 @@ const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSe
 
 export const linkTargets: readonly LinkTarget[] = [
   { dir: '~/.codex/skills', kind: 'skill', include: installableSkills },
+  { dir: '~/.kimi-code/skills', kind: 'skill', include: normalSkillNames },
   {
     dir: '~/.config/opencode/skills',
     kind: 'skill',
