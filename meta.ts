@@ -100,5 +100,17 @@ export const linkTargets: readonly LinkTarget[] = [
 ]
 
 export const vendors: Record<string, VendorSkillMeta> = {
-
+  // gsap: {
+  //   source: 'https://github.com/greensock/gsap-skills.git',
+  //   skills: {
+  //     'gsap-core': 'gsap-core',
+  //     'gsap-timeline': 'gsap-timeline',
+  //     'gsap-scrolltrigger': 'gsap-scrolltrigger',
+  //     'gsap-plugins': 'gsap-plugins',
+  //     'gsap-utils': 'gsap-utils',
+  //     'gsap-react': 'gsap-react',
+  //     'gsap-performance': 'gsap-performance',
+  //     'gsap-frameworks': 'gsap-frameworks',
+  //   },
+  // },
 }
