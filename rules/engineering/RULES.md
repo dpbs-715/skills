@@ -5,7 +5,7 @@ Load every matching topic file, and skip unrelated files to keep context small.
 ## Topics
 
 - Abstraction and design patterns: read [topics/abstraction.md](topics/abstraction.md).
-- Object copying, enrichment, normalization, model conversion, field preservation, or DTO mapping: read [topics/object-composition.md](topics/object-composition.md).
+- Data copying, enrichment, normalization, model conversion, field preservation, or boundary projection: read [topics/data-transformation.md](topics/data-transformation.md).
 - Complex state/config modeling: read [topics/state-modeling.md](topics/state-modeling.md).
 - Naming, function signatures, comments, or code readability: read [topics/naming-and-comments.md](topics/naming-and-comments.md).
 - File/directory organization, structuring, layout, or splitting work: read [topics/file-organization.md](topics/file-organization.md).
