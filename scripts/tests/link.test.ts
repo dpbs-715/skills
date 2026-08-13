@@ -124,6 +124,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
   assert.deepEqual(opencodePermissions.path, ['permission', 'external_directory'])
   assert.deepEqual(opencodePermissions.entries, [
     { key: '*', value: 'ask' },
+    { key: '~/.config/opencode/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
   ])
