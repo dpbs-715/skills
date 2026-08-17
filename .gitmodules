@@ -1,0 +1,3 @@
+[submodule "vendor/gathered-scenes-zine-skill"]
+	path = vendor/gathered-scenes-zine-skill
+	url = https://github.com/Zeejay0/gathered-scenes-zine-skill.git
