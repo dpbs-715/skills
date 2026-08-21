@@ -2,6 +2,7 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 
 // Use a const object instead of enum because Node strips types only for erasable syntax.
 export const Skill = {
+    CreatePageDesc: 'create-page-desc',
     Cpush: 'cpush',
     Commit: 'commit',
     Dcr: 'dcr',
@@ -16,6 +17,7 @@ export const Skill = {
 } as const
 
 export const localSkillSources = [
+    { kind: 'directory', name: Skill.CreatePageDesc, path: 'skills/create-page-desc' },
     { kind: 'directory', name: Skill.Cpush, path: 'skills/cpush' },
     { kind: 'directory', name: Skill.Commit, path: 'skills/commit' },
     { kind: 'directory', name: Skill.Dcr, path: 'skills/dcr' },
