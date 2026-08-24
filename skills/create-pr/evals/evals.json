@@ -1,0 +1,23 @@
+{
+  "skill_name": "create-pr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/create-pr feature/orders to release/2.0. This is a GitHub repository. The local feature/orders branch is two commits ahead of its upstream and has not been pushed yet. Create a ready PR using the repository template and link issue #184 without closing it.",
+      "expected_output": "Parses feature/orders as the source and release/2.0 as the target, resolves the GitHub repository and remotes, checks for an existing PR, inspects the commits and template, writes authored content and responses in English by default, uses a non-closing issue reference, previews the required non-force push and complete PR, and only after approval pushes the reviewed source and creates the PR with explicit gh arguments.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/create-pr -ch to main. The current repository is on a self-managed GitLab instance, and the checked-out branch tracks origin/231-export-orders. Create a draft merge request that closes issue #231 after merge. There are uncommitted documentation changes that are unrelated to this branch.",
+      "expected_output": "Removes -ch before parsing, uses the current branch's upstream remote branch 231-export-orders as the source and main as the target, preserves and excludes the unrelated uncommitted changes, checks for an existing MR, writes the authored title, body content, preview, and result in Chinese while preserving technical identifiers and template requirements, uses a closing issue reference, and creates the draft MR through glab with explicit source and target branches after approval.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/create-pr to main. The current branch has no upstream, and the repository has both origin and upstream remotes pointing to a fork and the canonical project. Open the request against the correct repository.",
+      "expected_output": "Does not guess which remote is the source or target, explains the unresolved fork mapping and missing upstream, and asks for the source remote and target repository before pushing or creating any PR or MR.",
+      "files": []
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 export const Skill = {
     CreatePageDesc: 'create-page-desc',
     CreateIssues: 'create-issues',
+    CreatePr: 'create-pr',
     Cpush: 'cpush',
     Commit: 'commit',
     Dcr: 'dcr',
@@ -20,6 +21,7 @@ export const Skill = {
 export const localSkillSources = [
     { kind: 'directory', name: Skill.CreatePageDesc, path: 'skills/create-page-desc' },
     { kind: 'directory', name: Skill.CreateIssues, path: 'skills/create-issues' },
+    { kind: 'directory', name: Skill.CreatePr, path: 'skills/create-pr' },
     { kind: 'directory', name: Skill.Cpush, path: 'skills/cpush' },
     { kind: 'directory', name: Skill.Commit, path: 'skills/commit' },
     { kind: 'directory', name: Skill.Dcr, path: 'skills/dcr' },
