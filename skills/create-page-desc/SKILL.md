@@ -26,6 +26,8 @@ Inspect the supplied source directly when it is accessible. When reading project
 - Describe the page relationship before listing fields: parent page, primary tabs or modules, regions within each module, actions that open another interface, and nested tabs or field groups inside that interface.
 - Make parent-child relationships explicit in prose and heading levels. Do not present sibling tabs as unrelated pages.
 - Preserve visible names, hierarchy, default selection, component types, field order, button order, and row actions.
+- Distinguish selector behavior when the source exposes it. Use precise component names such as `单选选择器`, `多选选择器`, `单选级联选择器`, and `多选级联选择器` instead of the generic `选择器`.
+- Inspect both query fields and form fields for selection mode. Do not infer multi-select behavior from the field name alone; when the mode cannot be verified, write `选择器（单/多选待确认）`.
 - Use compact tables when fields need exact component, display, or behavior mappings. Use prose for hierarchy and relationships.
 - Omit any section that does not apply.
 - Describe structural layout and region order, but omit decorative styling details such as colors, shadows, borders, corner radii, spacing values, font families, and font sizes unless the user explicitly asks for them.
@@ -61,7 +63,7 @@ Adapt this structure to the source and omit sections with no supporting content:
 
 | 字段 | 组件类型 | 默认值/占位提示 | 可选项或格式 |
 |---|---|---|---|
-| 字段名称 | 输入框 | 请输入 | 文本 |
+| 字段名称 | 多选选择器 | 请选择 | 可选择多个选项 |
 
 查询操作：搜索、重置。
 
@@ -86,7 +88,7 @@ Adapt this structure to the source and omit sections with no supporting content:
 
 | 字段 | 组件类型 | 必填/只读 | 默认值或格式 |
 |---|---|---|---|
-| 字段名称 | 输入框 | 必填 | 文本 |
+| 字段名称 | 单选选择器 | 必填 | 请选择一个选项 |
 
 #### 其他信息
 
