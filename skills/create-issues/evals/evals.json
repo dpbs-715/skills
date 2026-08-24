@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "The current repository is hosted on GitHub. Create a bug issue from the following report, then create and check out a linked branch from the default branch: after a user has been logged in for more than 30 minutes, refreshing the page sends an expired token and the API returns 401, but the page does not redirect to the login screen. Apply the bug and auth labels.",
-      "expected_output": "Identifies GitHub from repository context, checks gh authentication and duplicates, drafts a structured bug issue without inventing evidence, previews the issue and branch, requests confirmation before external writes, then uses gh issue create and gh issue develop with a resolved base branch.",
+      "expected_output": "Identifies GitHub from repository context, checks gh authentication and duplicates, drafts the structured bug issue, preview, and result in English by default without inventing evidence, requests confirmation before external writes, then uses gh issue create and gh issue develop with a resolved base branch.",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "Create a feature issue in the platform/orders project on the company's self-managed GitLab instance, then create, push, and check out a linked branch from the project's default branch. The requested feature is to split order exports into separate CSV files by store. Acceptance criteria: generate one file per store, include the store code in each filename, and do not generate files for empty results.",
-      "expected_output": "Targets the self-managed GitLab project explicitly, checks glab authentication, searches for duplicates, produces a feature issue with the supplied acceptance criteria, previews both external writes, creates the issue with glab after approval, and creates, pushes, and checks out a branch whose name starts with the new issue IID followed by a hyphen so GitLab associates it with the issue.",
+      "prompt": "-ch Create a feature issue in the platform/orders project on the company's self-managed GitLab instance, then create, push, and check out a linked branch from the project's default branch. The requested feature is to split order exports into separate CSV files by store. Acceptance criteria: generate one file per store, include the store code in each filename, and do not generate files for empty results.",
+      "expected_output": "Targets the self-managed GitLab project explicitly, checks glab authentication, searches for duplicates, writes the issue title, authored body content, preview, and result in Chinese while preserving technical identifiers, previews both external writes, creates the issue with glab after approval, and creates, pushes, and checks out a branch whose name starts with the new issue IID followed by a hyphen so GitLab associates it with the issue.",
       "files": []
     },
     {

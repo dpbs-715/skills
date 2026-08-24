@@ -24,6 +24,21 @@ existing issues; creating labels or milestones; opening pull or merge requests;
 or changing repository settings. Perform those actions only when the user asks
 for them and the applicable workflow is understood.
 
+## Language
+
+Use `-ch` to write the issue title, authored body content, preview, and final
+response in Chinese. Use `-en` to write them in English. Recognize either flag
+anywhere in the request and treat it as a skill option rather than issue content.
+
+If neither flag is provided, use English even when the user's request is in
+another language. Apply the selected language consistently to every issue in a
+batch.
+
+Preserve repository-mandated template headings and checklist text verbatim
+unless the user explicitly asks to translate them. Keep repository names,
+branch names, labels, milestones, usernames, issue identifiers, filenames,
+commands, code, logs, error messages, and URLs unchanged.
+
 ## Workflow
 
 ### 1. Resolve the platform and repository
@@ -262,4 +277,4 @@ Notes:
 
 For a batch, return one line per issue and clearly associate each branch with
 its issue. Keep commands, repository names, issue identifiers, URLs, and branch
-names unchanged when responding in the user's language.
+names unchanged when responding in the selected language.
