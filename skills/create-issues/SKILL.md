@@ -90,6 +90,7 @@ Read only the context needed to draft the issue:
 - repository guidance such as `CONTRIBUTING.md` or `AGENTS.md`;
 - GitHub templates under `.github/ISSUE_TEMPLATE/`;
 - GitLab templates under `.gitlab/issue_templates/`;
+- the repository's existing labels and any documented labeling convention;
 - relevant logs, TODOs, review findings, requirements, or code referenced by
   the user.
 
@@ -138,16 +139,27 @@ they are relevant, redact secrets, and use fenced code blocks for terminal
 output. Reference local paths only when repository collaborators can resolve
 them; otherwise summarize the evidence or use repository-relative paths.
 
-Collect only supported metadata:
+Collect only supported metadata. Unless the user explicitly asks for no labels,
+proactively select suitable labels from the destination repository so the issue
+is triaged when created. Prefer the repository's own taxonomy over generic
+guesses: choose the smallest useful set that describes the work type (for
+example bug, feature, or documentation) and, when clearly supported, its area,
+priority, or status. Do not add contradictory, speculative, or merely related
+labels. If no existing label is a confident match, leave the issue unlabeled and
+say so in the preview rather than creating a new label or forcing a poor match.
+
+Supported metadata includes:
 
 - common: labels, assignees, milestone, template;
 - GitHub-specific: project, issue type, parent or blocking relationships;
 - GitLab-specific: confidential, due date, weight, epic, time estimate, or
   linked issues.
 
-Check requested labels, assignees, milestones, and templates with read-only CLI
-commands where practical. If a requested value does not exist, report it rather
-than creating a replacement or quietly dropping it.
+List and validate labels with a read-only command such as
+`gh label list --repo OWNER/REPO` or `glab label list --repo GROUP/PROJECT`
+before selecting them. Also check requested assignees, milestones, and templates
+with read-only CLI commands where practical. If a requested value does not
+exist, report it rather than creating a replacement or quietly dropping it.
 
 ### 5. Search for duplicates
 
@@ -197,9 +209,11 @@ GitLab:
 glab issue create --repo GROUP/PROJECT --title "<title>" --description-file <body-file> --yes
 ```
 
-Add only reviewed metadata flags. Pass arguments as discrete command arguments;
-do not construct an `eval` string. `--yes` suppresses `glab`'s redundant CLI
-prompt only after the skill's preview has been approved.
+Add every reviewed label and other reviewed metadata field with the CLI's
+supported flags; do not omit the selected labels during creation. Pass arguments
+as discrete command arguments; do not construct an `eval` string. `--yes`
+suppresses `glab`'s redundant CLI prompt only after the skill's preview has been
+approved.
 
 Capture the returned issue number or IID and URL. For a batch, create issues in
 the reviewed order and record each result. If any creation fails, stop unless
