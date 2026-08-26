@@ -1,0 +1,35 @@
+{
+  "skill_name": "zentao-init",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/zentao-init。当前目录是一个 Git 仓库，根目录还没有 .zentao。zentao CLI 已登录，可以访问多个产品和多个项目。请初始化当前项目。",
+      "expected_output": "Resolves the Git root, confirms the CLI has a current profile without reading credentials, presents products and then projects through structured choices labeled with ID and name, never asks the user to type an object name, and obtains a final choice-based confirmation before creating .zentao. The eventual file contains only schemaVersion, product, and project; product is either the selected object or null when the user explicitly continues without an accessible product.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/zentao-init 产品 6 项目 12。请把当前仓库关联到这两个禅道对象。",
+      "expected_output": "Validates product 6 and project 12 through read-only zentao CLI detail queries, uses the returned names rather than inventing them, previews the strict JSON document, asks the user to choose Create .zentao, Choose again, or Cancel, and creates and validates the file only after confirmation without changing the global profile, workspace, git ignore files, or any ZenTao business object.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/zentao-init。仓库根目录已经有一个 .zentao，里面配置了产品 6 和项目 12。帮我检查一下配置是否还能用。",
+      "expected_output": "Parses the existing file as untrusted strict JSON, validates its schema and positive IDs, reads product 6 and project 12 from ZenTao, leaves a valid matching file byte-for-byte unchanged, reports stale names or invalid objects clearly, and never overwrites a malformed, unsupported, or symlinked file without explicit approval.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "/zentao-init。zentao profile --format=json 在 Codex 沙箱里返回 1005，说配置损坏或无法读取，但我已经在终端登录过了。",
+      "expected_output": "Does not claim the user is unauthenticated and does not immediately recommend zentao login. Recognizes that configstore may need to create a temporary file beside the global config even for a read-only profile command, requests approval to rerun the exact read-only command outside the sandbox when escalation is available, and proceeds if that succeeds. If the escalated command still returns 1005, reports the configuration error accurately without reading credentials or changing the profile.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "/zentao-init。当前账号已经登录，zentao product --all --pick=id,name --format=json 成功返回 data: []，但账号可以访问多个项目。",
+      "expected_output": "Does not claim that an empty successful product response proves a permission problem and does not stop initialization. Offers choice-based options to continue without a product, retry, or cancel. If the user continues, sets product to null, presents accessible projects as ID-and-name choices, and previews a strict .zentao document with schemaVersion 1, product null, and the selected project before requesting final write confirmation.",
+      "files": []
+    }
+  ]
+}

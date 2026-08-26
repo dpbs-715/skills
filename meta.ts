@@ -16,6 +16,9 @@ export const Skill = {
     Push: 'push',
     SceneDistillationZine: 'scene-distillation-zine-v1-3',
     ScenesGatheredZine: 'scenes-gathered-zine-v1-3',
+    ZentaoBugList: 'zentao-bug-list',
+    ZentaoFixBug: 'zentao-fix-bug',
+    ZentaoInit: 'zentao-init',
 } as const
 
 export const localSkillSources = [
@@ -61,6 +64,9 @@ export const localSkillSources = [
         title: 'Problem Solving Rules',
     },
     { kind: 'directory', name: Skill.Push, path: 'skills/push' },
+    { kind: 'directory', name: Skill.ZentaoBugList, path: 'skills/zentao-bug-list' },
+    { kind: 'directory', name: Skill.ZentaoFixBug, path: 'skills/zentao-fix-bug' },
+    { kind: 'directory', name: Skill.ZentaoInit, path: 'skills/zentao-init' },
 ] as const satisfies readonly LocalSkillSource[]
 
 const vendoredSkillNames = [

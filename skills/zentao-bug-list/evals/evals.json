@@ -1,0 +1,41 @@
+{
+  "skill_name": "zentao-bug-list",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/zentao-bug-list。当前 Git 仓库根目录有合法的 .zentao，产品是 #6，项目是 #12；zentao profile 的当前账号是 limingda。请列出我待处理的 Bug。",
+      "expected_output": "Reads and validates only the Git-root .zentao, resolves limingda from the structured current profile, queries all pages of product 6 before filtering to assignedTo limingda and status active, orders ranked priorities and severities before unspecified values, displays at most 20 concise rows with project and product context, and performs no writes or unnecessary follow-up questions.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/zentao-bug-list 严重程度 1 和 2，登录相关，最近 10 个。当前仓库没有 .zentao，但 zentao-cli 的全局工作区正好指向一个产品。",
+      "expected_output": "Stops before calling the Bug API because the project-local mapping is missing, does not silently use the global workspace despite its availability, explains that .zentao is required, and directs the user to /zentao-init without modifying files or ZenTao.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/zentao-bug-list 所有人、全部状态，建议我先处理哪三个。当前项目配置有效，查询结果中多个 Bug 的优先级和严重程度相同。",
+      "expected_output": "Removes the assignee and status filters, includes an assignee column, shows the exact project and product scope, recommends at most three Bugs using only structured priority, severity, and age evidence, reports ties honestly, and does not infer business impact or inspect Bug details or source code.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "/zentao-bug-list。当前仓库的 .zentao 中 schemaVersion 是 1，product 是 null，project 是 #12 供应链研发项目。",
+      "expected_output": "Accepts the strict project-only mapping, resolves the current profile account, queries Bugs with --project=12 rather than requiring a product or falling back to the global workspace, applies the normal active/current-assignee defaults, and labels the output as project-scoped with Product shown as not configured.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "/zentao-bug-list。项目 #9 的 Bug 查询 pager.total 是 5081、recPerPage 是 1000；第一页应用 assignedTo:limingda,status:active 后 data 为空，但第六页有 3 条匹配。",
+      "expected_output": "Does not treat the first filtered empty page as the final result. Avoids --all, computes six pages from the pager, fetches pages 2 through 6 with the same project scope and colon-based AND filter using bounded parallel reads, combines and de-duplicates all matches, then globally sorts and limits the output. It reports an incomplete query instead of an exact empty result if any page fails.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "/zentao-bug-list。当前安装的是 zentao-cli 0.2.0，帮助文字写 filter 格式是 field=value，并声称支持 --all。请按帮助直接查询。",
+      "expected_output": "Does not trust the misleading 0.2.0 help text. Uses colon equality because field=value is silently ineffective in that release, does not use --all because it can be silently ignored, and performs explicit 1000-record pagination based on the returned pager before claiming a complete result.",
+      "files": []
+    }
+  ]
+}
