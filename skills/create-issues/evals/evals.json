@@ -4,25 +4,25 @@
     {
       "id": 1,
       "prompt": "The current repository is hosted on GitHub. Create a bug issue: after a user has been logged in for more than 30 minutes, refreshing the page sends an expired token and the API returns 401, but the page does not redirect to login. Apply the bug and auth labels.",
-      "expected_output": "Resolves the GitHub repository, checks authentication and duplicates, writes the issue in English, creates it without asking for preview confirmation, and automatically creates and checks out a linked branch from the resolved default branch.",
+      "expected_output": "Resolves the GitHub repository, checks authentication and duplicates, writes the issue in English, assigns it to the authenticated creator with @me, creates it without asking for preview confirmation, and automatically creates and checks out a linked branch from the resolved default branch.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "-ch 先给我看看一个 GitLab feature issue 的草稿，不要直接提交。需求是按门店把订单导出成多个 CSV；每个门店一个文件，文件名包含门店编码，空结果不生成文件。",
-      "expected_output": "Writes a Chinese preview with a complete title, body, suitable existing metadata, and the planned associated branch, but makes no external changes and waits for approval.",
+      "expected_output": "Writes a Chinese preview with a complete title, body, the authenticated GitLab creator as the default assignee, suitable existing metadata, and the planned associated branch, but makes no external changes and waits for approval.",
       "files": []
     },
     {
       "id": 3,
       "prompt": "Create separate issues for these three review findings: empty strings are converted to null; pagination total uses the current page length; and the export endpoint has no authorization check. This repository has both upstream and origin remotes.",
-      "expected_output": "Recognizes a batch, drafts three focused English issues, and asks one consolidated question only if the issue destination or development remote cannot be resolved safely. Once resolved, it creates the issues directly and creates an associated branch for each without repeatedly switching the working tree.",
+      "expected_output": "Recognizes a batch, drafts three focused English issues, and asks one consolidated question only if the issue destination or development remote cannot be resolved safely. Once resolved, it assigns every issue to the authenticated creator, creates the issues directly, and creates an associated branch for each without repeatedly switching the working tree.",
       "files": []
     },
     {
       "id": 4,
       "prompt": "Open an issue for the broken password-reset link, but only create the issue; do not make a branch.",
-      "expected_output": "Creates the English issue directly after routine checks, does not ask for preview confirmation, honors the explicit branch opt-out, and reports that the branch was skipped.",
+      "expected_output": "Creates the English issue directly after routine checks, assigns it to the authenticated creator, does not ask for preview confirmation, honors the explicit branch opt-out, and reports that the branch was skipped.",
       "files": []
     }
   ]

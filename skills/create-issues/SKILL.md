@@ -19,6 +19,8 @@ repository, and interrupt only for a decision that materially affects the result
   issue immediately. Do not add a separate preview or confirmation step.
 - If the user asks to “draft,” “preview,” “show me first,” or approve before
   creation, show the final draft and wait without making external changes.
+- Assign the issue to the authenticated CLI account that creates it by default.
+  Honor an explicit request for another assignee or for no assignee instead.
 - After creating an issue, create and check out an associated branch by default.
   Skip it only when the user asks for no branch or only an issue.
 - Ask one consolidated question only when blocked by an ambiguous destination,
@@ -73,6 +75,11 @@ or other repository configuration implicitly. If nonessential requested
 metadata does not exist, omit it, continue, and mention the omission in the
 result; ask only when that field is central to the request.
 
+Unless the user overrides the default, set the assignee to the account
+authenticated against the resolved destination host. Use GitHub's `@me`
+shortcut. For GitLab, resolve the authenticated account's username for that
+host and pass it explicitly; do not infer it from the local Git author.
+
 ### 3. Check duplicates
 
 Search open and closed issues in the exact destination using distinctive title
@@ -96,8 +103,8 @@ For creation requests, proceed without preview confirmation. Write the body to
 a temporary Markdown file to preserve formatting and avoid quoting problems:
 
 ```sh
-gh issue create --repo OWNER/REPO --title "<title>" --body-file <body-file>
-glab issue create --repo GROUP/PROJECT --title "<title>" --description-file <body-file> --yes
+gh issue create --repo OWNER/REPO --title "<title>" --body-file <body-file> --assignee "@me"
+glab issue create --repo GROUP/PROJECT --title "<title>" --description-file <body-file> --assignee "<authenticated-username>" --yes
 ```
 
 Pass arguments discretely; do not build an `eval` string. Include every selected
