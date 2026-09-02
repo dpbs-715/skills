@@ -1,6 +1,0 @@
-[submodule "vendor/gathered-scenes-zine-skill"]
-	path = vendor/gathered-scenes-zine-skill
-	url = https://github.com/Zeejay0/gathered-scenes-zine-skill.git
-[submodule "vendor/threejs-skills"]
-	path = vendor/threejs-skills
-	url = https://github.com/CloudAI-X/threejs-skills.git

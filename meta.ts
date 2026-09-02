@@ -10,22 +10,9 @@ export const Skill = {
     Dcr: 'dcr',
     EngineeringRules: 'engineering-rules',
     Mock: 'mock',
-    MorandiCinematicPoster: 'morandi-cinematic-poster-zeejay',
     PersonalKnowledge: 'personal-knowledge',
     ProblemSolvingRules: 'problem-solving-rules',
     Push: 'push',
-    SceneDistillationZine: 'scene-distillation-zine-v1-3',
-    ScenesGatheredZine: 'scenes-gathered-zine-v1-3',
-    ThreejsAnimation: 'threejs-animation',
-    ThreejsFundamentals: 'threejs-fundamentals',
-    ThreejsGeometry: 'threejs-geometry',
-    ThreejsInteraction: 'threejs-interaction',
-    ThreejsLighting: 'threejs-lighting',
-    ThreejsLoaders: 'threejs-loaders',
-    ThreejsMaterials: 'threejs-materials',
-    ThreejsPostprocessing: 'threejs-postprocessing',
-    ThreejsShaders: 'threejs-shaders',
-    ThreejsTextures: 'threejs-textures',
     ZentaoBugList: 'zentao-bug-list',
     ZentaoFixBug: 'zentao-fix-bug',
     ZentaoInit: 'zentao-init',
@@ -80,19 +67,7 @@ export const localSkillSources = [
 ] as const satisfies readonly LocalSkillSource[]
 
 const vendoredSkillNames = [
-    Skill.MorandiCinematicPoster,
-    Skill.SceneDistillationZine,
-    Skill.ScenesGatheredZine,
-    Skill.ThreejsAnimation,
-    Skill.ThreejsFundamentals,
-    Skill.ThreejsGeometry,
-    Skill.ThreejsInteraction,
-    Skill.ThreejsLighting,
-    Skill.ThreejsLoaders,
-    Skill.ThreejsMaterials,
-    Skill.ThreejsPostprocessing,
-    Skill.ThreejsShaders,
-    Skill.ThreejsTextures,
+
 ] as const
 
 export const installableSkills = [
@@ -145,27 +120,27 @@ export const linkTargets: readonly LinkTarget[] = [
 ]
 
 export const vendors: Record<string, VendorSkillMeta> = {
-    'gathered-scenes-zine-skill': {
-        source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
-        skills: {
-            'morandi-cinematic-poster-zeejay': Skill.MorandiCinematicPoster,
-            'scene-distillation-zine-v1-3': Skill.SceneDistillationZine,
-            'scenes-gathered-zine-v1-3': Skill.ScenesGatheredZine,
-        },
-    },
-    'threejs-skills': {
-        source: 'https://github.com/CloudAI-X/threejs-skills.git',
-        skills: {
-            'threejs-animation': Skill.ThreejsAnimation,
-            'threejs-fundamentals': Skill.ThreejsFundamentals,
-            'threejs-geometry': Skill.ThreejsGeometry,
-            'threejs-interaction': Skill.ThreejsInteraction,
-            'threejs-lighting': Skill.ThreejsLighting,
-            'threejs-loaders': Skill.ThreejsLoaders,
-            'threejs-materials': Skill.ThreejsMaterials,
-            'threejs-postprocessing': Skill.ThreejsPostprocessing,
-            'threejs-shaders': Skill.ThreejsShaders,
-            'threejs-textures': Skill.ThreejsTextures,
-        },
-    },
+    // 'gathered-scenes-zine-skill': {
+    //     source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
+    //     skills: {
+    //         'morandi-cinematic-poster-zeejay': Skill.MorandiCinematicPoster,
+    //         'scene-distillation-zine-v1-3': Skill.SceneDistillationZine,
+    //         'scenes-gathered-zine-v1-3': Skill.ScenesGatheredZine,
+    //     },
+    // },
+    // 'threejs-skills': {
+    //     source: 'https://github.com/CloudAI-X/threejs-skills.git',
+    //     skills: {
+    //         'threejs-animation': Skill.ThreejsAnimation,
+    //         'threejs-fundamentals': Skill.ThreejsFundamentals,
+    //         'threejs-geometry': Skill.ThreejsGeometry,
+    //         'threejs-interaction': Skill.ThreejsInteraction,
+    //         'threejs-lighting': Skill.ThreejsLighting,
+    //         'threejs-loaders': Skill.ThreejsLoaders,
+    //         'threejs-materials': Skill.ThreejsMaterials,
+    //         'threejs-postprocessing': Skill.ThreejsPostprocessing,
+    //         'threejs-shaders': Skill.ThreejsShaders,
+    //         'threejs-textures': Skill.ThreejsTextures,
+    //     },
+    // },
 }
