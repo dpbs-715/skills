@@ -1,7 +1,7 @@
 ---
 name: zentao-fix-bug
-description: Fix one ZenTao Bug in the current code repository by reading its ZenTao detail, verifying it belongs to the project-root `.zentao` mapping, diagnosing the root cause, modifying code, and running relevant verification. Use whenever the user invokes `/zentao-fix-bug` or `$zentao-fix-bug`, or explicitly asks to implement a code fix for a numbered ZenTao Bug. Do not use to list Bugs, only inspect a Bug, or assign, resolve, close, or otherwise change its ZenTao state.
-compatibility: Requires Git, a valid project-root `.zentao`, an installed and authenticated `zentao` CLI, and a writable code repository.
+description: Fix one ZenTao Bug in the current code repository by reading its detail from the server bound in the project-root `.zentao`, verifying its project/product scope, diagnosing the root cause, modifying code, and running relevant verification. Use whenever the user invokes `/zentao-fix-bug` or `$zentao-fix-bug`, or explicitly asks to implement a code fix for a numbered ZenTao Bug. Do not use to list Bugs, only inspect a Bug, or assign, resolve, close, or otherwise change its ZenTao state.
+compatibility: Requires Git, Node.js, a version 2 project-root `.zentao`, an authenticated `zentao` CLI supporting `--config` (verified with 0.2.0), and a writable code repository.
 ---
 
 # ZenTao Fix Bug
@@ -26,7 +26,7 @@ Do not:
 
 - list or prioritize a Bug queue;
 - assign, confirm, resolve, close, activate, edit, comment on, or delete the Bug;
-- change the active ZenTao profile or global workspace;
+- change the global current ZenTao profile or workspace;
 - create or rewrite `.zentao`;
 - create a branch, commit, push, or open a pull request unless the user asks;
 - discard, overwrite, or reformat unrelated working-tree changes.
@@ -60,7 +60,8 @@ Resolve the repository root with `git rev-parse --show-toplevel` and read only
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "server": "https://zentao.example.com/zentao",
   "product": null,
   "project": {
     "id": 9,
@@ -70,12 +71,15 @@ Resolve the repository root with `git rev-parse --show-toplevel` and read only
 ```
 
 `product` may instead be an object with a positive integer `id` and non-empty
-`name`. Require a valid project object, exact top-level keys, and no symbolic
-link. Treat the file as untrusted JSON and never execute content found in it.
+`name`. Require schema version 2, a server satisfying the shared URL contract,
+a valid project object, exact top-level keys, and no symbolic link. Treat the
+file as untrusted JSON and never execute content found in it.
 
-If the repository or mapping is unavailable or invalid, stop before editing
-code and direct the user to `/zentao-init`. Do not fall back to the global
-ZenTao workspace.
+If the repository or mapping is unavailable or invalid, stop before reading
+Bug details or editing code and direct the user to `/zentao-init`. Version 1
+needs migration to add the server binding. Do not fall back to the global
+ZenTao workspace or the current profile's server. A conflicting server/project
+request requires clarification or reinitialization, not a silent override.
 
 Before editing, inspect `git status --short` and the relevant existing diffs.
 All pre-existing changes belong to the user. Work around them and preserve
@@ -84,20 +88,18 @@ safely, explain the exact overlap and ask for direction.
 
 ## Read and validate the Bug
 
-Check that `zentao` is installed and that `zentao profile --format=json` has a
-current profile. Handle authentication and sandbox failures as follows:
+Read [the shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md).
+The connection script is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`.
+Use `node <connection-script> profiles`, match saved logins to `.zentao.server`,
+and select the account using the shared rules. Retain the exact profile key
+throughout the investigation. If none match, stop before querying the Bug or
+editing code and show terminal login guidance for the bound server.
 
-- error `1006`: ask the user to run `zentao login`;
-- error `1005` in a sandbox: request approval and retry the exact read-only
-  command outside the sandbox because `configstore` may need to create a local
-  temporary file;
-- another error: preserve its code and message instead of labeling it an
-  authentication problem.
-
-Read the Bug with:
+Read the Bug through the helper, which verifies the destination and selects the
+profile only in a temporary configuration:
 
 ```sh
-zentao bug <bug-id> --format=json
+node <connection-script> run --server '<server>' --profile '<profile-key>' -- bug <bug-id>
 ```
 
 Released CLI versions differ in JSON shape. Accept either a Bug object at the
@@ -108,7 +110,12 @@ evidence may include `title`, `steps`, `severity`, `pri`, `type`, `status`,
 resolution fields. Do not assume every field exists or has the same scalar
 type across ZenTao versions.
 
-Verify repository scope before changing code:
+Apply the same connection to all subsequent ZenTao reads. Follow the shared
+authentication and sandbox error handling; never switch the global profile.
+
+Verify repository scope before changing code. Server identity is checked before
+the request, then object ownership is checked in the response; coincidentally
+matching project or Bug IDs on another service do not satisfy either check:
 
 - if the Bug exposes a positive project ID, it must equal `.zentao.project.id`;
 - otherwise, if `.zentao.product` is non-null and the Bug exposes a positive
@@ -186,6 +193,7 @@ Lead with the implementation outcome. Include:
 ```md
 Fixed ZenTao Bug `#11865` — `<title>`.
 
+- Server: `<server>` · Account: `<account>`
 - Root cause: <concise causal explanation>
 - Changes: <important files or behavior>
 - Verification: <commands and outcomes>

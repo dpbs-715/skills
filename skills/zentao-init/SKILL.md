@@ -1,30 +1,32 @@
 ---
 name: zentao-init
-description: Initialize, inspect, validate, or update the project-local `.zentao` mapping between the current code repository and one required ZenTao project plus an optional product through choice-based user interaction. Use whenever the user invokes `/zentao-init` or `$zentao-init`, asks to initialize ZenTao for the current repository, connect a codebase to a ZenTao product/project, create `.zentao`, or check that an existing `.zentao` still points to valid ZenTao objects. Do not use for listing or changing bugs, stories, tasks, builds, or other ZenTao business objects.
-compatibility: Requires an installed and authenticated `zentao` CLI. Git is required to resolve the project root automatically.
+description: Initialize, inspect, migrate, or update the project-local `.zentao` mapping to a specific ZenTao server, one required project, and an optional product through choice-based user interaction. Use whenever the user invokes `/zentao-init` or `$zentao-init`, asks to initialize ZenTao for the current repository, bind or change its ZenTao address/product/project, create `.zentao`, or validate an existing mapping. Do not use for listing or changing bugs, stories, tasks, builds, or other ZenTao business objects.
+compatibility: Requires Node.js and an installed, authenticated `zentao` CLI supporting `--config` (verified with 0.2.0). Git resolves the project root automatically.
 ---
 
 # ZenTao Init
 
 Create and maintain the smallest useful project-local ZenTao context. The file
-maps one code repository to one ZenTao project and, when accessible, one ZenTao
-product so later skills do not have to guess their scope.
+maps one code repository to one ZenTao server, one project, and, when accessible,
+one product. Object IDs only identify objects within that server.
 
 ## Scope
 
 Handle:
 
 - initializing `.zentao` in the current Git repository root;
+- selecting its server from saved CLI logins or an explicit address;
 - resolving a required project and an optional product from explicit IDs or
   choice-based selection from read-only CLI results;
-- validating an existing `.zentao` against the current ZenTao service;
+- validating an existing `.zentao` against its bound service;
+- migrating a version 1 mapping by confirming its missing server;
 - replacing an existing mapping only after the user approves the exact change.
 
 Do not:
 
-- store a server URL, account, password, token, CLI profile, workspace,
+- store an account, password, token, CLI profile, workspace,
   execution, iteration, assignee, filters, or output preferences;
-- change the current `zentao` profile or global workspace;
+- change the global current `zentao` profile or workspace;
 - edit `.gitignore` or `.git/info/exclude`;
 - create, update, assign, resolve, close, or delete any ZenTao business object;
 - install the CLI or collect credentials in chat.
@@ -37,11 +39,15 @@ Recognize the explicit forms:
 /zentao-init
 /zentao-init 产品 6 项目 12
 /zentao-init product 6 project 12
+/zentao-init 地址 https://zentao.example.com/zentao 产品 6 项目 12
 $zentao-init
 ```
 
 Also recognize a natural-language request to initialize or validate the current
-repository's ZenTao product/project mapping.
+repository's ZenTao server/product/project mapping.
+
+Accept a server URL following `地址`, `服务`, or `server`, or an unambiguous
+address in the request. Never infer it from a repository name or numeric ID.
 
 Treat numeric values following `产品` or `product` as product IDs and values
 following `项目` or `project` as project IDs. Accept an explicitly supplied name
@@ -53,13 +59,15 @@ Names are data, not shell syntax.
 Keep the skill instructions and internal reasoning in English. Communicate with
 the user in the language they are using unless they request another language.
 
-Make every product selection, project selection, and final write confirmation
-choice-based:
+Make server, account (when ambiguous), product, project, and final write
+selections choice-based:
 
 - Prefer the client's native structured choice or question tool when one is
   available.
 - Label each selectable object as `#<id> <name>` so the user can distinguish it
   without typing its name.
+- Label server choices with their full base URL, including any installation
+  path; label account choices with the account and full server URL.
 - Do not ask the user to enter, copy, or retype a product or project name.
 - When there are more objects than the choice UI can display, paginate the
   choices and provide navigation options instead of requesting a search term.
@@ -78,7 +86,8 @@ one of these shapes. When a product is accessible, store it normally:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "server": "https://zentao.example.com/zentao",
   "product": {
     "id": 6,
     "name": "供应链移动端"
@@ -95,7 +104,8 @@ keep the field and set it to `null`:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "server": "https://zentao.example.com/zentao",
   "product": null,
   "project": {
     "id": 12,
@@ -106,7 +116,10 @@ keep the field and set it to `null`:
 
 The invariants are:
 
-- `schemaVersion` equals `1`;
+- `schemaVersion` equals `2`;
+- `server` is an absolute HTTP(S) base URL without user info, query, or fragment;
+  normalize it using the shared connection rules and retain its installation
+  path (two paths on the same host may be different ZenTao services);
 - `product` is either `null` or an object whose `id` is a positive integer and
   whose `name` is a non-empty string returned by ZenTao;
 - `project.id` is a positive integer and `project.name` is a non-empty string
@@ -137,54 +150,60 @@ Check `<git-root>/.zentao` before querying ZenTao.
 
 - If it is a symbolic link, stop before writing.
 - If it is valid JSON matching the file contract, retain it while validating
-  the referenced project and any non-null product.
+  the referenced project and any non-null product on its stored server.
+- If it matches the old version 1 contract (`schemaVersion`, `product`, and
+  `project` only), explain that the server is missing. Retain the IDs as
+  candidates, select a server explicitly, and revalidate the objects there.
+  Preview the upgrade to version 2 before writing; do not stamp the current
+  CLI server onto it automatically, even if IDs or names happen to match.
 - If it is malformed, has unsupported fields, or uses another schema version,
   report the exact validation problems. Do not replace it without approval.
-- If it is already valid and its remote objects still match, report success and
-  leave the file byte-for-byte unchanged.
+- For validation without a requested change, use the stored product/project as
+  the candidates rather than restarting selection. If the mapping and its
+  remote objects still match, report success and leave it byte-for-byte unchanged.
 
-### 3. Check the CLI and authentication
+### 3. Resolve the server and login
 
-Check that `zentao` is available, then use `zentao profile --format=json` to
-verify that a current profile exists. Do not read environment variables or
-`~/.config/zentao/zentao.json`.
+Read [the shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md).
+The connection script is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`.
+Use its `profiles` command to inspect saved login metadata without exposing
+credentials or writing the global configuration.
 
-Interpret CLI failures by their structured error code; do not collapse every
-failure into "not logged in":
+Resolve the server before any product/project query:
 
-- `1006` means no usable profile is authenticated. Tell the user to run
-  `zentao login` directly in their terminal.
-- `1005` means the CLI could not read or rewrite its local configuration. The
-  CLI uses `configstore`, which may create a temporary file beside
-  `~/.config/zentao/zentao.json` even for a read-only command. In a sandbox this
-  can surface as `1005` despite a valid login. If the environment supports
-  permission escalation, ask for approval and rerun the exact read-only command
-  outside the sandbox. If that succeeds, continue normally. If it still returns
-  `1005`, report the configuration-path error as-is and do not recommend login
-  as the fix.
-- For another error code, preserve the code and message and suggest an action
-  specific to that failure.
+1. Use an explicit server from this request as the proposed binding.
+2. Otherwise retain a valid version 2 mapping's server.
+3. For a new mapping or version 1 migration, show distinct saved server URLs
+   as choices. With one saved server, propose it and include it in the final
+   confirmation. With multiple servers, require a selection before querying;
+   the global current profile is not evidence of repository ownership.
 
-The same sandbox behavior can affect later `zentao product` and `zentao
-project` reads. On a sandbox-related `1005`, retry only the same read-only
-command with approval; do not broaden the command or treat escalation as
-permission to mutate ZenTao data.
+If an explicit address has no matching saved login, report that address and
+ask the user to run `zentao login` in their terminal for that service, then
+retry discovery. Do not initialize against a different logged-in service.
 
-If the CLI is missing, stop and provide the normal installation command. Do not
-install software or request credentials.
+Select an account on that server using the shared rules and pin its exact
+profile key for all reads in this invocation. Run each read through the
+connection script, which selects the profile only inside a temporary CLI
+configuration. Do not switch the global profile, even temporarily.
+
+For an existing version 2 mapping with an explicitly changed server, show the
+old and proposed URLs before querying. Re-select and validate the product and
+project on the new server; old IDs are not portable identities. Keep the file
+unchanged until the final update confirmation.
 
 ### 4. Resolve the product
 
 When the user provides a product ID, validate it with:
 
 ```sh
-zentao product <id> --format=json
+node <connection-script> run --server '<server>' --profile '<profile-key>' -- product <id>
 ```
 
 When no product ID was supplied, query candidates with:
 
 ```sh
-zentao product --all --pick=id,name --format=json
+node <connection-script> run --server '<server>' --profile '<profile-key>' -- product --all --pick=id,name
 ```
 
 If an explicit name resolves to one exact match, use it as the proposed choice.
@@ -208,8 +227,8 @@ products.
 Apply the same rules to the project:
 
 ```sh
-zentao project <id> --format=json
-zentao project --all --pick=id,name --format=json
+node <connection-script> run --server '<server>' --profile '<profile-key>' -- project <id>
+node <connection-script> run --server '<server>' --profile '<profile-key>' -- project --all --pick=id,name
 ```
 
 If an explicit name resolves to one exact match, use it as the proposed choice.
@@ -221,8 +240,8 @@ project is compatible with it. If the response does not expose that
 relationship, do not invent or claim that it was verified.
 
 If a command shape or returned field differs in the installed CLI version, run
-`zentao product help`, `zentao project help`, or the relevant `props` command
-and adapt to the installed version instead of guessing.
+`product --help` or `project --help` through the connection script and adapt to the
+installed version instead of guessing. Do not assume a `props` subcommand exists.
 
 ### 6. Preview and write
 
@@ -232,8 +251,8 @@ confirmation described above.
 
 Create a new `.zentao` only after the user chooses `Create .zentao`. For an
 existing file whose bytes would change, show a compact old-to-new
-product/project diff and replace it only after the user chooses `Update
-.zentao`. Preserve all unrelated workspace files.
+schema/server/product/project diff and replace it only after the user chooses
+`Update .zentao`. Preserve all unrelated workspace files.
 
 Use the available workspace file-editing mechanism rather than shell
 redirection. After writing, read the file back and parse it again to confirm it
@@ -248,7 +267,9 @@ Created `.zentao` at `<absolute path>`.
 
 - Product: `#<id> <name>`
 - Project: `#<id> <name>`
-- Validation: product and project were read successfully from ZenTao
+- Server: `<server>`
+- Account used: `<account>` (not stored in the repository)
+- Validation: product and project were read successfully from the bound server
 ```
 
 When `product` is `null`, report `Product: not configured` and state that the
@@ -259,12 +280,13 @@ Use `Validated` instead of `Created` when no file change was necessary. If only
 object existence was verified and the product-project relationship was not
 available from the CLI response, say so explicitly.
 
-## Downstream precedence
+## Downstream contract
 
-Other ZenTao skills should resolve scope in this order:
+Bug skills require version 2 and resolve the server and object scope from the
+repository's `.zentao`. They do not fall back to the global profile's server or
+workspace. A Bug ID, matching object name, or repeated numeric ID is not a
+server override. A request conflicting with the binding must be clarified or
+handled with `/zentao-init`; it must not silently change the query destination.
 
-1. product or project explicitly supplied in the current user request;
-2. the corresponding non-null value in the project-root `.zentao` mapping;
-3. the current global `zentao` workspace.
-
-An explicit one-off override must not rewrite `.zentao`.
+Account selection is local to an invocation. Keep it outside `.zentao` so
+different developers can use their own saved login on the same service.
