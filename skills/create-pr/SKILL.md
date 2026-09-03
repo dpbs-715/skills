@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub pull request or GitLab merge request from existing local or remote branches with `gh` or `glab`. Use when the user invokes `/create-pr`, `$create-pr`, asks to open, submit, draft, or create a PR or MR, or wants to push a development branch and open it for review. Support `<source> to <target>` and `to <target>` branch syntax. Do not use for creating development branches, changing or committing code, reviewing an existing PR/MR, or merging one.
+description: Create a GitHub pull request or GitLab merge request from existing local or remote branches with `gh` or `glab`. Use when the user invokes `/create-pr`, `$create-pr`, asks to open, submit, preview, draft, or create a PR or MR, or wants to push a development branch and open it for review. Create immediately by default, including a required normal source-branch push; preview only when the user asks. Support `<source> to <target>` and `to <target>` branch syntax. Do not use for creating development branches, changing or committing code, reviewing an existing PR/MR, or merging one.
 compatibility: Requires Git and either GitHub CLI (`gh`) or GitLab CLI (`glab`) for the selected host.
 ---
 
@@ -23,6 +23,20 @@ Do not create a development branch, edit or commit code, rebase, merge, resolve
 conflicts, force-push, change repository settings, or merge the created PR/MR.
 Do not update an existing PR/MR unless the user explicitly asks for that
 separate action.
+
+## Defaults
+
+- Treat a skill invocation or a request to create, open, or submit a PR/MR as
+  authorization to create it immediately, including a required normal push of
+  the resolved source branch. Do not add a separate preview or confirmation step.
+- If the user explicitly asks to preview, show the content first, write only the
+  title/body, or approve before creation, show the final preview and wait without
+  pushing or creating anything.
+- A request to create a Draft PR/MR authorizes creating a remote request in Draft
+  state. Distinguish this from a request to draft only the title/body.
+- Ask only when material information, an ambiguous destination, conflicting
+  existing requests, or unsafe Git state prevents proceeding. Infer routine
+  details from repository evidence.
 
 ## Language
 
@@ -75,8 +89,9 @@ tracking `origin/feature/orders` uses remote branch `feature/orders` as the
 source.
 
 If the current branch has no upstream, do not pretend one exists. Resolve an
-unambiguous remote, include `git push --set-upstream <remote> <branch>` in the
-preview, and push only after approval. If the remote is ambiguous, ask.
+unambiguous remote and use `git push --set-upstream <remote> <branch>` when
+creation requires a push. For preview-only requests, describe the planned push
+without executing it. If the remote is ambiguous, ask.
 
 ### Bare invocation and natural language
 
@@ -166,14 +181,15 @@ Inspect:
 - changed files and relevant diff statistics;
 - repository guidance such as `CONTRIBUTING.md` and `AGENTS.md`.
 
-Uncommitted changes are not part of a PR/MR. Mention them in the preview and do
-not stage, commit, stash, discard, or otherwise include them. If the request
-clearly expects those changes, stop and ask the user to handle or authorize a
-commit workflow first.
+Uncommitted changes are not part of a PR/MR. Mention them in the result (or the
+requested preview) and do not stage, commit, stash, discard, or otherwise include
+them. If the request clearly expects those changes, stop and ask the user to
+handle or authorize a commit workflow first.
 
 If the local source is behind or diverged from its upstream, stop rather than
-repairing history. If it is only ahead, include a normal, non-force push in the
-preview. If source contains no commits or changes relative to target, do not
+repairing history. If it is only ahead, perform a normal, non-force push in
+step 9 for creation requests; describe it only for preview requests.
+If source contains no commits or changes relative to target, do not
 create an empty PR/MR.
 
 ### 5. Check for an existing PR or MR
@@ -239,9 +255,12 @@ Validate named users, labels, milestones, and templates with read-only commands
 where practical. Do not create missing metadata or quietly omit invalid values.
 Do not mark incomplete work ready merely because the branch is pushable.
 
-### 8. Preview external writes
+### 8. Preview or proceed
 
-Show a compact final preview containing:
+For creation requests, proceed directly to the required push and PR/MR creation
+without preview confirmation.
+
+Only when the user requests a preview or approval before creation, show:
 
 - platform, host, and target repository;
 - remote source repository and branch;
@@ -253,9 +272,9 @@ Show a compact final preview containing:
 - exact push required, if any;
 - uncommitted local changes that will not be included.
 
-Obtain approval before the first external write. If the user has already
-approved an exact preview and explicitly asked to create it, do not ask them to
-approve the same content again.
+For these preview-only requests, stop here without pushing or creating anything.
+Once the user approves creation, continue without asking for the same approval
+again.
 
 ### 9. Push the source when required
 
