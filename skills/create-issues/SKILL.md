@@ -122,14 +122,15 @@ remote default branch, and inspect the working tree. After the issue number is
 known, check that the proposed branch does not already exist. Never stash,
 discard, reset, overwrite, or force-push user work.
 
-Follow a documented repository convention. Otherwise use:
+Follow a documented repository convention, subject to the GitLab rule below. Otherwise use:
 
 ```text
 <issue-number>-<type>-<short-description>
 ```
 
-Examples: `123-fix-login-timeout`, `124-feat-export-orders`. Keep the GitLab IID
-immediately before `-` so GitLab can associate the branch with the issue.
+Examples: `123-fix-login-timeout`, `124-feat-export-orders`.
+GitLab branches must start with `<IID>-` and contain no `/` (e.g. `22-fix-login`,
+not `any/22-fix-login`) so GitLab can associate them with issues.
 
 For GitHub, use the native linked-branch command:
 
