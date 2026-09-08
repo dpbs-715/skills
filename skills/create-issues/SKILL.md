@@ -104,8 +104,12 @@ a temporary Markdown file to preserve formatting and avoid quoting problems:
 
 ```sh
 gh issue create --repo OWNER/REPO --title "<title>" --body-file <body-file> --assignee "@me"
-glab issue create --repo GROUP/PROJECT --title "<title>" --description-file <body-file> --assignee "<authenticated-username>" --yes
+glab issue create --repo GROUP/PROJECT --title "<title>" --description "$(cat "$issue_body_file")" --assignee "<authenticated-username>" --yes
 ```
+
+For GitLab, set `issue_body_file` to the temporary Markdown file path. The quoted
+command substitution passes its contents as one description argument; do not use
+the unsupported `--description-file` flag.
 
 Pass arguments discretely; do not build an `eval` string. Include every selected
 metadata field supported by the CLI and capture the issue number or IID and URL.
