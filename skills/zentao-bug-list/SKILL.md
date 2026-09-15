@@ -170,7 +170,7 @@ With a non-null product, the first page of the default query is:
 
 ```sh
 node <connection-script> run --server '<server>' --profile '<profile-key>' -- \
-  bug --product=<product-id> --page=1 --recPerPage=1000 \
+  bug --product=<product-id> --page=1 --recPerPage=1000 --orderBy=status_asc \
   --filter='assignedTo:<account>,status:active' \
   --pick=id,title,severity,pri,status,assignedTo,openedDate
 ```
@@ -186,6 +186,33 @@ in the same expression shown above. Do not use `field=value` merely because an
 installed help string shows it: `zentao-cli` 0.2.0 silently fails to interpret
 that equality form.
 
+Reduce fetching with server-side status ordering when the query restricts
+status (the default `active`, or explicit status values). Bug statuses sort as
+`active` < `closed` < `resolved` under `orderBy=status_asc`. Endpoints that
+ignore `browseType` may still honor `orderBy` (verified on a ZenTao 22.2
+project-scoped endpoint with `zentao-cli` 0.2.0: `browseType` and `status`
+params were ignored, `orderBy` was applied). Add the API parameter directly:
+
+- requested statuses include `active` → `--orderBy=status_asc`;
+- else requested statuses include `resolved` → `--orderBy=status_desc`;
+- else (`closed` only) → `--orderBy=status_asc`.
+
+Then fetch pages sequentially, stopping after the first page that contains a
+status sorting strictly after every requested status in the chosen direction
+(`active`: stop at the first `closed` or `resolved`; `resolved` under
+`status_desc`: stop at the first `closed` or `active`; `closed`: stop at the
+first `resolved`), or that returns fewer rows than `recPerPage`, or that
+reaches the pager's last page. Later pages cannot match the status filter.
+This commonly reduces the default assigned-to-me active query to a single
+page even in scopes with thousands of historical Bugs.
+
+Before relying on the stop condition, verify page 1 actually honors `orderBy`:
+row statuses must be monotonically ordered in the requested direction. A
+monotonic page proves no requested-status rows exist beyond it. If page 1
+violates the ordering, the server ignored `orderBy`: drop the parameter and
+fall back to full pagination below. Use full pagination whenever the query
+spans all statuses.
+
 Treat pagination as an explicit part of correctness:
 
 1. Request page 1 with `--recPerPage=1000`, the maximum declared by the Bug
@@ -198,7 +225,9 @@ Treat pagination as an explicit part of correctness:
 3. Fetch every remaining page with the same server, exact profile key, scope,
    filters, search, pick, and page size through the helper. Use bounded parallel
    reads, at most three pages at a time, when the execution environment supports
-   parallel tool calls.
+   parallel tool calls. When the status-ordering early stop above applies,
+   fetch sequentially instead and stop at the first page meeting the stop
+   condition; do not fetch beyond it.
 4. If any page fails or times out, do not call the result complete. Report the
    failed page numbers and stop or offer a retry.
 5. Combine all page data, de-duplicate by Bug ID, then apply the requested
@@ -212,9 +241,11 @@ limit after aggregation.
 
 Do not rely on `browseType=assignedtome` as a shortcut. The value was incorrect
 in older `zentao-api` metadata (`assignedtome` versus `assigntome`), and some
-project-scoped ZenTao endpoints ignore it. Explicit full pagination remains the
-source of truth unless the installed CLI and server behavior are independently
-verified.
+project-scoped ZenTao endpoints ignore it entirely (observed on ZenTao 22.2:
+the pager total stays unchanged). The verified `orderBy` status-ordering
+strategy above is the supported fast path; explicit full pagination remains
+the source of truth for all-status queries and for servers that ignore
+`orderBy`.
 
 Add only user-requested filters and searches. Keep user-supplied values as data:
 quote them safely and never use `eval`, command substitution, or a shell

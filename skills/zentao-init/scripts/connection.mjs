@@ -11,7 +11,7 @@ const requestTimeoutMs = 10_000
 const commandTimeoutMs = 30_000
 const maxOutputBytes = 16 * 1024 * 1024
 const readOptions = new Set([
-  '--pick', '--filter', '--sort', '--search', '--search-fields',
+  '--pick', '--filter', '--sort', '--search', '--search-fields', '--orderBy',
   '--page', '--recPerPage', '--limit', '--product', '--project', '--execution',
 ])
 const numericOptions = new Set([
@@ -83,6 +83,8 @@ function validateReadCommand(command) {
       throw new Error('Every read option requires a nonempty value that is not another option.')
     if (numericOptions.has(option) && !/^[1-9]\d*$/.test(value))
       throw new Error('Scope, pagination, and limit options require positive integer values.')
+    if (option === '--orderBy' && !/^[a-z][a-z0-9]*_(asc|desc)$/i.test(value))
+      throw new Error('The --orderBy option requires a field_asc or field_desc value.')
   }
 }
 
