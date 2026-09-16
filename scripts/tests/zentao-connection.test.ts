@@ -97,6 +97,47 @@ test('returns module help after selecting the repository profile', async t => {
   await context.checkCleanup()
 })
 
+test('reports the bound server version through the selected profile', async t => {
+  const context = await setup(t)
+  const result = await context.execute(readArgs(serverB, profileB, ['version']))
+  assert.deepEqual(JSON.parse(result.stdout), { cli: '0.3.0-fixture', serverVersion: '22.5', server: serverB })
+  const calls = await context.calls()
+  assert.deepEqual(calls.at(-1)?.command, ['version'])
+  await context.checkCleanup()
+})
+
+test('forwards my bugs reads with browseType, orderBy, and filters to the bound profile', async t => {
+  const context = await setup(t)
+  const filters = JSON.stringify([{ field: 'status', operator: '=', value: 'active' }])
+  const result = await context.execute(readArgs(serverA, profileA,
+    ['my', 'bugs', '--browseType=assignedtome', '--orderBy=status_asc', `--filters=${filters}`, '--page=1', '--recPerPage=200']))
+  assert.deepEqual(JSON.parse(result.stdout), {
+    data: [{ id: 7, server: serverA, account: 'alice' }],
+    pager: { total: 1, page: 1, recPerPage: 200 },
+  })
+  const calls = await context.calls()
+  assert.deepEqual(calls.at(-1)?.command.slice(0, 2), ['my', 'bugs'])
+  await context.checkCleanup()
+})
+
+test('returns my subcommand help after selecting the repository profile', async t => {
+  const context = await setup(t)
+  const result = await context.execute(readArgs(serverA, profileA, ['my', 'bugs', '--help']))
+  assert.deepEqual(JSON.parse(result.stdout), { help: 'Help for my bugs' })
+  await context.checkCleanup()
+})
+
+test('rejects unsupported my subcommands, version arguments, and malformed filters before invoking CLI', async t => {
+  const context = await setup(t)
+  for (const command of [
+    ['my', 'tasks'], ['my'], ['version', '--format=json'], ['version', 'extra'],
+    ['my', 'bugs', '--browseType=1'], ['my', 'bugs', '--filters={}'], ['my', 'bugs', '--filters', 'not-json'],
+  ])
+    await assert.rejects(context.execute(readArgs(serverA, profileA, command)))
+  assert.deepEqual(await context.calls(), [])
+  await context.checkCleanup()
+})
+
 test('rejects missing profiles, account aliases, server mismatches, and a wrong CLI switch before API calls', async t => {
   const context = await setup(t)
   for (const args of [

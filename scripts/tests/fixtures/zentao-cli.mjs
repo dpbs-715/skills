@@ -10,13 +10,13 @@ assert.equal(args[0], '--config')
 const path = args[1]
 assert.equal(statSync(path).mode & 0o777, 0o600)
 assert.equal(statSync(dirname(path)).mode & 0o777, 0o700)
-assert.ok(args.includes('--format=json'))
-assert.ok(args.includes('--machine-readable'))
-assert.equal(args[args.indexOf('--timeout') + 1], '10000')
 for (const key of ['ZENTAO_CONFIG_FILE', 'ZENTAO_URL', 'ZENTAO_ACCOUNT', 'ZENTAO_PASSWORD', 'ZENTAO_TOKEN'])
   assert.equal(process.env[key], undefined)
 const config = JSON.parse(readFileSync(path, 'utf8'))
 const command = args.slice(6)
+assert.ok(args.includes(command[0] === 'version' ? '--format=markdown' : '--format=json'))
+assert.ok(args.includes('--machine-readable'))
+assert.equal(args[args.indexOf('--timeout') + 1], '10000')
 appendFileSync(process.env.FAKE_ZENTAO_LOG, `${JSON.stringify({ path, command })}\n`)
 if (process.env.FAKE_ZENTAO_MODE === 'fail') {
   console.error(JSON.stringify({ error: {
@@ -39,11 +39,18 @@ if (command[0] === 'profile') {
 }
 else {
   const current = config.profiles.find(profile => profile.key === config.currentProfile)
-  if (command[1] === '--help') console.log(`Help for ${command[0]}`)
+  if (command.at(-1) === '--help') console.log(`Help for ${command.slice(0, -1).join(' ')}`)
+  else if (command[0] === 'version')
+    console.log(`Zentao CLI: 0.3.0-fixture\nZentao Server: 22.5 (${current?.server ?? 'https://unknown.example.test'})`)
   else if (!current?.token) {
     console.error(JSON.stringify({ error: { code: '1006', message: 'No saved profile token' } }))
     process.exit(1)
   }
+  else if (command[0] === 'my')
+    console.log(JSON.stringify({
+      data: [{ id: 7, server: current.server, account: current.account }],
+      pager: { total: 1, page: 1, recPerPage: 200 },
+    }))
   else console.log(JSON.stringify({ id: Number(command[1] ?? 7), server: current.server, account: current.account }))
 }
 config.lastUsedTime = 'changed only in temporary copy'

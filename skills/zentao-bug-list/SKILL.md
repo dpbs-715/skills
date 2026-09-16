@@ -1,7 +1,7 @@
 ---
 name: zentao-bug-list
 description: Query, filter, sort, summarize, and prioritize the current code project's ZenTao bugs using the server and product or project scope in the project-root `.zentao` file. Use whenever the user invokes `/zentao-bug-list` or `$zentao-bug-list`, asks to see their active or assigned ZenTao bugs, filters bugs by status, severity, priority, or keyword, or asks which bugs to handle first. This skill is read-only; do not use it to inspect a single bug in depth, modify code, assign, resolve, close, or otherwise change a bug.
-compatibility: Requires Git, Node.js, a version 2 project-root `.zentao`, and an authenticated `zentao` CLI supporting `--config` (verified with 0.2.0).
+compatibility: Requires Git, Node.js, a version 2 project-root `.zentao`, and an authenticated `zentao` CLI supporting `--config` (verified with 0.2.0 and 0.3.0; CLI 0.3.0 adds the `my bugs` fast path for servers meeting its minimum version).
 ---
 
 # ZenTao Bug List
@@ -82,7 +82,9 @@ Interpret supported modifiers as follows:
 | `最近`, `latest` | Sort by opened date descending before applying the count |
 
 Multiple explicit filters combine with AND unless the user clearly requests OR.
-Never broaden an empty result by silently removing a filter.
+Never broaden an empty result by silently removing a filter. An `all
+assignees` query always uses the scoped Bug list path, never the `my bugs`
+fast path (see Query Bugs).
 
 ## Resolve project context
 
@@ -160,92 +162,26 @@ shared error handling; do not display credentials or switch the global profile.
 
 ## Query Bugs
 
-Use the bound `bug --help` command when the installed CLI's supported options
-or response fields are uncertain. Do not assume that a
+Use the bound `bug --help` and `my bugs --help` commands through the helper
+when the installed CLI's supported options or response fields are uncertain.
+Do not assume that a
 `props` subcommand exists. Prefer the installed CLI contract over memorized
 field names.
 
-Build a read-only Bug list command using the selected `.zentao` scope.
-With a non-null product, the first page of the default query is:
+Two read paths exist. Choose exactly one per invocation, then read its
+reference file before building any command:
 
-```sh
-node <connection-script> run --server '<server>' --profile '<profile-key>' -- \
-  bug --product=<product-id> --page=1 --recPerPage=1000 --orderBy=status_asc \
-  --filter='assignedTo:<account>,status:active' \
-  --pick=id,title,severity,pri,status,assignedTo,openedDate
-```
+| Condition | Path | Reference |
+| --- | --- | --- |
+| CLI is 0.3.0 or newer, the assignee scope is the bound account (the default query), and the server meets the `my bugs` minimum version | `my bugs` fast path | [references/my-bugs.md]({{REPO_ROOT}}/skills/zentao-bug-list/references/my-bugs.md) |
+| Anything else, including every all-assignee query | Scoped Bug list | [references/scoped-list.md]({{REPO_ROOT}}/skills/zentao-bug-list/references/scoped-list.md) |
 
-With `product: null`, replace `--product=<product-id>` with
-`--project=<project-id>`. The installed CLI supports project-scoped Bug lists;
-do not fall back to the global workspace merely because a product is absent.
+The version gate (a runtime `version` read through the helper, the `2010`
+probe fallback, and the series comparison rules) is defined in the fast path
+reference.
 
-Use `:` for equality in CLI filters for compatibility with released versions.
-Within one `--filter`, comma-separated conditions are AND. Repeated `--filter`
-options are OR. For example, the default assignee and status constraints belong
-in the same expression shown above. Do not use `field=value` merely because an
-installed help string shows it: `zentao-cli` 0.2.0 silently fails to interpret
-that equality form.
-
-Reduce fetching with server-side status ordering when the query restricts
-status (the default `active`, or explicit status values). Bug statuses sort as
-`active` < `closed` < `resolved` under `orderBy=status_asc`. Endpoints that
-ignore `browseType` may still honor `orderBy` (verified on a ZenTao 22.2
-project-scoped endpoint with `zentao-cli` 0.2.0: `browseType` and `status`
-params were ignored, `orderBy` was applied). Add the API parameter directly:
-
-- requested statuses include `active` → `--orderBy=status_asc`;
-- else requested statuses include `resolved` → `--orderBy=status_desc`;
-- else (`closed` only) → `--orderBy=status_asc`.
-
-Then fetch pages sequentially, stopping after the first page that contains a
-status sorting strictly after every requested status in the chosen direction
-(`active`: stop at the first `closed` or `resolved`; `resolved` under
-`status_desc`: stop at the first `closed` or `active`; `closed`: stop at the
-first `resolved`), or that returns fewer rows than `recPerPage`, or that
-reaches the pager's last page. Later pages cannot match the status filter.
-This commonly reduces the default assigned-to-me active query to a single
-page even in scopes with thousands of historical Bugs.
-
-Before relying on the stop condition, verify page 1 actually honors `orderBy`:
-row statuses must be monotonically ordered in the requested direction. A
-monotonic page proves no requested-status rows exist beyond it. If page 1
-violates the ordering, the server ignored `orderBy`: drop the parameter and
-fall back to full pagination below. Use full pagination whenever the query
-spans all statuses.
-
-Treat pagination as an explicit part of correctness:
-
-1. Request page 1 with `--recPerPage=1000`, the maximum declared by the Bug
-   list contract. Do not pass `--all`: released versions may silently ignore it
-   and newer versions may reject it because automatic pagination is not
-   implemented.
-2. Read `pager.total` and `pager.recPerPage` from the JSON response and compute
-   the total page count. A filtered `data: []` on page 1 is not an empty final
-   result when the pager reports later pages.
-3. Fetch every remaining page with the same server, exact profile key, scope,
-   filters, search, pick, and page size through the helper. Use bounded parallel
-   reads, at most three pages at a time, when the execution environment supports
-   parallel tool calls. When the status-ordering early stop above applies,
-   fetch sequentially instead and stop at the first page meeting the stop
-   condition; do not fetch beyond it.
-4. If any page fails or times out, do not call the result complete. Report the
-   failed page numbers and stop or offer a retry.
-5. Combine all page data, de-duplicate by Bug ID, then apply the requested
-   global ordering and display limit. Never apply a CLI `--limit` before all
-   pages are combined, and do not rely on per-page sorting for the final order.
-
-The CLI applies `--filter`, `--search`, `--sort`, and `--limit` after retrieving
-each page. Filtering or searching every page with the same expression is safe;
-filtering or searching only page 1 is not. Always perform the final ordering and
-limit after aggregation.
-
-Do not rely on `browseType=assignedtome` as a shortcut. The value was incorrect
-in older `zentao-api` metadata (`assignedtome` versus `assigntome`), and some
-project-scoped ZenTao endpoints ignore it entirely (observed on ZenTao 22.2:
-the pager total stays unchanged). The verified `orderBy` status-ordering
-strategy above is the supported fast path; explicit full pagination remains
-the source of truth for all-status queries and for servers that ignore
-`orderBy`.
+Both paths share one pagination, ordering, and aggregation contract:
+[references/pagination.md]({{REPO_ROOT}}/skills/zentao-bug-list/references/pagination.md).
 
 Add only user-requested filters and searches. Keep user-supplied values as data:
 quote them safely and never use `eval`, command substitution, or a shell

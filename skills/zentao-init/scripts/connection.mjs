@@ -13,10 +13,12 @@ const maxOutputBytes = 16 * 1024 * 1024
 const readOptions = new Set([
   '--pick', '--filter', '--sort', '--search', '--search-fields', '--orderBy',
   '--page', '--recPerPage', '--limit', '--product', '--project', '--execution',
+  '--browseType', '--filters',
 ])
 const numericOptions = new Set([
   '--page', '--recPerPage', '--limit', '--product', '--project', '--execution',
 ])
+const mySubcommands = new Set(['bugs'])
 
 function normalizeServer(server) {
   if (/[\s\\]/.test(server))
@@ -39,7 +41,7 @@ function normalizeServer(server) {
 function parseArguments(args) {
   const [action, ...rest] = args
   if (!['profiles', 'run'].includes(action))
-    throw new Error('Usage: connection.mjs profiles [--config path] | run --server URL --profile exact-key [--config path] -- product|project|bug [id/options]')
+    throw new Error('Usage: connection.mjs profiles [--config path] | run --server URL --profile exact-key [--config path] -- version|product|project|bug|my [id/options]')
   const separator = rest.indexOf('--')
   const options = separator < 0 ? rest : rest.slice(0, separator)
   const command = separator < 0 ? [] : rest.slice(separator + 1)
@@ -66,11 +68,26 @@ function parseArguments(args) {
 }
 
 function validateReadCommand(command) {
-  if (!['product', 'project', 'bug'].includes(command[0]))
-    throw new Error('Only product, project, and bug reads are supported.')
-  if (command.length === 2 && command[1] === '--help') return
+  if (command[0] === 'version') {
+    if (command.length !== 1)
+      throw new Error('The version read does not accept arguments.')
+    return
+  }
+  if (!['product', 'project', 'bug', 'my'].includes(command[0]))
+    throw new Error('Only version, product, project, bug, and my reads are supported.')
+  if (command[command.length - 1] === '--help') {
+    if (command.length === 2
+        || (command[0] === 'my' && command.length === 3 && mySubcommands.has(command[1])))
+      return
+    throw new Error('Unsupported help read.')
+  }
   let index = 1
-  if (/^[1-9]\d*$/.test(command[index] ?? '')) index++
+  if (command[0] === 'my') {
+    if (!mySubcommands.has(command[1] ?? ''))
+      throw new Error('Only my bugs reads are supported.')
+    index = 2
+  }
+  else if (/^[1-9]\d*$/.test(command[index] ?? '')) index++
   while (index < command.length) {
     const argument = command[index++]
     if (argument === '--all') continue
@@ -85,6 +102,15 @@ function validateReadCommand(command) {
       throw new Error('Scope, pagination, and limit options require positive integer values.')
     if (option === '--orderBy' && !/^[a-z][a-z0-9]*_(asc|desc)$/i.test(value))
       throw new Error('The --orderBy option requires a field_asc or field_desc value.')
+    if (option === '--browseType' && !/^[a-z]+$/i.test(value))
+      throw new Error('The --browseType option requires an alphabetic value.')
+    if (option === '--filters') {
+      let filters
+      try { filters = JSON.parse(value) }
+      catch { throw new Error('The --filters option requires a JSON array of search conditions.') }
+      if (!Array.isArray(filters))
+        throw new Error('The --filters option requires a JSON array of search conditions.')
+    }
   }
 }
 
@@ -132,10 +158,10 @@ function cliFailure(error) {
     : `ZenTao command failed (${error.code ?? 'unknown exit status'}).`)
 }
 
-async function invokeCli(temporaryConfig, args, signal) {
+async function invokeCli(temporaryConfig, args, signal, format = 'json') {
   try {
     const result = await execFileAsync('zentao', [
-      '--config', temporaryConfig, '--format=json', '--machine-readable',
+      '--config', temporaryConfig, `--format=${format}`, '--machine-readable',
       '--timeout', String(requestTimeoutMs), ...args,
     ], {
       env: commandEnvironment(), timeout: commandTimeoutMs, maxBuffer: maxOutputBytes,
@@ -179,6 +205,14 @@ async function profileMetadata(temporaryConfig, signal) {
   return { currentProfile: result.currentProfile, profiles }
 }
 
+function parseVersionOutput(output) {
+  const cli = /Zentao CLI:\s*(\S+)/i.exec(output)?.[1]
+  const server = /Zentao Server:\s*(\S+)\s*\(([^)\s]+)\)/i.exec(output)
+  if (!cli || !server)
+    throw new Error('ZenTao CLI returned an unrecognized version response; verify the installed CLI version.')
+  return { cli, serverVersion: server[1], server: server[2] }
+}
+
 async function run() {
   const options = parseArguments(process.argv.slice(2))
   const directory = await mkdtemp(join(tmpdir(), 'zentao-connection-'))
@@ -212,8 +246,10 @@ async function run() {
     if (selected.currentProfile !== options.profile || active.length !== 1
         || normalizeServer(active[0].server) !== options.server)
       throw new Error('CLI profile selection did not match the repository connection; no business request was sent.')
+    if (options.command[0] === 'version')
+      return parseVersionOutput(await invokeCli(temporaryConfig, options.command, controller.signal, 'markdown'))
     const output = await invokeCli(temporaryConfig, options.command, controller.signal)
-    return options.command[1] === '--help' ? { help: output.trim() } : parseJson(output)
+    return options.command.at(-1) === '--help' ? { help: output.trim() } : parseJson(output)
   }
   finally {
     process.removeListener('SIGINT', cancel)

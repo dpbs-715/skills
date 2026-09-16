@@ -90,9 +90,14 @@ the source CLI config. It also avoids the normal configstore write beside the
 global file during read commands.
 
 Run every page through this helper with the same selected key and server. Its
-allowlist covers the reads these skills need; do not bypass rejection by using
+allowlist covers the reads these skills need, including `version` (server
+version detection; the helper requests markdown output and returns parsed
+`{ cli, serverVersion, server }`) and `my bugs` (the server-side
+assigned-to-me list, accepting `--browseType` and a JSON-array `--filters`);
+do not bypass rejection by using
 bare CLI commands or enabling raw request/configuration overrides. For uncertain
-read options, run `bug --help` through the helper with the same server and key;
+read options, run `bug --help` or `my bugs --help` through the helper with the
+same server and key;
 it returns a JSON object containing the help text. If the required option is
 not supported by the helper, report the limitation instead of changing its code
 inside an application repository.
