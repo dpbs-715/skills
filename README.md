@@ -20,6 +20,7 @@ This repository separates always-on preferences from task-specific skills:
 | Source skill | Commit | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
 | Source skill | Commit and push | [skills/cpush/SKILL.md](skills/cpush/SKILL.md) |
 | Source skill | Diff review | [skills/dcr/SKILL.md](skills/dcr/SKILL.md) |
+| Source skill | PR/MR review and merge | [skills/review-pr/SKILL.md](skills/review-pr/SKILL.md) |
 | Source skill | Mock | [skills/mock/SKILL.md](skills/mock/SKILL.md) |
 | Source skill | Push | [skills/push/SKILL.md](skills/push/SKILL.md) |
 
