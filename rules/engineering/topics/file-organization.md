@@ -21,6 +21,13 @@ Layout:
 - Colocate tests with the code they cover.
 - Keep the layout reorganizable: a unit must not depend on its own depth or path in the tree.
 
+Module boundaries:
+
+- Identify the owner of rules, state, use cases, and external effects before choosing folders. A domain module and a deployment/package boundary need not coincide.
+- Cross-module consumers use the owner's public contract instead of reaching into implementation files. Keep the contract focused on caller-visible behavior, types, errors, and events.
+- Keep dependency direction explicit: business rules do not depend on UI or platform implementations; use capability interfaces when a use case needs external effects.
+- Adapt layer names and directory depth to the project. Do not create empty layers or split files merely to match an architecture template.
+
 Good to extract:
 
 - Stable, named configuration that helps the main entry stay focused: columns, fields, schemas, rules, metadata, field lists, option maps, status/display config, repeated defaults, or behavior settings.
