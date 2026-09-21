@@ -107,14 +107,37 @@ LGTM (｡•̀ᴗ-)✧
 Follow with the reviewed SHA and a short verification note only when useful.
 On GitHub, use an approval review with that body when permitted; the review
 itself is the LGTM message, so do not also post a duplicate comment. On GitLab,
-post the LGTM note and approve separately when permitted. If self-approval or
-permissions prevent formal approval, use a comment and report that approval was
+post the LGTM note and approve separately when permitted, always binding the
+approval to the reviewed head:
+
+```sh
+glab mr approve <iid> --repo <project-url> --sha <reviewed-head>
+```
+
+Apply this guard to every GitLab approval, including review-only runs and
+restored approvals. A SHA mismatch means the head changed: return to steps 2
+and 3 for the new revision, without retrying an unguarded approval. If the
+installed CLI cannot guard approval, leave it unset and report the limitation.
+If self-approval or permissions prevent formal approval, use a comment and report that approval was
 not recorded. A comment never satisfies a required approval by itself.
 
 Inspect existing comments/reviews by the authenticated account before writing.
-Reuse an equivalent conclusion for the same head and base; do not repeat LGTM,
-findings, or approvals on retry. Record the base SHA alongside the head SHA in
-a hidden marker, for example `<!-- review-pr: head=<sha> base=<sha> -->`.
+Reuse equivalent LGTM or findings text for the same head and base instead of
+reposting it. Deduplicate review text separately from formal approval state:
+an old LGTM or approval record does not prove that approval is still active.
+Inspect the authenticated account's current approval for the reviewed revision.
+If it is active, do not submit it again. If it is absent, dismissed, or revoked,
+read any dismissal reason and new discussions and revalidate the passing review
+and permission before restoring it. Unresolved objections block restoration;
+unknown approval state must be reported rather than treated as active or absent.
+When eligible, restore the formal approval without reposting the LGTM text.
+For GitHub, submit a new approval review with a short restoration note and the
+reviewed revision, since approval is itself a review; for GitLab, use the guarded
+approve command above without another LGTM note. Verify the resulting active
+approval state before continuing.
+
+Record the base SHA alongside the head SHA in a hidden marker, for example
+`<!-- review-pr: head=<sha> base=<sha> -->`.
 New commits require a new review, even when an old LGTM exists.
 
 Write Markdown to a temporary file and pass it with the installed CLI's file
