@@ -61,6 +61,7 @@ async function createValidRepo({
   return {
     root,
     options: {
+      agentOnlySkills: [],
       installableSkills: [skillName],
       localSkillSources: localSkillSources ?? [{
         kind: 'directory',
@@ -154,6 +155,7 @@ description: Use when testing validation.
   )
 
   const result = await validateSkills({
+    agentOnlySkills: [],
     installableSkills: [],
     localSkillSources: [],
     root,
@@ -186,6 +188,7 @@ test('reports a missing configured installable skill', async () => {
   const root = await createTempDir('skills-validate-')
 
   const result = await validateSkills({
+    agentOnlySkills: [],
     installableSkills: [skillName],
     localSkillSources: [],
     root,
@@ -193,6 +196,20 @@ test('reports a missing configured installable skill', async () => {
 
   assert.equal(result.ok, false)
   assert.deepEqual(issueCodes(result), ['missing-installable-skill'])
+})
+
+test('reports a missing configured agent-only skill', async () => {
+  const root = await createTempDir('skills-validate-')
+
+  const result = await validateSkills({
+    agentOnlySkills: ['role-specialty'],
+    installableSkills: [],
+    localSkillSources: [],
+    root,
+  })
+
+  assert.deepEqual(issueCodes(result), ['missing-agent-only-skill'])
+  assert.equal(result.issues[0].path, 'generated/role-specialty/SKILL.md')
 })
 
 test('reports missing repo absolute paths in source and generated skills', async () => {

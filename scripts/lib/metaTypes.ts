@@ -27,6 +27,14 @@ export interface DirectoryLinkTarget {
   include: readonly string[]
 }
 
+export type AgentFormat = 'claude' | 'kimi-code' | 'opencode' | 'pi'
+
+export interface AgentLinkTarget {
+  dir: string
+  format: AgentFormat
+  kind: 'agent'
+}
+
 export interface JsonArrayConfigTarget {
   file: string
   kind: 'json-array'
@@ -46,4 +54,4 @@ export interface JsonObjectConfigTarget {
   path: readonly string[]
 }
 
-export type LinkTarget = DirectoryLinkTarget | JsonArrayConfigTarget | JsonObjectConfigTarget
+export type LinkTarget = DirectoryLinkTarget | AgentLinkTarget | JsonArrayConfigTarget | JsonObjectConfigTarget

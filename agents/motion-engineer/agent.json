@@ -1,0 +1,15 @@
+{
+  "name": "motion-engineer",
+  "description": "Implements focused GSAP motion, timelines, scroll behavior, and framework lifecycle integration.",
+  "rules": [
+    "rules/engineering/RULES.md",
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [],
+  "agentOnlySkills": [
+    "gsap-core",
+    "gsap-timeline",
+    "gsap-scrolltrigger",
+    "gsap-frameworks"
+  ]
+}

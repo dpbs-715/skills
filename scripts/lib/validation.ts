@@ -2,9 +2,11 @@ import { readdir, readFile } from 'node:fs/promises'
 import { isAbsolute, join, relative } from 'node:path'
 
 import {
+  agentOnlySkills as defaultAgentOnlySkills,
   installableSkills as defaultInstallableSkills,
   localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
+import { expectedAgentFiles } from './agents.ts'
 import type { LocalSkillSource } from './metaTypes.ts'
 import {
   GENERATED_SKILLS_DIR,
@@ -13,6 +15,7 @@ import {
   SKILL_FILE,
 } from './skillRendering.ts'
 import { pathExists, repoRoot } from './utils.ts'
+import { readTeams } from './teams.ts'
 
 export type ValidationIssueCode =
   | 'missing-directory-skill'
@@ -20,10 +23,15 @@ export type ValidationIssueCode =
   | 'missing-generated-skill'
   | 'stale-generated-skill'
   | 'missing-installable-skill'
+  | 'missing-agent-only-skill'
   | 'missing-frontmatter'
   | 'missing-frontmatter-field'
   | 'skill-name-mismatch'
   | 'missing-absolute-path'
+  | 'invalid-agent'
+  | 'missing-generated-agent'
+  | 'stale-generated-agent'
+  | 'invalid-team'
 
 export interface ValidationIssue {
   code: ValidationIssueCode
@@ -37,6 +45,7 @@ export interface ValidationResult {
 }
 
 export interface ValidationOptions {
+  agentOnlySkills?: readonly string[]
   installableSkills?: readonly string[]
   localSkillSources?: readonly LocalSkillSource[]
   root?: string
@@ -173,6 +182,55 @@ async function validateInstallableSkills(
   }
 }
 
+async function validateAgentOnlySkills(
+  root: string,
+  agentOnlySkills: readonly string[],
+  issues: ValidationIssue[],
+): Promise<void> {
+  for (const name of agentOnlySkills) {
+    const relPath = join(GENERATED_SKILLS_DIR, name, SKILL_FILE)
+    if (!await pathExists(join(root, relPath))) {
+      addIssue(
+        issues,
+        'missing-agent-only-skill',
+        relPath,
+        `Missing configured agent-only skill; run pnpm skills sync or pnpm skills link: ${relPath}`,
+      )
+    }
+  }
+}
+
+async function validateAgents(root: string, issues: ValidationIssue[]): Promise<void> {
+  let expected: Awaited<ReturnType<typeof expectedAgentFiles>>
+  try {
+    expected = await expectedAgentFiles(root)
+  }
+  catch (error) {
+    addIssue(issues, 'invalid-agent', 'agents', error instanceof Error ? error.message : String(error))
+    return
+  }
+
+  for (const agent of expected) {
+    const relPath = join('generated', 'agents', agent.format, `${agent.name}.md`)
+    const path = join(root, relPath)
+    if (!await pathExists(path)) {
+      addIssue(issues, 'missing-generated-agent', relPath, `Missing generated agent; run pnpm skills link: ${relPath}`)
+    }
+    else if (await readFile(path, 'utf8') !== agent.content) {
+      addIssue(issues, 'stale-generated-agent', relPath, `Generated agent is stale; run pnpm skills link: ${relPath}`)
+    }
+  }
+}
+
+async function validateTeams(root: string, issues: ValidationIssue[]): Promise<void> {
+  try {
+    await readTeams(root)
+  }
+  catch (error) {
+    addIssue(issues, 'invalid-team', 'teams', error instanceof Error ? error.message : String(error))
+  }
+}
+
 function parseFrontmatter(content: string): Frontmatter | undefined {
   const normalized = content.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n'))
@@ -271,6 +329,7 @@ async function validateSkillFrontmatter(
 }
 
 export async function validateSkills({
+  agentOnlySkills = defaultAgentOnlySkills,
   installableSkills = defaultInstallableSkills,
   localSkillSources = defaultLocalSkillSources,
   root = repoRoot(),
@@ -279,7 +338,10 @@ export async function validateSkills({
 
   await validateLocalSkillSources(root, localSkillSources, issues)
   await validateInstallableSkills(root, installableSkills, issues)
+  await validateAgentOnlySkills(root, agentOnlySkills, issues)
   await validateSkillFrontmatter(root, issues)
+  await validateAgents(root, issues)
+  await validateTeams(root, issues)
 
   return {
     issues,

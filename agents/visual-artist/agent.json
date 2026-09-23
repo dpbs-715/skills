@@ -1,0 +1,12 @@
+{
+  "name": "visual-artist",
+  "description": "Creates visual artwork and poster concepts from user-provided scenes or images.",
+  "rules": [
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [],
+  "agentOnlySkills": [
+    "scenes-gathered-zine-v1-3",
+    "scene-distillation-zine-v1-3"
+  ]
+}

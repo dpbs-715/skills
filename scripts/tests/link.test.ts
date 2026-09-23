@@ -127,6 +127,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
     { key: '~/.config/opencode/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
+    { key: '{{REPO_ROOT}}/generated/**', value: 'allow' },
   ])
 })
 

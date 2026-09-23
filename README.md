@@ -6,8 +6,10 @@ This repository separates always-on preferences from task-specific skills:
 
 - `rules/` contains durable personal or project rules that should guide broad work.
 - `skills/` contains hand-written repo-owned skill packages.
-- `generated/` contains rendered or synced installable skill bundles that are symlinked into agent directories.
-- `vendor/` is reserved for synchronized third-party skill repositories.
+- `agents/` contains reusable role definitions. Each role has an `agent.json` manifest and an `AGENT.md` instruction body.
+- `teams/` may contain reusable workflows once a task pattern has proven useful. Each task in `team.json` names an agent and its prerequisite task IDs.
+- `generated/` contains rendered agent definitions and rendered or synced installable skill bundles that are symlinked into tool directories.
+- `vendor/` contains synchronized third-party skill repositories.
 - `meta.ts` is the link configuration: which local directory or document sources render into `generated/` (`localSkillSources`), which generated bundles link into agents (`installableSkills`), which document-backed skills are also delivered as always-on instructions (`alwaysOnInstructionSkills`), the per-destination link/config table (`linkTargets`), and vendored skill mappings. Type definitions live in `scripts/lib/metaTypes.ts`.
 
 ## Current Entries
@@ -23,10 +25,17 @@ This repository separates always-on preferences from task-specific skills:
 | Source skill | PR/MR review and merge | [skills/review-pr/SKILL.md](skills/review-pr/SKILL.md) |
 | Source skill | Mock | [skills/mock/SKILL.md](skills/mock/SKILL.md) |
 | Source skill | Push | [skills/push/SKILL.md](skills/push/SKILL.md) |
+| Source skill | Team workflow | [skills/team-workflow/SKILL.md](skills/team-workflow/SKILL.md) |
+| Agent-only skill | Before you build | [skills/before-you-build/SKILL.md](skills/before-you-build/SKILL.md) |
+| Agent | Frontend engineer | [agents/frontend-engineer/AGENT.md](agents/frontend-engineer/AGENT.md) |
+| Agent | Product manager | [agents/product-manager/AGENT.md](agents/product-manager/AGENT.md) |
+| Agent | Visual artist | [agents/visual-artist/AGENT.md](agents/visual-artist/AGENT.md) |
+| Agent | Three.js engineer | [agents/threejs-engineer/AGENT.md](agents/threejs-engineer/AGENT.md) |
+| Agent | Motion engineer | [agents/motion-engineer/AGENT.md](agents/motion-engineer/AGENT.md) |
 
 Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each generated bundle is present in `generated/`, any undeclared generated skill directories, and submodule checkout state.
 
-Run `pnpm skills validate` to check that configured local sources, generated skill shims, skill frontmatter, and repo-local absolute references are still consistent.
+Run `pnpm skills validate` to check that configured local sources, generated skills and agents, team dependencies, skill frontmatter, and repo-local absolute references are still consistent.
 
 ## Vendored Skills
 
@@ -67,7 +76,7 @@ Manual vendor setup is still possible when you want to add a submodule yourself:
 3. Run the vendor sync script directly.
 
 ```bash
-git submodule add https://github.com/greensock/gsap-skills vendor/gsap
+git submodule add https://github.com/greensock/gsap-skills.git vendor/gsap-skills
 pnpm skills sync
 pnpm skills link
 ```
@@ -79,6 +88,29 @@ Synced skills in `generated/` get a `SYNC.md` file with the upstream path, repos
 Rule sets use `RULES.md` as the entry file and keep focused topic documents in `topics/`.
 
 Hand-written repo-owned skills should use the standard `SKILL.md` layout under `skills/<name>/`.
+
+## Role Agents
+
+Keep each role's mission and handoff instructions in `agents/<name>/AGENT.md`. Its `agent.json` declares the matching `name`, a delegation `description`, applicable `rules/` Markdown paths, and skill names from `installableSkills`. Skills remain shared packages; the role lists the ones it normally uses. The list is not a security boundary on tools that expose every installed skill to agents.
+
+The `skills` list is preloaded by Claude Code and shown as a role skill everywhere. Repository workflow operations such as commits, pushes, and pull requests are handled by the lead agent rather than assigned to `frontend-engineer`.
+
+For a skill used only by a role, register its name in `agentOnlySkills` in `meta.ts` and in that role's `agentOnlySkills` list. Local sources stay under `skills/` and are declared in `localSkillSources`; third-party sources are declared in `vendors` and synced from `vendor/`. Both are rendered under `generated/` for the role to read, but omitted from every tool's general skill directory and from Claude's `skills` preload field. `before-you-build` belongs to `product-manager`; the selected visual, Three.js, and GSAP skills belong to specialist roles. This is discovery scoping, not filesystem access control.
+
+`pnpm skills link` renders each role to `generated/agents/<tool>/<name>.md` and links it into the native agent directory for Claude Code, Kimi Code, OpenCode, and Pi. Claude receives its native `skills` preload field; OpenCode receives `mode: subagent`; the other fields and body are shared. `pnpm skills unlink` removes only links owned by this repository. Edit `agents/`, never the generated files.
+
+| Tool | Agent destination | Notes |
+| --- | --- | --- |
+| Claude Code | `~/.claude/agents` | Skills in the manifest are preloaded. |
+| Kimi Code | `~/.kimi-code/agents` | Uses the shared Markdown agent definition. |
+| OpenCode | `~/.config/opencode/agents` | Generated role runs as a subagent. |
+| Pi | `~/.pi/agent/agents` | Requires a Pi subagent extension that reads this directory; Pi does not activate roles from files alone. |
+
+The `team-workflow` skill is the coordination entry point when the user asks for multiple agents. It forms a small team for the current task, assigns independent work, and verifies the combined result. It does not change a host's concurrency limit or save each temporary plan as a template.
+
+## Team Templates
+
+When a workflow proves reusable, save it as `teams/<name>/team.json` with tasks containing `id`, `agent`, `goal`, and `dependsOn`. A task may start only after every task in `dependsOn` finishes and its output is checked. Ready independent tasks may run concurrently; a dependency chain runs linearly. `TEAM.md` explains when to choose the template and how to integrate its results. Templates are optional and do not install as native agent profiles. `pnpm skills validate` rejects unknown agents, missing dependencies, duplicate task IDs, and cycles in saved templates.
 
 Document-backed skills, such as rule wrappers or the personal knowledge index wrapper, are declared in `localSkillSources` in `meta.ts`. Their source content stays in `rules/` or `knowledge/`; `pnpm skills link` renders it into gitignored `generated/<name>/SKILL.md` files and resolves relative document links to absolute paths in this checkout.
 

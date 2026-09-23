@@ -2,6 +2,17 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 
 // Use a const object instead of enum because Node strips types only for erasable syntax.
 export const Skill = {
+    TeamWorkflow: 'team-workflow',
+    BeforeYouBuild: 'before-you-build',
+    ScenesGatheredZine: 'scenes-gathered-zine-v1-3',
+    SceneDistillationZine: 'scene-distillation-zine-v1-3',
+    ThreejsFundamentals: 'threejs-fundamentals',
+    ThreejsInteraction: 'threejs-interaction',
+    ThreejsAnimation: 'threejs-animation',
+    GsapCore: 'gsap-core',
+    GsapTimeline: 'gsap-timeline',
+    GsapScrolltrigger: 'gsap-scrolltrigger',
+    GsapFrameworks: 'gsap-frameworks',
     CreatePageDesc: 'create-page-desc',
     CreateIssues: 'create-issues',
     CreatePr: 'create-pr',
@@ -23,6 +34,8 @@ export const Skill = {
 } as const
 
 export const localSkillSources = [
+    { kind: 'directory', name: Skill.TeamWorkflow, path: 'skills/team-workflow' },
+    { kind: 'directory', name: Skill.BeforeYouBuild, path: 'skills/before-you-build' },
     { kind: 'directory', name: Skill.CreatePageDesc, path: 'skills/create-page-desc' },
     { kind: 'directory', name: Skill.CreateIssues, path: 'skills/create-issues' },
     { kind: 'directory', name: Skill.CreatePr, path: 'skills/create-pr' },
@@ -74,13 +87,44 @@ export const localSkillSources = [
     { kind: 'directory', name: Skill.ZentaoInit, path: 'skills/zentao-init' },
 ] as const satisfies readonly LocalSkillSource[]
 
-const vendoredSkillNames = [
+export const vendors: Record<string, VendorSkillMeta> = {
+    'gathered-scenes-zine-skill': {
+        source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
+        skills: {
+            'scenes-gathered-zine-v1-3': Skill.ScenesGatheredZine,
+            'scene-distillation-zine-v1-3': Skill.SceneDistillationZine,
+        },
+    },
+    'threejs-skills': {
+        source: 'https://github.com/CloudAI-X/threejs-skills.git',
+        skills: {
+            'threejs-fundamentals': Skill.ThreejsFundamentals,
+            'threejs-interaction': Skill.ThreejsInteraction,
+            'threejs-animation': Skill.ThreejsAnimation,
+        },
+    },
+    'gsap-skills': {
+        source: 'https://github.com/greensock/gsap-skills.git',
+        skills: {
+            'gsap-core': Skill.GsapCore,
+            'gsap-timeline': Skill.GsapTimeline,
+            'gsap-scrolltrigger': Skill.GsapScrolltrigger,
+            'gsap-frameworks': Skill.GsapFrameworks,
+        },
+    },
+}
 
+const vendoredSkillNames = Object.values(vendors).flatMap(vendor => Object.values(vendor.skills))
+
+export const agentOnlySkills = [
+    Skill.BeforeYouBuild,
+    ...vendoredSkillNames,
 ] as const
+const agentOnlySkillSet = new Set<string>(agentOnlySkills)
 
 export const installableSkills = [
-    ...localSkillSources.map(source => source.name),
-    ...vendoredSkillNames,
+    ...localSkillSources.map(source => source.name).filter(name => !agentOnlySkillSet.has(name)),
+    ...vendoredSkillNames.filter(name => !agentOnlySkillSet.has(name)),
 ]
 
 export const alwaysOnInstructionSkills = [
@@ -113,12 +157,17 @@ export const linkTargets: readonly LinkTarget[] = [
             { key: '~/.config/opencode/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
+            { key: '{{REPO_ROOT}}/generated/**', value: 'allow' },
         ],
         file: '~/.config/opencode/opencode.json',
         kind: 'json-object',
         path: ['permission', 'external_directory'],
     },
     { dir: '~/.agents/skills', kind: 'skill', include: installableSkills },
+    { dir: '~/.claude/agents', format: 'claude', kind: 'agent' },
+    { dir: '~/.kimi-code/agents', format: 'kimi-code', kind: 'agent' },
+    { dir: '~/.config/opencode/agents', format: 'opencode', kind: 'agent' },
+    { dir: '~/.pi/agent/agents', format: 'pi', kind: 'agent' },
     {
         dir: '~/.claude/skills',
         kind: 'skill',
@@ -126,29 +175,3 @@ export const linkTargets: readonly LinkTarget[] = [
     },
     { dir: '~/.claude/rules', kind: 'rule', include: alwaysOnInstructionSkills },
 ]
-
-export const vendors: Record<string, VendorSkillMeta> = {
-    // 'gathered-scenes-zine-skill': {
-    //     source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
-    //     skills: {
-    //         'morandi-cinematic-poster-zeejay': Skill.MorandiCinematicPoster,
-    //         'scene-distillation-zine-v1-3': Skill.SceneDistillationZine,
-    //         'scenes-gathered-zine-v1-3': Skill.ScenesGatheredZine,
-    //     },
-    // },
-    // 'threejs-skills': {
-    //     source: 'https://github.com/CloudAI-X/threejs-skills.git',
-    //     skills: {
-    //         'threejs-animation': Skill.ThreejsAnimation,
-    //         'threejs-fundamentals': Skill.ThreejsFundamentals,
-    //         'threejs-geometry': Skill.ThreejsGeometry,
-    //         'threejs-interaction': Skill.ThreejsInteraction,
-    //         'threejs-lighting': Skill.ThreejsLighting,
-    //         'threejs-loaders': Skill.ThreejsLoaders,
-    //         'threejs-materials': Skill.ThreejsMaterials,
-    //         'threejs-postprocessing': Skill.ThreejsPostprocessing,
-    //         'threejs-shaders': Skill.ThreejsShaders,
-    //         'threejs-textures': Skill.ThreejsTextures,
-    //     },
-    // },
-}

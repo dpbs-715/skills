@@ -6,6 +6,7 @@ import {
   linkTargets as defaultLinkTargets,
 } from '../../meta.ts'
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
+import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'
 import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'
 import type { LinkTarget, LocalSkillSource } from '../lib/metaTypes.ts'
 import {
@@ -64,9 +65,18 @@ export async function linkAll({
   targets = defaultLinkTargets,
 }: OrchestrateOptions = {}): Promise<LinkResult[]> {
   await renderLocalSkillSources({ root, localSkillSources })
+  const agentNames = await renderAgents(root)
   const results: LinkResult[] = []
 
   for (const target of targets) {
+    if (target.kind === 'agent') {
+      const dir = homePath(target.dir)
+      if (!await pathExists(dirname(dir)))
+        continue
+      results.push(...await createAgentLinks({ format: target.format, names: agentNames, root, target: dir }))
+      continue
+    }
+
     if (target.kind === 'skill') {
       const dir = homePath(target.dir)
       if (!await pathExists(dir))
@@ -131,7 +141,9 @@ export async function unlinkAll({
       continue
 
     const dir = homePath(target.dir)
-    if (target.kind === 'skill')
+    if (target.kind === 'agent')
+      results.push(...await removeAgentLinks({ format: target.format, root, target: dir }))
+    else if (target.kind === 'skill')
       results.push(...await removeSkillLinks({ root, targets: [dir] }))
     else
       results.push(...await removeInstructionLinks({ root, targets: [dir] }))

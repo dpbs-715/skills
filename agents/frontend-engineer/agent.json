@@ -1,0 +1,12 @@
+{
+  "name": "frontend-engineer",
+  "description": "Implements and reviews frontend behavior, components, and page interactions.",
+  "rules": [
+    "rules/engineering/RULES.md",
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [
+    "create-page-desc",
+    "dcr"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "threejs-engineer",
+  "description": "Builds and checks focused Three.js scenes, animation, and interaction.",
+  "rules": [
+    "rules/engineering/RULES.md",
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [],
+  "agentOnlySkills": [
+    "threejs-fundamentals",
+    "threejs-interaction",
+    "threejs-animation"
+  ]
+}

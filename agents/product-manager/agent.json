@@ -1,0 +1,13 @@
+{
+  "name": "product-manager",
+  "description": "Clarifies user needs and turns product requests into testable scope and acceptance criteria.",
+  "rules": [
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [
+    "create-page-desc"
+  ],
+  "agentOnlySkills": [
+    "before-you-build"
+  ]
+}
