@@ -6,6 +6,8 @@ Personal rules and skills for AI coding agents.
 
 Give a local coding agent the [copyable installation prompt](docs/local-setup-prompt.md). It covers environment checks, first-time knowledge index creation, existing tool configuration, linking, and verification. The prompt includes the repository URL and can be forwarded on its own.
 
+## Repository Layout
+
 This repository separates always-on preferences from task-specific skills:
 
 - `rules/` contains durable personal or project rules that should guide broad work.
@@ -18,24 +20,72 @@ This repository separates always-on preferences from task-specific skills:
 
 ## Current Entries
 
-| Type | Name | Entry |
+This inventory covers the skills configured in `meta.ts` and every repository role. Links point to source entries; installable bundles are rendered or synced into `generated/`.
+
+### General Skills
+
+| Skill | Purpose |
+| --- | --- |
+| [commit](skills/commit/SKILL.md) | Create focused commits with Conventional Commit messages. |
+| [cpush](skills/cpush/SKILL.md) | Commit and push through the existing commit and push workflows. |
+| [create-issues](skills/create-issues/SKILL.md) | Create GitHub or GitLab issues and associated branches. |
+| [create-page-desc](skills/create-page-desc/SKILL.md) | Turn page references or requirements into structured specifications. |
+| [create-pr](skills/create-pr/SKILL.md) | Open GitHub pull requests or GitLab merge requests. |
+| [dcr](skills/dcr/SKILL.md) | Review local Git diffs and report actionable findings. |
+| [mock](skills/mock/SKILL.md) | Simulate a request flow and identify applicable tools, skills, and rules. |
+| [psql](skills/psql/SKILL.md) | Query and manage PostgreSQL through local CLI connections. |
+| [psql-init](skills/psql-init/SKILL.md) | Configure a project's PostgreSQL connection mapping. |
+| [push](skills/push/SKILL.md) | Push local commits to a remote. |
+| [review-pr](skills/review-pr/SKILL.md) | Review PRs/MRs and merge when the required checks pass. |
+| [submit](skills/submit/SKILL.md) | Run the issue, branch, commit/push, and PR/MR submission workflow. |
+| [team-workflow](skills/team-workflow/SKILL.md) | Coordinate repository roles and report each subagent's contributions. |
+| [zentao-bug-list](skills/zentao-bug-list/SKILL.md) | List, filter, and prioritize bugs within the project's ZenTao scope. |
+| [zentao-fix-bug](skills/zentao-fix-bug/SKILL.md) | Investigate and fix one scoped ZenTao bug. |
+| [zentao-init](skills/zentao-init/SKILL.md) | Configure or validate a project's ZenTao mapping. |
+
+### Rules and Knowledge
+
+These document sources are rendered as skills. Engineering and problem-solving rules also become always-on instructions for configured tools that use rule directories.
+
+| Skill | Source | Purpose |
 | --- | --- | --- |
-| Rule set | Engineering | [rules/engineering/RULES.md](rules/engineering/RULES.md) |
-| Rule set | Problem solving | [rules/problem-solving/RULES.md](rules/problem-solving/RULES.md) |
-| Knowledge index | Personal knowledge | [knowledge/INDEX.md](knowledge/INDEX.md) |
-| Source skill | Commit | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
-| Source skill | Commit and push | [skills/cpush/SKILL.md](skills/cpush/SKILL.md) |
-| Source skill | Diff review | [skills/dcr/SKILL.md](skills/dcr/SKILL.md) |
-| Source skill | PR/MR review and merge | [skills/review-pr/SKILL.md](skills/review-pr/SKILL.md) |
-| Source skill | Mock | [skills/mock/SKILL.md](skills/mock/SKILL.md) |
-| Source skill | Push | [skills/push/SKILL.md](skills/push/SKILL.md) |
-| Source skill | Team workflow | [skills/team-workflow/SKILL.md](skills/team-workflow/SKILL.md) |
-| Agent-only skill | Before you build | [skills/before-you-build/SKILL.md](skills/before-you-build/SKILL.md) |
-| Agent | Frontend engineer | [agents/frontend-engineer/AGENT.md](agents/frontend-engineer/AGENT.md) |
-| Agent | Product manager | [agents/product-manager/AGENT.md](agents/product-manager/AGENT.md) |
-| Agent | Visual artist | [agents/visual-artist/AGENT.md](agents/visual-artist/AGENT.md) |
-| Agent | Three.js engineer | [agents/threejs-engineer/AGENT.md](agents/threejs-engineer/AGENT.md) |
-| Agent | Motion engineer | [agents/motion-engineer/AGENT.md](agents/motion-engineer/AGENT.md) |
+| `engineering-rules` | [Engineering rules](rules/engineering/RULES.md) | Guide implementation, structure, and code review. |
+| `problem-solving-rules` | [Problem-solving rules](rules/problem-solving/RULES.md) | Investigate symptoms and address root causes. |
+| `personal-knowledge` | Local `knowledge/INDEX.md`; see [Knowledge Notes](#knowledge-notes) | Find private reusable notes through a lightweight index. |
+
+The knowledge index and notes are gitignored. Run `pnpm skills note reindex` to create the index on a fresh checkout.
+
+### Role-Only Skills
+
+These skills are available to their owning roles and are omitted from global skill directories. Vendored submodule sources become available locally after `pnpm skills init`; only the selected skills below are configured for use.
+
+| Skill | Owning role | Source |
+| --- | --- | --- |
+| `before-you-build` | Product manager | [Local skill](skills/before-you-build/SKILL.md) |
+| `visual-design-foundations` | UI designer | [Vendored snapshot](vendor/ui-designer-skills/visual-design-foundations/SKILL.md) |
+| `frontend-design` | UI designer | [Vendored snapshot](vendor/ui-designer-skills/frontend-design/SKILL.md) |
+| `scenes-gathered-zine-v1-3` | Visual artist | [Vendored skill](vendor/gathered-scenes-zine-skill/skills/scenes-gathered-zine-v1-3/SKILL.md) |
+| `scene-distillation-zine-v1-3` | Visual artist | [Vendored skill](vendor/gathered-scenes-zine-skill/skills/scene-distillation-zine-v1-3/SKILL.md) |
+| `threejs-fundamentals` | Three.js engineer | [Vendored skill](vendor/threejs-skills/skills/threejs-fundamentals/SKILL.md) |
+| `threejs-interaction` | Three.js engineer | [Vendored skill](vendor/threejs-skills/skills/threejs-interaction/SKILL.md) |
+| `threejs-animation` | Three.js engineer | [Vendored skill](vendor/threejs-skills/skills/threejs-animation/SKILL.md) |
+| `gsap-core` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-core/SKILL.md) |
+| `gsap-timeline` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-timeline/SKILL.md) |
+| `gsap-scrolltrigger` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-scrolltrigger/SKILL.md) |
+| `gsap-frameworks` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-frameworks/SKILL.md) |
+
+### Role Agents
+
+| Role | Responsibility |
+| --- | --- |
+| [Product manager](agents/product-manager/AGENT.md) | Clarify needs, scope, and acceptance criteria. |
+| [UI designer](agents/ui-designer/AGENT.md) | Design page hierarchy, layouts, component states, responsive behavior, and visual handoff. |
+| [Frontend engineer](agents/frontend-engineer/AGENT.md) | Implement and review frontend components and interactions. |
+| [Visual artist](agents/visual-artist/AGENT.md) | Create visual artwork and poster concepts. |
+| [Three.js engineer](agents/threejs-engineer/AGENT.md) | Build and verify Three.js scenes, animation, and interaction. |
+| [Motion engineer](agents/motion-engineer/AGENT.md) | Implement GSAP motion, timelines, scrolling, and framework integration. |
+
+Each role has an `agent.json` manifest beside its `AGENT.md` source. There are currently no saved [team templates](teams/README.md); `team-workflow` assembles a team for each task.
 
 Run `pnpm skills status` for the live view derived from `meta.ts`: which skills are configured (and why), whether each generated bundle is present in `generated/`, any undeclared generated skill directories, and submodule checkout state.
 
