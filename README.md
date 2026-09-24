@@ -2,6 +2,10 @@
 
 Personal rules and skills for AI coding agents.
 
+## Install on Another Computer
+
+Give a local coding agent the [copyable installation prompt](docs/local-setup-prompt.md). It covers environment checks, first-time knowledge index creation, existing tool configuration, linking, and verification. The prompt includes the repository URL and can be forwarded on its own.
+
 This repository separates always-on preferences from task-specific skills:
 
 - `rules/` contains durable personal or project rules that should guide broad work.
