@@ -1,0 +1,14 @@
+{
+  "name": "ui-designer",
+  "description": "Designs page hierarchy, layouts, component states, responsive behavior, and visual handoff for product interfaces.",
+  "rules": [
+    "rules/problem-solving/RULES.md"
+  ],
+  "skills": [
+    "create-page-desc"
+  ],
+  "agentOnlySkills": [
+    "visual-design-foundations",
+    "frontend-design"
+  ]
+}

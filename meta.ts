@@ -4,6 +4,8 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 export const Skill = {
     TeamWorkflow: 'team-workflow',
     BeforeYouBuild: 'before-you-build',
+    VisualDesignFoundations: 'visual-design-foundations',
+    FrontendDesign: 'frontend-design',
     ScenesGatheredZine: 'scenes-gathered-zine-v1-3',
     SceneDistillationZine: 'scene-distillation-zine-v1-3',
     ThreejsFundamentals: 'threejs-fundamentals',
@@ -36,6 +38,8 @@ export const Skill = {
 export const localSkillSources = [
     { kind: 'directory', name: Skill.TeamWorkflow, path: 'skills/team-workflow' },
     { kind: 'directory', name: Skill.BeforeYouBuild, path: 'skills/before-you-build' },
+    { kind: 'directory', name: Skill.VisualDesignFoundations, path: 'vendor/ui-designer-skills/visual-design-foundations' },
+    { kind: 'directory', name: Skill.FrontendDesign, path: 'vendor/ui-designer-skills/frontend-design' },
     { kind: 'directory', name: Skill.CreatePageDesc, path: 'skills/create-page-desc' },
     { kind: 'directory', name: Skill.CreateIssues, path: 'skills/create-issues' },
     { kind: 'directory', name: Skill.CreatePr, path: 'skills/create-pr' },
@@ -118,6 +122,8 @@ const vendoredSkillNames = Object.values(vendors).flatMap(vendor => Object.value
 
 export const agentOnlySkills = [
     Skill.BeforeYouBuild,
+    Skill.VisualDesignFoundations,
+    Skill.FrontendDesign,
     ...vendoredSkillNames,
 ] as const
 const agentOnlySkillSet = new Set<string>(agentOnlySkills)
