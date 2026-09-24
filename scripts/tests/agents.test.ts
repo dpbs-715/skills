@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readlink, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
 import { agentOnlySkills, installableSkills, linkTargets } from '../../meta.ts'
+import { cleanupUnusedEntries } from '../commands/cleanup.ts'
 import { linkAll, unlinkAll } from '../commands/link.ts'
 import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'
 import { validateSkills } from '../lib/validation.ts'
@@ -148,3 +149,67 @@ test('validation reports stale generated role files', async () => {
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('skill cleanup preserves generated agents and their installed links', async () => {
+  const root = await fixture()
+  const target = join(root, 'tool-agents')
+  try {
+    await renderAgents(root)
+    await createAgentLinks({ format: 'claude', names: ['reviewer'], root, target })
+    const roleContent = await readFile(join(target, 'reviewer.md'), 'utf8')
+    await mkdir(join(root, 'generated', 'retired-skill'))
+    const options = { root, installableSkills: [], localSkillSources: [], vendors: {} }
+
+    const preview = await cleanupUnusedEntries(options)
+    assert.deepEqual(preview.skills, [{ name: 'retired-skill', status: 'would-remove' }])
+    const result = await cleanupUnusedEntries({ ...options, yes: true })
+    assert.deepEqual(result.skills, [{ name: 'retired-skill', status: 'removed' }])
+    assert.equal(await readFile(join(target, 'reviewer.md'), 'utf8'), roleContent)
+    const validation = await validateSkills({ root, agentOnlySkills: [], installableSkills: [], localSkillSources: [] })
+    assert.deepEqual(validation.issues, [])
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+for (const change of ['rename', 'delete-all'] as const) {
+  test(`validation detects retired generated agents after ${change}, and linking removes them`, async () => {
+    const root = await fixture()
+    const target = join(root, 'tool-agents')
+    const targets = [{ dir: target, format: 'claude', kind: 'agent' }] as const
+    const validationOptions = { root, agentOnlySkills: [], installableSkills: [], localSkillSources: [] }
+    try {
+      await linkAll({ root, localSkillSources: [], targets })
+      if (change === 'rename') {
+        await rename(join(root, 'agents', 'reviewer'), join(root, 'agents', 'auditor'))
+        const manifestPath = join(root, 'agents', 'auditor', 'agent.json')
+        const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+        await writeFile(manifestPath, JSON.stringify({ ...manifest, name: 'auditor' }))
+      }
+      else {
+        await rm(join(root, 'agents'), { recursive: true })
+      }
+
+      const before = await validateSkills(validationOptions)
+      assert.equal(before.ok, false)
+      assert.deepEqual(before.issues.filter(issue => issue.code === 'unexpected-generated-agent').map(issue => issue.path).sort(), [
+        'generated/agents/claude/reviewer.md',
+        'generated/agents/kimi-code/reviewer.md',
+        'generated/agents/opencode/reviewer.md',
+        'generated/agents/pi/reviewer.md',
+      ])
+      if (change === 'rename')
+        assert.equal(before.issues.filter(issue => issue.code === 'missing-generated-agent').length, 4)
+
+      await linkAll({ root, localSkillSources: [], targets })
+      assert.deepEqual((await validateSkills(validationOptions)).issues, [])
+      await assert.rejects(readlink(join(target, 'reviewer.md')), { code: 'ENOENT' })
+      if (change === 'rename')
+        assert.match(await readFile(join(target, 'auditor.md'), 'utf8'), /name: auditor/)
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+}

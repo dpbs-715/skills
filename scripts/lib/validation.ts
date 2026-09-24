@@ -6,7 +6,7 @@ import {
   installableSkills as defaultInstallableSkills,
   localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
-import { expectedAgentFiles } from './agents.ts'
+import { expectedAgentFiles, GENERATED_AGENTS_DIR } from './agents.ts'
 import type { LocalSkillSource } from './metaTypes.ts'
 import {
   GENERATED_SKILLS_DIR,
@@ -31,6 +31,7 @@ export type ValidationIssueCode =
   | 'invalid-agent'
   | 'missing-generated-agent'
   | 'stale-generated-agent'
+  | 'unexpected-generated-agent'
   | 'invalid-team'
 
 export interface ValidationIssue {
@@ -210,8 +211,10 @@ async function validateAgents(root: string, issues: ValidationIssue[]): Promise<
     return
   }
 
+  const expectedPaths = new Set<string>()
   for (const agent of expected) {
-    const relPath = join('generated', 'agents', agent.format, `${agent.name}.md`)
+    const relPath = join(GENERATED_AGENTS_DIR, agent.format, `${agent.name}.md`)
+    expectedPaths.add(relPath)
     const path = join(root, relPath)
     if (!await pathExists(path)) {
       addIssue(issues, 'missing-generated-agent', relPath, `Missing generated agent; run pnpm skills link: ${relPath}`)
@@ -219,6 +222,20 @@ async function validateAgents(root: string, issues: ValidationIssue[]): Promise<
     else if (await readFile(path, 'utf8') !== agent.content) {
       addIssue(issues, 'stale-generated-agent', relPath, `Generated agent is stale; run pnpm skills link: ${relPath}`)
     }
+  }
+
+  const generatedDir = join(root, GENERATED_AGENTS_DIR)
+  if (!await pathExists(generatedDir))
+    return
+
+  const entries = await readdir(generatedDir, { recursive: true, withFileTypes: true })
+  const actualPaths = entries
+    .filter(entry => (entry.isFile() || entry.isSymbolicLink()) && entry.name.endsWith('.md'))
+    .map(entry => relative(root, join(entry.parentPath, entry.name)))
+    .sort()
+  for (const relPath of actualPaths) {
+    if (!expectedPaths.has(relPath))
+      addIssue(issues, 'unexpected-generated-agent', relPath, `Generated agent has no matching source; run pnpm skills link: ${relPath}`)
   }
 }
 

@@ -17,6 +17,7 @@ import {
   type RunGit,
 } from '../lib/git.ts'
 import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
+import { GENERATED_AGENTS_DIR } from '../lib/agents.ts'
 import { GENERATED_SKILLS_DIR } from '../lib/skillRendering.ts'
 import { listDirectories, repoRoot } from '../lib/utils.ts'
 
@@ -73,7 +74,10 @@ export async function cleanupUnusedEntries({
 
   const expectedSkills = expectedSkillNames({ installableSkills, localSkillSources, vendors })
   const existingSkills = await listDirectories(join(root, GENERATED_SKILLS_DIR))
-  const extraSkills = existingSkills.filter(name => !expectedSkills.has(name))
+  // Role outputs share generated/ with skill bundles and are managed by the agent renderer.
+  const extraSkills = existingSkills.filter(name =>
+    join(GENERATED_SKILLS_DIR, name) !== GENERATED_AGENTS_DIR && !expectedSkills.has(name),
+  )
 
   const results: CleanupResult = {
     skills: [],

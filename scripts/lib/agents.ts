@@ -8,7 +8,7 @@ import { pathExists, repoRoot } from './utils.ts'
 
 const agentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const formats: readonly AgentFormat[] = ['claude', 'kimi-code', 'opencode', 'pi']
-const generatedAgentsDir = 'generated/agents'
+export const GENERATED_AGENTS_DIR = join('generated', 'agents')
 
 interface AgentManifest {
   agentOnlySkills?: string[]
@@ -94,7 +94,7 @@ function renderAgent(root: string, agent: { manifest: AgentManifest, body: strin
   }).join('\n')
   const agentOnlySection = agentOnly ? `\n\n## Agent-only skills\n\n${agentOnly}` : ''
 
-  return `${frontmatter.join('\n')}\n\n${body}\n\n## Shared rules\n\n${rules}\n\n## Role skills\n\n${skills}${agentOnlySection}\n\nUse these skills when relevant to the assigned task. The user may explicitly request another available skill.\n\nReturn a concise, self-contained result to the delegating agent.\n`
+  return `${frontmatter.join('\n')}\n\n${body}\n\n## Shared rules\n\n${rules}\n\n## Role skills\n\n${skills}${agentOnlySection}\n\nUse these skills when relevant to the assigned task. The user may explicitly request another available skill.\n\nReturn a concise, self-contained result to the delegating agent. Include the role name, task outcome, skills actually used, deliverables, and checks or blockers.\n`
 }
 
 export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
@@ -122,12 +122,12 @@ export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
 export async function renderAgents(root = repoRoot()): Promise<string[]> {
   const files = await expectedAgentFiles(root)
   if (files.length === 0) {
-    await rm(join(root, generatedAgentsDir), { force: true, recursive: true })
+    await rm(join(root, GENERATED_AGENTS_DIR), { force: true, recursive: true })
     return []
   }
 
   for (const format of formats) {
-    const targetDir = join(root, generatedAgentsDir, format)
+    const targetDir = join(root, GENERATED_AGENTS_DIR, format)
     await rm(targetDir, { force: true, recursive: true })
     await mkdir(targetDir, { recursive: true })
     for (const file of files.filter(file => file.format === format))
@@ -144,12 +144,12 @@ export async function createAgentLinks(options: {
   target: string
 }): Promise<LinkResult[]> {
   const { format, names, root = repoRoot(), target } = options
-  const sourceDir = join(root, generatedAgentsDir, format)
+  const sourceDir = join(root, GENERATED_AGENTS_DIR, format)
   await mkdir(target, { recursive: true })
   const results: LinkResult[] = []
   for (const name of names) {
     const status = await ensureLink(join(sourceDir, `${name}.md`), join(target, `${name}.md`), {
-      replaceFrom: [join(root, generatedAgentsDir)],
+      replaceFrom: [join(root, GENERATED_AGENTS_DIR)],
     })
     results.push({ name: `${name}.md`, target, status })
   }
@@ -163,5 +163,5 @@ export async function removeAgentLinks(options: {
   target: string
 }): Promise<LinkResult[]> {
   const { format, root = repoRoot(), target } = options
-  return pruneLinks(target, new Set(), join(root, generatedAgentsDir, format))
+  return pruneLinks(target, new Set(), join(root, GENERATED_AGENTS_DIR, format))
 }

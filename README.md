@@ -106,7 +106,7 @@ For a skill used only by a role, register its name in `agentOnlySkills` in `meta
 | OpenCode | `~/.config/opencode/agents` | Generated role runs as a subagent. |
 | Pi | `~/.pi/agent/agents` | Requires a Pi subagent extension that reads this directory; Pi does not activate roles from files alone. |
 
-The `team-workflow` skill is the coordination entry point when the user asks for multiple agents. It forms a small team for the current task, assigns independent work, and verifies the combined result. It does not change a host's concurrency limit or save each temporary plan as a template.
+The `team-workflow` skill forms an ad hoc team for the current task. It explicitly binds each subagent to an installed role or passes the role's instructions, rules, and relevant skill paths to a generic subagent. The lead agent checks prerequisite outputs before starting dependent work and verifies the combined result. Completion reports map each subagent task to the repository role actually used, work completed, deliverables, checks, and status. Reusable templates are saved only when the user asks.
 
 ## Team Templates
 
