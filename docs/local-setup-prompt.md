@@ -1,10 +1,3 @@
-# Local Setup Prompt
-
-Send the code block below to a coding agent with local terminal, filesystem, and network access. The prompt includes the repository URL and can be forwarded on its own. No skills from this repository need to be installed beforehand.
-
-This configuration includes the author's engineering preferences, workflows, and roles. The default linking process handles multiple existing tool directories and may merge OpenCode configuration. Keep the repository in a permanent location; do not delete or move it after installation.
-
-```text
 Install https://github.com/dpbs-715/skills.git on my machine and verify the installation. Carry out the setup rather than only giving me commands.
 
 Use ~/agent-skills unless I specify another location. You are authorized to download the repository, install its required project dependencies, and register skills, rules, and agents for tools already configured on this machine, following the repository configuration. First identify the current agent and runtime environment; ask me if you cannot determine the target tool.
@@ -35,6 +28,4 @@ Setup requirements:
 7. Verify skill discovery and role loading using capabilities actually supported by the current tool. Codex uses team-workflow to pass repository roles to generic subagents. Role files for Claude Code, Kimi Code, OpenCode, and Pi are generated according to the repository configuration. Pi also needs a subagent extension that can load those role files. If verification requires a new session or restart, clearly distinguish files being installed from runtime behavior still awaiting verification, and tell me what to do next.
 
 Finish with a brief installation report: repository path and revision, tools actually configured, installation results for skills/rules/agents, verification results, conflicts or skipped entries, and whether I need to reopen the session. Include two usable example prompts. One should ask team-workflow to coordinate a UI designer and a frontend engineer, then report the role and work performed by each subagent. There is no need to create an application project, commit code, or push anything to verify this installation.
-```
 
-This prompt does not bypass the receiving agent's permission requirements. Whether newly installed skills or subagents are immediately available depends on the receiving tool's loading behavior and capabilities.
