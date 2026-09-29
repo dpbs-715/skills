@@ -18,6 +18,7 @@ export type LocalSkillSource = DirectorySkillSource | DocumentSkillSource
 
 export interface VendorSkillMeta {
   source: string
+  skillsDir?: string
   skills: Record<string, string>
 }
 

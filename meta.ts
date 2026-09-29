@@ -2,6 +2,14 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 
 // Use a const object instead of enum because Node strips types only for erasable syntax.
 export const Skill = {
+    ApifoxCli: 'apifox-cli',
+    ApifoxCliCheckup: 'apifox-cli-checkup',
+    ApifoxBranch: 'apifox-branch',
+    ApifoxImportExport: 'apifox-import-export',
+    ApifoxTestCase: 'apifox-test-case',
+    ApifoxTestScenario: 'apifox-test-scenario',
+    ApifoxTestAutomation: 'apifox-test-automation',
+    ApifoxWorkflowApiLifecycle: 'apifox-workflow-api-lifecycle',
     TeamWorkflow: 'team-workflow',
     BeforeYouBuild: 'before-you-build',
     VisualDesignFoundations: 'visual-design-foundations',
@@ -92,6 +100,20 @@ export const localSkillSources = [
 ] as const satisfies readonly LocalSkillSource[]
 
 export const vendors: Record<string, VendorSkillMeta> = {
+    'apifox-cli-skills': {
+        source: 'https://github.com/apifox/apifox-cli-skills.git',
+        skillsDir: '.well-known/agent-skills',
+        skills: {
+            'apifox-cli': Skill.ApifoxCli,
+            'apifox-cli-checkup': Skill.ApifoxCliCheckup,
+            'apifox-branch': Skill.ApifoxBranch,
+            'apifox-import-export': Skill.ApifoxImportExport,
+            'apifox-test-case': Skill.ApifoxTestCase,
+            'apifox-test-scenario': Skill.ApifoxTestScenario,
+            'apifox-test-automation': Skill.ApifoxTestAutomation,
+            'apifox-workflow-api-lifecycle': Skill.ApifoxWorkflowApiLifecycle,
+        },
+    },
     'gathered-scenes-zine-skill': {
         source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
         skills: {
@@ -124,7 +146,15 @@ export const agentOnlySkills = [
     Skill.BeforeYouBuild,
     Skill.VisualDesignFoundations,
     Skill.FrontendDesign,
-    ...vendoredSkillNames,
+    Skill.ScenesGatheredZine,
+    Skill.SceneDistillationZine,
+    Skill.ThreejsFundamentals,
+    Skill.ThreejsInteraction,
+    Skill.ThreejsAnimation,
+    Skill.GsapCore,
+    Skill.GsapTimeline,
+    Skill.GsapScrolltrigger,
+    Skill.GsapFrameworks,
 ] as const
 const agentOnlySkillSet = new Set<string>(agentOnlySkills)
 

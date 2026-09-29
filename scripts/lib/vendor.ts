@@ -100,7 +100,8 @@ export async function syncVendorSkills({
 
   for (const [vendorName, vendor] of Object.entries(vendors)) {
     const vendorPath = join(root, 'vendor', vendorName)
-    const vendorSkillsPath = join(vendorPath, 'skills')
+    const skillsDir = vendor.skillsDir ?? 'skills'
+    const vendorSkillsPath = join(vendorPath, skillsDir)
     const hasVendorSkills = await pathExists(vendorSkillsPath)
     const sha = hasVendorSkills ? await resolveGitSha(vendorPath) : null
 
@@ -131,7 +132,7 @@ export async function syncVendorSkills({
         date,
         repository: vendor.source,
         sha,
-        source: `vendor/${vendorName}/skills/${sourceSkill}`,
+        source: `vendor/${vendorName}/${skillsDir}/${sourceSkill}`,
       }))
 
       results.push({ ...resultBase, status: 'synced' })

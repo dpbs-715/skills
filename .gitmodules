@@ -7,3 +7,6 @@
 [submodule "vendor/gsap-skills"]
 	path = vendor/gsap-skills
 	url = https://github.com/greensock/gsap-skills.git
+[submodule "vendor/apifox-cli-skills"]
+	path = vendor/apifox-cli-skills
+	url = https://github.com/apifox/apifox-cli-skills.git

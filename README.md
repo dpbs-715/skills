@@ -26,6 +26,7 @@ This inventory covers the skills configured in `meta.ts` and every repository ro
 
 | Skill | Purpose |
 | --- | --- |
+| [Apifox CLI skills](vendor/apifox-cli-skills/README.md) | Eight skills for CLI resources, diagnostics, branches, import/export, test cases, scenarios, automation, and API lifecycle workflows. |
 | [commit](skills/commit/SKILL.md) | Create focused commits with Conventional Commit messages. |
 | [cpush](skills/cpush/SKILL.md) | Commit and push through the existing commit and push workflows. |
 | [create-issues](skills/create-issues/SKILL.md) | Create GitHub or GitLab issues and associated branches. |
@@ -95,7 +96,7 @@ Run `pnpm skills validate` to check that configured local sources, generated ski
 
 This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:
 
-1. Declare the upstream repository and skills to copy in `meta.ts` under `vendors`.
+1. Declare the upstream repository and skills to copy in `meta.ts` under `vendors`. The source directory defaults to `skills/`; set `skillsDir` for another layout, such as Apifox’s `.well-known/agent-skills/`.
 2. Run the skills manager to add missing submodules.
 3. Sync selected upstream skills into `generated/`.
 

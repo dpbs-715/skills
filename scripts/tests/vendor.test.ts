@@ -60,6 +60,36 @@ test('syncs configured vendor skills into the generated directory', async () => 
 `)
 })
 
+test('syncs skills from a configured source directory and records their origin', async () => {
+  const root = await createTempDir('skills-repo-')
+  const skillsDir = '.well-known/agent-skills'
+  const source = join(root, 'vendor', 'apifox', skillsDir, 'apifox-cli')
+  await mkdir(source, { recursive: true })
+  await writeFile(join(source, 'SKILL.md'), '---\nname: apifox-cli\ndescription: Manage APIs.\n---\n')
+
+  const results = await syncVendorSkills({
+    root,
+    vendors: {
+      apifox: {
+        source: 'https://github.com/apifox/apifox-cli-skills.git',
+        skillsDir,
+        skills: { 'apifox-cli': 'apifox-cli' },
+      },
+    },
+    resolveGitSha: async () => 'abc123',
+  })
+
+  assert.equal(results[0]?.status, 'synced')
+  assert.equal(
+    await readFile(join(root, 'generated', 'apifox-cli', 'SKILL.md'), 'utf-8'),
+    await readFile(join(source, 'SKILL.md'), 'utf-8'),
+  )
+  assert.match(
+    await readFile(join(root, 'generated', 'apifox-cli', 'SYNC.md'), 'utf-8'),
+    /vendor\/apifox\/\.well-known\/agent-skills\/apifox-cli/,
+  )
+})
+
 test('reports missing vendor directories without creating output skills', async () => {
   const root = await createTempDir('skills-repo-')
   const vendors: Record<string, VendorSkillMeta> = {
