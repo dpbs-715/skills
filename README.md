@@ -26,7 +26,8 @@ This inventory covers the skills configured in `meta.ts` and every repository ro
 
 | Skill | Purpose |
 | --- | --- |
-| [Apifox CLI skills](vendor/apifox-cli-skills/README.md) | Eight skills for CLI resources, diagnostics, branches, import/export, test cases, scenarios, automation, and API lifecycle workflows. |
+| [apifox](skills/apifox/SKILL.md) | Work with APIs, branches, imports/exports and tests in explicitly bound Apifox projects. |
+| [apifox-init](skills/apifox-init/SKILL.md) | Bind multiple projects to local credential aliases without storing tokens in the repository. |
 | [commit](skills/commit/SKILL.md) | Create focused commits with Conventional Commit messages. |
 | [cpush](skills/cpush/SKILL.md) | Commit and push through the existing commit and push workflows. |
 | [create-issues](skills/create-issues/SKILL.md) | Create GitHub or GitLab issues and associated branches. |
@@ -96,7 +97,7 @@ Run `pnpm skills validate` to check that configured local sources, generated ski
 
 This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:
 
-1. Declare the upstream repository and skills to copy in `meta.ts` under `vendors`. The source directory defaults to `skills/`; set `skillsDir` for another layout, such as Apifox’s `.well-known/agent-skills/`.
+1. Declare the upstream repository and skills to copy in `meta.ts` under `vendors`. The source directory defaults to `skills/`; set `skillsDir` for another layout, such as `.well-known/agent-skills/`.
 2. Run the skills manager to add missing submodules.
 3. Sync selected upstream skills into `generated/`.
 
@@ -172,6 +173,21 @@ Document-backed skills, such as rule wrappers or the personal knowledge index wr
 A directory skill that must reference files outside its own folder can still use the `{{REPO_ROOT}}` placeholder. Edit `skills/<name>/SKILL.md`, never the generated copy, and re-run `pnpm skills link` to regenerate.
 
 Add a skill name to `installableSkills` in `meta.ts` when its generated bundle should be symlinked into local agent skill directories. Add it to `alwaysOnInstructionSkills` when its rendered `generated/<name>/SKILL.md` should also reach Claude or opencode as an always-loaded markdown instruction under their rule directories.
+
+## Apifox Project Bindings
+
+The repo-owned `apifox-init` skill selects projects and credential aliases and writes
+`.apifox/projects.json` in the current code repository. Multiple projects can share
+one credential; different aliases can hold multiple tokens, including tokens for
+the same account. An explicit project key, saved default, or sole project selects
+the connection. Ambiguous selections require a choice.
+
+Tokens live only in `~/.config/apifox-skills/credentials.json` (mode `0600`), configured
+through the helper's hidden terminal prompt. The `apifox` skill uses the shared
+connection helper to supply the project, server and token per command without
+switching global CLI accounts. See the [connection contract](skills/apifox-init/references/connection.md)
+for configuration examples and commands. The previous upstream Apifox submodule
+has been replaced by these local skills.
 
 ## Knowledge Notes
 
