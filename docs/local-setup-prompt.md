@@ -1,3 +1,5 @@
+```text
+
 Install https://github.com/dpbs-715/skills.git on my machine and verify the installation. Carry out the setup rather than only giving me commands.
 
 Use ~/agent-skills unless I specify another location. You are authorized to download the repository, install its required project dependencies, and register skills, rules, and agents for tools already configured on this machine, following the repository configuration. First identify the current agent and runtime environment; ask me if you cannot determine the target tool.
@@ -29,3 +31,4 @@ Setup requirements:
 
 Finish with a brief installation report: repository path and revision, tools actually configured, installation results for skills/rules/agents, verification results, conflicts or skipped entries, and whether I need to reopen the session. Include two usable example prompts. One should ask team-workflow to coordinate a UI designer and a frontend engineer, then report the role and work performed by each subagent. There is no need to create an application project, commit code, or push anything to verify this installation.
 
+```
