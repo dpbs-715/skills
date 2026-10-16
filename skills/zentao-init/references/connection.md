@@ -90,9 +90,10 @@ the source CLI config. It also avoids the normal configstore write beside the
 global file during read commands.
 
 Run every page through this helper with the same selected key and server. Its
-allowlist covers the reads these skills need, including `version` (server
-version detection; the helper requests markdown output and returns parsed
-`{ cli, serverVersion, server }`) and `my bugs` (the server-side
+allowlist covers the reads these skills need, including `version` (the helper
+requests markdown output and returns parsed `{ cli, serverVersion, server }`;
+server information may be cached in the login profile, so this is not a live
+upgrade check) and `my bugs` (the server-side
 assigned-to-me list, accepting `--browseType` and a JSON-array `--filters`);
 do not bypass rejection by using
 bare CLI commands or enabling raw request/configuration overrides. For uncertain

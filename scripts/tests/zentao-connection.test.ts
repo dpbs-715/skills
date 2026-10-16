@@ -109,14 +109,14 @@ test('reports the bound server version through the selected profile', async t =>
 test('forwards my bugs reads with browseType, orderBy, and filters to the bound profile', async t => {
   const context = await setup(t)
   const filters = JSON.stringify([{ field: 'status', operator: '=', value: 'active' }])
-  const result = await context.execute(readArgs(serverA, profileA,
-    ['my', 'bugs', '--browseType=assignedtome', '--orderBy=status_asc', `--filters=${filters}`, '--page=1', '--recPerPage=200']))
+  const command = ['my', 'bugs', '--browseType=assignedTo', '--orderBy=id_asc', `--filters=${filters}`, '--page=1', '--recPerPage=200']
+  const result = await context.execute(readArgs(serverA, profileA, command))
   assert.deepEqual(JSON.parse(result.stdout), {
     data: [{ id: 7, server: serverA, account: 'alice' }],
     pager: { total: 1, page: 1, recPerPage: 200 },
   })
   const calls = await context.calls()
-  assert.deepEqual(calls.at(-1)?.command.slice(0, 2), ['my', 'bugs'])
+  assert.deepEqual(calls.at(-1)?.command, command)
   await context.checkCleanup()
 })
 

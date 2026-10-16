@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "/zentao-bug-list。当前 Git 仓库根目录有合法的 .zentao，产品是 #6，项目是 #12；zentao profile 的当前账号是 dev1。请列出我待处理的 Bug。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Reads and validates only the Git-root .zentao, resolves dev1 from a saved profile matching the mapped server and runs every page through the isolated helper with that exact key, queries all pages of product 6 before filtering to assignedTo dev1 and status active, orders ranked priorities and severities before unspecified values, displays at most 20 concise rows with project and product context, and performs no writes or unnecessary follow-up questions.",
+      "expected_output": "Validates only the Git-root version-2 binding, pins the login matching its server through the helper, prefers my bugs --browseType=assignedTo when supported, fetches raw pages and then filters product 6/current account/active. Globally orders ranked priority/severity before unspecified values and displays at most 20 rows with exact scope and filtered count. Makes no writes or unnecessary follow-up questions.",
       "files": []
     },
     {
@@ -22,19 +22,24 @@
     {
       "id": 4,
       "prompt": "/zentao-bug-list。当前仓库的 .zentao 中 schemaVersion 是 2，product 是 null，project 是 #12 供应链研发项目。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Accepts the strict project-only mapping, resolves the account on the mapped server and pins its exact key through the helper, queries Bugs with --project=12 rather than requiring a product or falling back to the global workspace, applies the normal active/current-assignee defaults, and labels the output as project-scoped with Product shown as not configured.",
+      "expected_output": "Accepts the strict project-only mapping, pins the matching login, and applies project 12/current-assignee/active defaults. Uses the personal list with project fields when supported, otherwise bug --project=12. Never requires a product or falls back to a global workspace. Labels the output project-scoped and product not configured.",
       "files": []
     },
     {
       "id": 5,
-      "prompt": "/zentao-bug-list。项目 #9 的 Bug 查询 pager.total 是 5081、recPerPage 是 1000；第一页应用 assignedTo:dev1,status:active 后 data 为空，但第六页有 3 条匹配。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Does not treat the first filtered empty page as the final result. Avoids --all, computes six pages from the pager, fetches pages 2 through 6 with the same project scope and colon-based AND filter using bounded parallel reads, combines and de-duplicates all matches, then globally sorts and limits the output. It reports an incomplete query instead of an exact empty result if any page fails.",
-      "files": []
+      "prompt": "/zentao-bug-list。CLI 不支持 my bugs。项目 #9 的原始 Bug 列表 pager.total=5081、recPerPage=1000；第一页没有指派给 dev1 的 active Bug，第六页有 3 条匹配。第一页状态看起来单调有序。合法的 schemaVersion 2 .zentao 绑定 server=https://a.example.com/zentao、product=null、project=#9，存在该服务器 dev1 的有效登录。",
+      "expected_output": "Uses raw list pages, not per-page CLI filtering. Computes six pages from the effective pager and fetches all six with the same scope/profile/projection using at most three concurrent reads. Does not stop on an empty filtered page or status ordering. Aggregates, de-duplicates, filters, globally sorts and then limits. Reports incomplete if a page fails.",
+      "files": [],
+      "expectations": [
+        "完整读取 6 页，包含第 6 页匹配项",
+        "分页读取原始数据，聚合后统一过滤",
+        "不会用第一页状态单调性提前结束"
+      ]
     },
     {
       "id": 6,
       "prompt": "/zentao-bug-list。当前安装的是 zentao-cli 0.2.0，帮助文字写 filter 格式是 field=value，并声称支持 --all。请按帮助直接查询。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Does not trust the misleading 0.2.0 help text. Uses colon equality because field=value is silently ineffective in that release, does not use --all because it can be silently ignored, and performs explicit 1000-record pagination based on the returned pager before claiming a complete result.",
+      "expected_output": "Uses the scoped list because this CLI lacks my bugs, does not pass --all or rely on misleading local-filter syntax, and fetches raw pages explicitly using the effective pager. Applies scope/account/status and other filters once after aggregation before claiming completeness.",
       "files": []
     },
     {
@@ -59,6 +64,52 @@
       "id": 10,
       "prompt": "/zentao-bug-list。version 2 映射 https://a.example.com 项目 #9；当前 profile 在 B，A 有 dev 和 tester 两个登录。",
       "expected_output": "Asks which A account to use using metadata choices, does not default to B or arbitrary first A account, pins the chosen key for all reads and uses its structured account for the default assignee.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "/zentao-bug-list。合法 version 2 绑定产品 #6、项目 #9，账号 limingda。CLI 0.3.0 帮助把 my bugs 的 browseType 写成 assignedtome；同一账号用 assignedtome 得 0 条，用区分大小写的 assignedTo 得 7 条（1 active、6 resolved），都在产品 #6。",
+      "expected_output": "Uses the verified assignedTo browse value despite stale help, filters the complete seven raw rows to the one active match in product 6, labels that scope/status and does not report account-wide total 1 or declare the personal API broken.",
+      "files": [],
+      "expectations": [
+        "查询命令使用区分大小写的 assignedTo",
+        "默认队列保留 active 并得到可信的 1 条结果",
+        "保留产品范围，项目仅作展示上下文"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "/zentao-bug-list。version 2 绑定项目 #9、product=null，dev1 已登录。zentao version 显示 22.2，但管理员说网页是 22.6；my bugs --browseType=assignedTo 实际可返回正常数据。",
+      "expected_output": "Does not use cached zentao version as a live compatibility gate or demand an upgrade/login. Tries the business read with assignedTo, completes pagination and scope/status filtering. Does not infer when an upgrade took effect.",
+      "files": []
+    },
+    {
+      "id": 13,
+      "prompt": "/zentao-bug-list 全部。version 2 绑定产品 #6、项目 #9、dev1 登录。my bugs 返回 dev1 的 7 条（1 active、6 resolved），产品都是 #6，其中两条在项目 #10。",
+      "expected_output": "Removes only the status filter, retains product 6 and dev1, includes all seven rows including project 10 because project 9 is display context, reports exact filtered count 7 and uses the personal entry. Does not treat 全部 as all assignees.",
+      "files": [],
+      "expectations": [
+        "全部仅取消状态条件，保留当前指派人",
+        "产品范围包含项目 #10 的两条 Bug",
+        "结果明确 7 条，且不编造缺失行字段"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "/zentao-bug-list。version 2 绑定项目 #9、product=null，dev1 登录。个人列表有返回但没有可用 project 字段，去掉 pick 后仍无此字段。作用域列表可以正常查询。",
+      "expected_output": "Restarts with bug --project=9 through the same bound helper/profile, stops fetching personal pages, completes scoped pagination and applies dev1/active filters. Does not guess scope, fetch details, or mix personal and scoped totals.",
+      "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "/zentao-bug-list。version 2 绑定产品 #6，dev1 登录。my bugs 正确使用 assignedTo，响应成功且 pager.total=0，也没有任何已知的同范围非空结果。",
+      "expected_output": "Reports an empty result for product 6/dev1/active, does not automatically try unrelated browse values, broaden filters, or diagnose version/permissions/API failure.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "/zentao-bug-list 严重程度 1 和 2，登录相关，最近 10 个。合法 version 2 绑定产品 #6、dev1 已登录。响应有两页，页1没有 steps 投影，页2包含标题不含登录但 steps 含登录的 severity=2 Bug；页2首次请求超时。",
+      "expected_output": "Includes steps in the list projection or inspects the unprojected list, treats severity 1 and 2 as alternatives AND keyword/default assignee/active/scope conditions, and searches both title and steps. Retries page 2 with the same profile or labels data incomplete, never a complete zero. After success globally sorts by openedDate descending and displays at most 10 without showing full steps.",
       "files": []
     }
   ]
