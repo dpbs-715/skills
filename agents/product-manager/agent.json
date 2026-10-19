@@ -2,6 +2,7 @@
   "name": "product-manager",
   "description": "Clarifies user needs and turns product requests into testable scope and acceptance criteria.",
   "rules": [
+    "rules/engineering/topics/build-what-is-needed.md",
     "rules/problem-solving/RULES.md"
   ],
   "skills": [
