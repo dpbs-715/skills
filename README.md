@@ -75,6 +75,7 @@ These skills are available to their owning roles and are omitted from global ski
 | `gsap-timeline` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-timeline/SKILL.md) |
 | `gsap-scrolltrigger` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-scrolltrigger/SKILL.md) |
 | `gsap-frameworks` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-frameworks/SKILL.md) |
+| `gsap-react` | Motion engineer | [Vendored skill](vendor/gsap-skills/skills/gsap-react/SKILL.md) |
 
 ### Role Agents
 
@@ -168,7 +169,7 @@ The `team-workflow` skill forms an ad hoc team for the current task. It explicit
 
 When a workflow proves reusable, save it as `teams/<name>/team.json` with tasks containing `id`, `agent`, `goal`, and `dependsOn`. A task may start only after every task in `dependsOn` finishes and its output is checked. Ready independent tasks may run concurrently; a dependency chain runs linearly. `TEAM.md` explains when to choose the template and how to integrate its results. Templates are optional and do not install as native agent profiles. `pnpm skills validate` rejects unknown agents, missing dependencies, duplicate task IDs, and cycles in saved templates.
 
-Document-backed skills, such as rule wrappers or the personal knowledge index wrapper, are declared in `localSkillSources` in `meta.ts`. Their source content stays in `rules/` or `knowledge/`; `pnpm skills link` renders it into gitignored `generated/<name>/SKILL.md` files and resolves relative document links to absolute paths in this checkout.
+Document-backed skills, such as rule wrappers or the personal knowledge index wrapper, are declared in `localSkillSources` in `meta.ts`. Their source content stays in `rules/` or `knowledge/`; `pnpm skills link` renders it into gitignored `generated/<name>/SKILL.md` files and resolves relative document links to absolute paths in this checkout. Directory-backed bundles replace `{{REPO_ROOT}}` throughout their Markdown files; scripts and binary assets are copied unchanged. Validation checks every regular bundled file for missing, stale, or retired output, including references and assets.
 
 A directory skill that must reference files outside its own folder can still use the `{{REPO_ROOT}}` placeholder. Edit `skills/<name>/SKILL.md`, never the generated copy, and re-run `pnpm skills link` to regenerate.
 
@@ -216,6 +217,7 @@ By default this first renders configured `localSkillSources`, then applies the `
 | Destination | Kind | Receives |
 | --- | --- | --- |
 | `~/.codex/skills` | skill | all `installableSkills` |
+| `~/.kimi-code/skills` | skill | all `installableSkills`, including the two shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
 | `~/.config/opencode/opencode.json` | json-array | ensures `instructions` includes `~/.config/opencode/rules/*.md` |

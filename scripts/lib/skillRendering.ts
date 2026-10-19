@@ -1,5 +1,5 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 import { localSkillSources as defaultLocalSkillSources } from '../../meta.ts'
 import type { DocumentSkillSource, LocalSkillSource } from './metaTypes.ts'
@@ -13,6 +13,20 @@ export const SKILL_FILE = 'SKILL.md'
 interface RenderLocalSkillSourcesOptions {
   localSkillSources?: readonly LocalSkillSource[]
   root?: string
+}
+
+export async function listSkillBundleFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { recursive: true, withFileTypes: true })
+  return entries
+    .filter(entry => entry.isFile())
+    .map(entry => relative(directory, join(entry.parentPath, entry.name)))
+    .sort()
+}
+
+export function renderSkillBundleFile(path: string, content: Buffer, root: string): Buffer {
+  return path.toLowerCase().endsWith('.md')
+    ? Buffer.from(content.toString('utf8').replaceAll(REPO_ROOT_TOKEN, root))
+    : content
 }
 
 function resolveDocumentLinks(content: string, root: string, sourcePath: string): string {
@@ -71,11 +85,15 @@ async function renderDirectorySkill(root: string, source: LocalSkillSource): Pro
   if (!await pathExists(sourcePath))
     throw new Error(`Missing configured directory skill: ${source.path}/${SKILL_FILE}`)
 
-  const content = (await readFile(sourcePath, 'utf-8')).replaceAll(REPO_ROOT_TOKEN, root)
   const skillDir = join(root, GENERATED_SKILLS_DIR, source.name)
   await rm(skillDir, { recursive: true, force: true })
   await cp(sourceDir, skillDir, { recursive: true })
-  await writeFile(join(skillDir, SKILL_FILE), content)
+  for (const path of await listSkillBundleFiles(sourceDir)) {
+    if (!path.toLowerCase().endsWith('.md'))
+      continue
+    const content = await readFile(join(sourceDir, path))
+    await writeFile(join(skillDir, path), renderSkillBundleFile(path, content, root))
+  }
 }
 
 async function renderDocumentSkillSource(root: string, source: LocalSkillSource): Promise<void> {

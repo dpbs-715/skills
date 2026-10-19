@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, readlink, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
@@ -131,6 +131,21 @@ test('linkTargets configures opencode rules and instructions together', () => {
   ])
 })
 
+test('Kimi installs shared rule skills alongside normal skills', async () => {
+  const root = await createTempDir('skills-kimi-')
+  const target = await createTempDir('skills-kimi-target-')
+  const configured = linkTargets.find(row => row.kind === 'skill' && row.dir === '~/.kimi-code/skills')
+  assert.ok(configured && configured.kind === 'skill')
+  for (const name of configured.include)
+    await createGeneratedSkill(root, name)
+
+  await linkAll({ root, localSkillSources: [], targets: [{ ...configured, dir: target }] })
+
+  for (const name of ['engineering-rules', 'problem-solving-rules', 'dcr'])
+    assert.equal(await readlink(join(target, name)), join(root, 'generated', name))
+  assert.equal(await pathExists(join(target, 'gsap-react')), false)
+})
+
 test('renders a directory source into generated/<name>/SKILL.md with the repo root resolved', async () => {
   const root = await createTempDir('skills-repo-')
   await createSourceSkill(root, 'engineering-rules')
@@ -210,6 +225,28 @@ test('copies bundled resources while rendering the generated SKILL.md', async ()
     '# Notes\n',
   )
   assert.equal(await pathExists(join(root, 'generated', 'engineering-rules', 'SKILL.md')), true)
+})
+
+test('renders nested Markdown references while preserving executable scripts and binary assets', async () => {
+  const root = await createTempDir('skills-bundle-')
+  await createSourceSkill(root, 'bundle')
+  const source = join(root, 'skills', 'bundle')
+  await mkdir(join(source, 'references', 'nested'), { recursive: true })
+  await mkdir(join(source, 'scripts'), { recursive: true })
+  const script = '#!/bin/sh\necho "{{REPO_ROOT}}"\n'
+  const binary = Buffer.concat([Buffer.from([0xff, 0, 0xfe]), Buffer.from(REPO_ROOT_TOKEN)])
+  await writeFile(join(source, 'references', 'nested', 'guide.md'), `Read ${REPO_ROOT_TOKEN}/README.md\n`)
+  await writeFile(join(source, 'scripts', 'run.sh'), script)
+  await chmod(join(source, 'scripts', 'run.sh'), 0o755)
+  await writeFile(join(source, 'image.bin'), binary)
+
+  await renderLocalSkillSources({ root, localSkillSources: [directorySource('bundle')] })
+
+  const generated = join(root, 'generated', 'bundle')
+  assert.equal(await readFile(join(generated, 'references', 'nested', 'guide.md'), 'utf8'), `Read ${root}/README.md\n`)
+  assert.equal(await readFile(join(generated, 'scripts', 'run.sh'), 'utf8'), script)
+  assert.equal((await stat(join(generated, 'scripts', 'run.sh'))).mode & 0o777, 0o755)
+  assert.deepEqual(await readFile(join(generated, 'image.bin')), binary)
 })
 
 test('links an installable skill after rendering', async () => {

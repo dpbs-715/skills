@@ -17,6 +17,7 @@ export const Skill = {
     GsapTimeline: 'gsap-timeline',
     GsapScrolltrigger: 'gsap-scrolltrigger',
     GsapFrameworks: 'gsap-frameworks',
+    GsapReact: 'gsap-react',
     CreatePageDesc: 'create-page-desc',
     CreateIssues: 'create-issues',
     CreatePr: 'create-pr',
@@ -118,6 +119,7 @@ export const vendors: Record<string, VendorSkillMeta> = {
             'gsap-timeline': Skill.GsapTimeline,
             'gsap-scrolltrigger': Skill.GsapScrolltrigger,
             'gsap-frameworks': Skill.GsapFrameworks,
+            'gsap-react': Skill.GsapReact,
         },
     },
 }
@@ -137,6 +139,7 @@ export const agentOnlySkills = [
     Skill.GsapTimeline,
     Skill.GsapScrolltrigger,
     Skill.GsapFrameworks,
+    Skill.GsapReact,
 ] as const
 const agentOnlySkillSet = new Set<string>(agentOnlySkills)
 
@@ -156,7 +159,7 @@ const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSe
 export const linkTargets: readonly LinkTarget[] = [
     { dir: '~/.codex/skills', kind: 'skill', include: installableSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: installableSkills },
-    { dir: '~/.kimi-code/skills', kind: 'skill', include: normalSkillNames },
+    { dir: '~/.kimi-code/skills', kind: 'skill', include: installableSkills },
     {
         dir: '~/.config/opencode/skills',
         kind: 'skill',

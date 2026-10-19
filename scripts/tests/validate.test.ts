@@ -6,7 +6,7 @@ import test from 'node:test'
 
 import { run as runValidate } from '../commands/validate.ts'
 import type { LocalSkillSource } from '../lib/metaTypes.ts'
-import { REPO_ROOT_TOKEN } from '../lib/skillRendering.ts'
+import { renderLocalSkillSources, REPO_ROOT_TOKEN } from '../lib/skillRendering.ts'
 import { type ValidationOptions, validateSkills } from '../lib/validation.ts'
 
 const temporaryPaths: string[] = []
@@ -139,6 +139,47 @@ description: Use when testing validation.
 
   assert.equal(result.ok, false)
   assert.deepEqual(issueCodes(result), ['stale-generated-skill'])
+})
+
+test('detects a changed reference even when the generated SKILL.md remains current', async () => {
+  const { options, root } = await createValidRepo()
+  const reference = join('skills', skillName, 'references', 'nested', 'guide.md')
+  await writeRepoFile(root, reference, `Use ${REPO_ROOT_TOKEN}/README.md\n`)
+  await renderLocalSkillSources(options)
+  assert.equal((await validateSkills(options)).ok, true)
+
+  await writeRepoFile(root, reference, '# Updated guide\n')
+  const result = await validateSkills(options)
+  assert.deepEqual(issueCodes(result), ['stale-generated-resource'])
+  assert.equal(result.issues[0].path, join('generated', skillName, 'references', 'nested', 'guide.md'))
+
+  await renderLocalSkillSources(options)
+  assert.equal((await validateSkills(options)).ok, true)
+})
+
+test('detects a missing script and corrupted binary resource', async () => {
+  const { options, root } = await createValidRepo()
+  await writeRepoFile(root, join('skills', skillName, 'scripts', 'helper.mjs'), 'export const value = 1\n')
+  const binaryPath = join('skills', skillName, 'asset.bin')
+  await writeFile(join(root, binaryPath), Buffer.from([0xff, 0, 1]))
+  await renderLocalSkillSources(options)
+  await rm(join(root, 'generated', skillName, 'scripts', 'helper.mjs'))
+  await writeFile(join(root, 'generated', skillName, 'asset.bin'), Buffer.from([0xfe, 0, 1]))
+
+  const result = await validateSkills(options)
+  assert.deepEqual(issueCodes(result), ['missing-generated-resource', 'stale-generated-resource'])
+})
+
+test('detects retired generated resources and rendering removes them', async () => {
+  const { options, root } = await createValidRepo()
+  const reference = join('skills', skillName, 'references', 'retired.md')
+  await writeRepoFile(root, reference, '# Retired\n')
+  await renderLocalSkillSources(options)
+  await rm(join(root, reference))
+
+  assert.deepEqual(issueCodes(await validateSkills(options)), ['unexpected-generated-resource'])
+  await renderLocalSkillSources(options)
+  assert.equal((await validateSkills(options)).ok, true)
 })
 
 test('reports discovered skill frontmatter problems', async () => {

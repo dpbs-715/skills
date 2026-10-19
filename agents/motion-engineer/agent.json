@@ -10,6 +10,7 @@
     "gsap-core",
     "gsap-timeline",
     "gsap-scrolltrigger",
-    "gsap-frameworks"
+    "gsap-frameworks",
+    "gsap-react"
   ]
 }

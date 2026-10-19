@@ -7,11 +7,12 @@ import {
   localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
 import { expectedAgentFiles, GENERATED_AGENTS_DIR } from './agents.ts'
-import type { LocalSkillSource } from './metaTypes.ts'
+import type { DirectorySkillSource, LocalSkillSource } from './metaTypes.ts'
 import {
   GENERATED_SKILLS_DIR,
+  listSkillBundleFiles,
   renderDocumentSkill,
-  REPO_ROOT_TOKEN,
+  renderSkillBundleFile,
   SKILL_FILE,
 } from './skillRendering.ts'
 import { pathExists, repoRoot } from './utils.ts'
@@ -22,6 +23,9 @@ export type ValidationIssueCode =
   | 'missing-document-source'
   | 'missing-generated-skill'
   | 'stale-generated-skill'
+  | 'missing-generated-resource'
+  | 'stale-generated-resource'
+  | 'unexpected-generated-resource'
   | 'missing-installable-skill'
   | 'missing-agent-only-skill'
   | 'missing-frontmatter'
@@ -66,10 +70,6 @@ function addIssue(
   issues.push({ code, message, path })
 }
 
-function renderSourceContent(content: string, root: string): string {
-  return content.replaceAll(REPO_ROOT_TOKEN, root)
-}
-
 function isRepoPath(root: string, path: string): boolean {
   const relPath = relative(root, path)
   return relPath === '' || (!relPath.startsWith('..') && !isAbsolute(relPath))
@@ -99,48 +99,88 @@ async function validateBacktickPaths(
   }
 }
 
+async function validateDirectorySkillSource(
+  root: string,
+  source: DirectorySkillSource,
+  issues: ValidationIssue[],
+): Promise<void> {
+  const sourceDir = join(root, source.path)
+  const sourceRelPath = join(source.path, SKILL_FILE)
+  if (!await pathExists(join(root, sourceRelPath))) {
+    addIssue(issues, 'missing-directory-skill', sourceRelPath, `Missing configured directory skill: ${sourceRelPath}`)
+    return
+  }
+
+  const generatedDir = join(root, GENERATED_SKILLS_DIR, source.name)
+  const expectedFiles = await listSkillBundleFiles(sourceDir)
+  const actualFiles = await pathExists(generatedDir) ? await listSkillBundleFiles(generatedDir) : []
+  const actualPaths = new Set(actualFiles)
+  for (const path of expectedFiles) {
+    const sourcePath = join(source.path, path)
+    const generatedRelPath = join(GENERATED_SKILLS_DIR, source.name, path)
+    const expected = renderSkillBundleFile(path, await readFile(join(root, sourcePath)), root)
+    const markdown = path.toLowerCase().endsWith('.md')
+    if (markdown)
+      await validateBacktickPaths(root, sourcePath, expected.toString('utf8'), issues)
+
+    if (!actualPaths.has(path)) {
+      addIssue(
+        issues,
+        path === SKILL_FILE ? 'missing-generated-skill' : 'missing-generated-resource',
+        generatedRelPath,
+        `Missing generated file; run pnpm skills link: ${generatedRelPath}`,
+      )
+      continue
+    }
+
+    const actual = await readFile(join(root, generatedRelPath))
+    if (markdown)
+      await validateBacktickPaths(root, generatedRelPath, actual.toString('utf8'), issues)
+    if (!actual.equals(expected)) {
+      addIssue(
+        issues,
+        path === SKILL_FILE ? 'stale-generated-skill' : 'stale-generated-resource',
+        generatedRelPath,
+        `Generated file is stale; run pnpm skills link: ${generatedRelPath}`,
+      )
+    }
+  }
+
+  const expectedPaths = new Set(expectedFiles)
+  for (const path of actualFiles) {
+    if (!expectedPaths.has(path)) {
+      const generatedRelPath = join(GENERATED_SKILLS_DIR, source.name, path)
+      addIssue(issues, 'unexpected-generated-resource', generatedRelPath, `Generated file has no matching source; run pnpm skills link: ${generatedRelPath}`)
+    }
+  }
+}
+
 async function validateLocalSkillSources(
   root: string,
   localSkillSources: readonly LocalSkillSource[],
   issues: ValidationIssue[],
 ): Promise<void> {
   for (const source of localSkillSources) {
+    if (source.kind === 'directory') {
+      await validateDirectorySkillSource(root, source, issues)
+      continue
+    }
+
     const generatedRelPath = join(GENERATED_SKILLS_DIR, source.name, SKILL_FILE)
     const generatedPath = join(root, generatedRelPath)
-    let expected: string
-
-    if (source.kind === 'directory') {
-      const sourceRelPath = join(source.path, SKILL_FILE)
-      const sourcePath = join(root, sourceRelPath)
-      if (!await pathExists(sourcePath)) {
-        addIssue(
-          issues,
-          'missing-directory-skill',
-          sourceRelPath,
-          `Missing configured directory skill: ${sourceRelPath}`,
-        )
-        continue
-      }
-
-      expected = renderSourceContent(await readFile(sourcePath, 'utf-8'), root)
-      await validateBacktickPaths(root, sourceRelPath, expected, issues)
-    }
-    else {
-      const sourcePath = join(root, source.source)
-      if (!await pathExists(sourcePath)) {
-        addIssue(
-          issues,
-          'missing-document-source',
-          source.source,
-          `Missing configured document source: ${source.source}`,
-        )
-        continue
-      }
-
-      expected = renderDocumentSkill(source, await readFile(sourcePath, 'utf-8'), root)
-      await validateBacktickPaths(root, source.source, expected, issues)
+    const sourcePath = join(root, source.source)
+    if (!await pathExists(sourcePath)) {
+      addIssue(
+        issues,
+        'missing-document-source',
+        source.source,
+        `Missing configured document source: ${source.source}`,
+      )
+      continue
     }
 
+    const expected = renderDocumentSkill(source, await readFile(sourcePath, 'utf-8'), root)
+    await validateBacktickPaths(root, source.source, expected, issues)
     if (!await pathExists(generatedPath)) {
       addIssue(
         issues,
