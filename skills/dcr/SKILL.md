@@ -26,8 +26,9 @@ If no target is provided:
 
 - Inspect `git status --short --branch`.
 - Review current working tree changes, including both staged and unstaged diffs.
-- Mention when both staged and unstaged changes were included.
-- If there is no diff to review, say so briefly.
+- Inspect relevant untracked files listed by `git ls-files --others --exclude-standard`; ordinary Git diffs do not include their contents. Treat new source, tests, and configuration in the requested scope as part of the review.
+- State which staged, unstaged, and untracked changes were included. If a relevant file cannot be inspected, report that gap.
+- Say there is nothing to review only when there are no relevant tracked changes or untracked files.
 
 When reviewing pasted diffs without repository context, state that the review is
 limited to the supplied diff.

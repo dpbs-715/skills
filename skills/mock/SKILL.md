@@ -1,15 +1,15 @@
 ---
 name: mock
-description: Trigger when the user types a command starting with /mock, or asks to simulate a request/call flow. Treat the request as a code-change task, list the currently available tools, skills, and rules, and use tables to show which ones would be invoked and why.
+description: Simulate how an agent would select tools, skills, and rules for a task. Use for /mock or an explicit request to preview agent/tool/skill invocation decisions without executing the task. Do not use for API mocking, simulated HTTP requests, business-flow tests, or generating mock data.
 ---
 
 # Mock Request Simulation
 
-When the user enters `/mock <task>` or asks to simulate a request, follow this workflow.
+When the user enters `/mock <task>` or explicitly asks to simulate agent/tool/skill invocation decisions, follow this workflow. Ordinary requests to mock an API, simulate an HTTP request, test a business flow, or generate mock data belong to their normal implementation or testing workflow.
 
 ## Task Interpretation
 
-Treat `<task>` as a user request that is preparing to modify code. If no task is provided, default to "prepare to change code".
+Interpret `<task>` using its actual intent, including read-only work. If no task is provided, default to "prepare to change code".
 
 Do not actually modify any files or execute code. Only read project instruction files as needed to list referenced docs, and only output the simulated plan.
 

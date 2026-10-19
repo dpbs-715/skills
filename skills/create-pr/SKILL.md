@@ -147,8 +147,12 @@ If a prerequisite is missing or unauthenticated:
 - do not install software, expose tokens, request tokens in chat, or silently
   fall back to a REST call.
 
-Use normal `gh` and `glab` commands. Use `gh api`, `glab api`, or `curl` only when
-the user explicitly requests an API path or approves a required CLI fallback.
+Prefer normal `gh` and `glab` commands. If they lack a required operation or
+field, use authenticated `gh api` or `glab api` against the same resolved host
+and repository, retaining the authorized scope and safety checks. Explain the
+fallback briefly; changing transport alone does not require another approval.
+Do not use it to bypass authentication or permission failures, broaden scope,
+or perform a write during preview-only work.
 
 ### 3. Resolve branch refs
 
@@ -307,8 +311,13 @@ flags only when applicable.
 GitLab:
 
 ```sh
-glab mr create --repo GROUP/PROJECT --source-branch <source> --target-branch <target> --title <title> --description-file <body-file> --yes
+glab mr create --repo GROUP/PROJECT --source-branch <source> --target-branch <target> --title <title> --description "$(cat "$pr_body_file")" --yes
 ```
+
+Set `pr_body_file` to the temporary Markdown file path. The quoted substitution
+passes the file contents as one argument; do not interpolate authored text into
+shell code or use the unsupported `--description-file` flag. Check installed
+help when command support differs.
 
 Add `--draft` and reviewed metadata flags only when applicable. Do not combine
 an authored body with `--fill`, because implicit commit-derived content can
@@ -316,8 +325,9 @@ override or dilute the reviewed template.
 
 Capture the returned number or IID and URL. If the push succeeds but request
 creation fails, keep the remote branch and report the partial result. Do not
-delete it, retry against another repository or target, or switch to a web/API
-flow without approval.
+delete it or retry against another repository or target. Inspect remote state
+before retrying an uncertain creation; use only the same-scope authenticated
+API fallback described above when needed, and honor a CLI-only instruction.
 
 ## Result
 

@@ -54,9 +54,13 @@ proof of the association.
 Check the selected CLI and host authentication. Use explicit repository values
 on every platform command (`--repo [HOST/]OWNER/REPO` for gh PR/Issue commands;
 `--repo <full-project-URL>` for glab). Check installed command help for supported
-flags and output fields. Prefer normal CLI commands. Do not silently switch to
-gh api, glab api, or curl; request approval for a necessary API fallback after
-completing the available review work. Never install tools or ask for tokens.
+flags and output fields. Prefer normal CLI commands. When a required operation
+or field is unavailable, use authenticated gh api or glab api against the same
+resolved host and repository, preserving revision guards and the user's read/write
+authorization. Explain the fallback briefly; no extra approval is needed merely
+for changing transport. Honor a CLI-only instruction, never bypass authentication,
+permissions, or merge requirements, and keep preview/no-post work read-only.
+Never install tools or ask for tokens.
 
 Read the request's identity, state, author, source and target repositories and
 branches, head SHA, base SHA, diff, commits, checks/pipelines, approvals,

@@ -56,7 +56,13 @@ For creation, check Git, the selected CLI, and authentication for the resolved
 host. If a prerequisite is missing, stop and provide the relevant login command.
 For preview-only work, missing authentication does not block drafting; identify
 any metadata that could not be validated. Do not install software, request
-tokens in chat, or silently fall back to an API.
+tokens in chat, or bypass an authentication failure through an API.
+
+Prefer normal CLI commands. When a required operation or field is unavailable,
+authenticated `gh api` or `glab api` may target the same resolved host and
+repository within the user's authorized scope. Explain the fallback briefly;
+changing transport alone does not require confirmation. Honor CLI-only and
+preview-only restrictions, and do not bypass permission failures or broaden scope.
 
 ### 2. Gather only useful context
 
