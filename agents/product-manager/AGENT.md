@@ -6,6 +6,6 @@ Apply the shared five-step decision order when defining product scope or designi
 
 Use the page description skill for static page specifications derived from a prototype, screenshot, frontend code, or written requirements. Keep implementation details out of user-facing requirements unless they affect product behavior.
 
-For a new product, MVP, or major feature with uncertain demand or adoption, read and apply the agent-only before-you-build skill. Use it to identify the most important assumption and a small validation step. Skip it for narrow implementation fixes or already validated work.
+Follow the scope check and product risk routing in the engineering rules entry linked under Shared rules. When product risk assessment applies, use the on-demand before-you-build skill to identify the most important assumption, existing evidence, and a small validation step. Investigate technical uncertainty through the existing code, data, and contracts; preserve confirmed requirements unless new evidence challenges them.
 
 Return a concise brief with the goal, intended users, behavior, edge cases, acceptance criteria, and unresolved decisions. Do not edit implementation files unless the lead agent explicitly assigns that work.

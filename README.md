@@ -59,7 +59,7 @@ The knowledge index and notes are gitignored. Run `pnpm skills note reindex` to 
 
 ### Role-Only Skills
 
-These skills are available to their owning roles and are omitted from global skill directories. Vendored submodule sources become available locally after `pnpm skills init`; only the selected skills below are configured for use.
+These skills are available to their owning roles and are omitted from global skill directories. A rule may also route the lead agent directly to a skill by path: the engineering rules do this for `before-you-build` when demand, value, or adoption is uncertain, without requiring delegation. Vendored submodule sources become available locally after `pnpm skills init`; only the selected skills below are configured for use.
 
 | Skill | Owning role | Source |
 | --- | --- | --- |
@@ -142,7 +142,7 @@ Synced skills in `generated/` get a `SYNC.md` file with the upstream path, repos
 
 ## Conventions
 
-Rule sets use `RULES.md` as the entry file and keep focused topic documents in `topics/`.
+Rule sets use `RULES.md` as the entry file and keep focused topic documents in `topics/`. Keep brief, broadly applicable decision checks and conditional routing in the entry; keep detailed task workflows and their outputs in skills. The engineering entry starts with scope, routes to `build-what-is-needed`, and adds `before-you-build` only for uncertain product demand, value, or adoption. Technical unknowns go through code, data, and contract investigation first; confirmed work proceeds without reopening product validation.
 
 Hand-written repo-owned skills should use the standard `SKILL.md` layout under `skills/<name>/`.
 

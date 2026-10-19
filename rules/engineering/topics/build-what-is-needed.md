@@ -14,6 +14,8 @@ For scope decisions, implementation choices, process improvements, performance w
 
 Apply the relevant steps in order; stop when the task is satisfied. This is a decision guide, not a requirement to produce a five-step report or add optimization and automation to every task. If a later step exposes an unnecessary requirement or process, revisit the earlier decision.
 
+Use established requirements and acceptance criteria as evidence; reopen them only when new evidence reveals a conflict or missing need. An unknown API field or implementation choice calls for technical investigation, not automatically a product risk review. Follow the product risk routing in the [engineering rules entry](../RULES.md) when demand, value, or adoption is uncertain. Scope decisions and product risk assessment serve different purposes; applying one does not establish that the other was performed.
+
 ## Scope And Removal
 
 Don't build ahead:

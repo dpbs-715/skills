@@ -1,45 +1,43 @@
 ---
 name: before-you-build
-description: Pre-build product and feature risk review for founders, product managers, and AI-assisted builders. Use this skill when the user is about to build a landing page, MVP, SaaS product, internal tool, agent workflow, or major feature and needs to check demand, positioning, monetization, retention, trust, distribution, and adoption risk before implementation starts.
+description: Assess product risk before building a new product, MVP, launch asset, internal tool, agent workflow, or major feature when demand, value, or adoption is uncertain. Identify the main assumption, existing evidence, and smallest validation action. Skip routine fixes, already validated work with clear acceptance criteria, and uncertainty limited to code, data, or API implementation. The lead agent or product manager can apply this skill directly; delegation is optional.
 ---
 
 # Before You Build
 
-Run a compact pre-mortem before implementation. The goal is not to block building; it is to identify the highest-risk assumption, the smallest validation step, and the build scope that should be delayed until evidence improves.
+Run a compact pre-mortem before implementation to identify the highest-risk assumption and the smallest useful validation step. Use existing evidence and keep effort proportional to the decision. Recommend a smaller build scope when useful; do not turn missing evidence into an automatic approval gate or override the user's instruction to proceed.
 
-## When To Use
+## Establish The Decision
 
-Use this skill when a user asks to build or ship:
+Identify the intended user, desired outcome, confirmed requirements, and unresolved product assumption from the conversation and available material. Separate evidence from guesses; missing information is not proof that demand is absent.
 
-- A new product, MVP, prototype, landing page, SaaS app, marketplace, content site, agent workflow, or internal tool
-- A major feature with unclear adoption, revenue, retention, trust, or distribution impact
-- A public launch asset where weak positioning could waste development or promotion effort
-
-Skip this skill when the task is a narrow implementation fix, refactor, test repair, dependency update, or already-validated change with clear acceptance criteria.
+For scope and implementation decisions, also follow [Build What's Needed]({{REPO_ROOT}}/rules/engineering/topics/build-what-is-needed.md). This assessment complements that rule; it does not replace its scope check.
 
 ## Risk Checklist
 
-Review the idea across these risks:
+Choose the risks that could change this decision:
 
 - **Demand:** Is there evidence that a specific buyer or user urgently wants this?
 - **Positioning:** Can the target user understand what it is and why it matters in one sentence?
-- **Monetization:** Is there a credible path to payment, budget, or strategic value?
-- **Retention:** Is there a reason users would return after the first try?
-- **Trust:** Does the product require credibility, data access, integrations, or behavior change that users may resist?
-- **Distribution:** Is there a repeatable way to reach the target user?
-- **Feature adoption:** For feature work, will the feature change user behavior or just add surface area?
+- **Value:** Is there a credible benefit that justifies adoption and maintenance? For commercial products, also consider payment and budget.
+- **Repeat use:** For recurring work, is there a reason users would return?
+- **Trust:** Does success depend on credibility, data access, integrations, or behavior change that users may resist?
+- **Reach:** How will intended users discover and start using it? Explore distribution channels when external reach matters.
+- **Feature adoption:** Will the feature improve an existing workflow, and what observable behavior would show that?
+
+For internal tools and business features, focus on workflow pain, time or error savings, adoption, and relevant trust concerns. For commercial products and public launches, expand into positioning, monetization, retention, and distribution where relevant. One-time tools do not need a recurring-use story. Avoid filling every category mechanically.
 
 If the verdict is not obvious, use `references/risk-checklist.md` for deeper questions.
 
 ## Output Format
 
-Keep the response short and decision-oriented:
+Default to three short points, integrated into the existing brief when there is one:
 
-1. **Risk verdict:** Low, medium, or high risk, with one sentence explaining why.
-2. **Main assumption:** The single assumption most likely to break the project.
-3. **Evidence to find first:** The smallest useful signal before building more.
-4. **Do next:** One concrete validation step or reduced build scope.
-5. **Delay:** What not to build yet.
+1. **Main uncertainty:** The single product assumption most likely to change the decision.
+2. **Existing evidence:** What supports it, and what remains unknown.
+3. **Smallest validation action:** One concrete way to learn, with an observable success signal; use a reduced implementation slice if it is the cheapest useful validation.
+
+Add a risk level or deferred scope only when it helps a decision or the user requests it. If evidence already establishes the need and acceptance criteria are clear, state that briefly and continue implementation without a separate risk report.
 
 ## Guidance
 

@@ -53,7 +53,7 @@ export const localSkillSources = [
     { kind: 'directory', name: Skill.Dcr, path: 'skills/dcr' },
     { kind: 'directory', name: Skill.Mock, path: 'skills/mock' },
     {
-        description: 'Use when writing, modifying, or reviewing code.',
+        description: 'Use when defining requirements or scope, choosing implementation approaches, or writing, modifying, or reviewing code.',
         instructions: [
             'Load only the topic files that match the work. Prefer more specific project rules when they conflict with these personal rules.',
         ],

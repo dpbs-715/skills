@@ -1,6 +1,6 @@
 # Risk Checklist
 
-Use these questions when the basic verdict is not obvious.
+Use only the sections relevant to the unresolved product assumption. For internal tools, prioritize workflow pain, measurable value, and adoption; commercial monetization and external distribution apply only when relevant. Skip recurring-use questions for one-time tools.
 
 ## Demand
 
@@ -16,6 +16,7 @@ Use these questions when the basic verdict is not obvious.
 
 ## Monetization
 
+- For internal tools, what time savings, error reduction, or operational outcome would justify adoption and maintenance?
 - Who controls the budget or time savings?
 - Is the value large enough to support the required build and maintenance cost?
 - Would the first useful version create enough value to justify payment, adoption, or internal sponsorship?
