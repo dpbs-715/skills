@@ -25,9 +25,11 @@ symbolic links. Require strict UTF-8 JSON with exactly these top-level keys:
 ```
 
 `product` may be `null`. Each object otherwise has only a positive integer `id`
-and a non-empty `name`. Use the product ID when present, otherwise the project
-ID. In a product-scoped query, the project is display context, not an additional
-filter or a verified product/project relationship.
+and a non-empty `name`. Default to the bound project, matching the fix-bug
+workflow's project check. An explicit request for the whole bound product may
+use its product ID when non-null; this includes other projects and requires
+the project ownership labels described below. Do not infer a verified
+product/project relationship merely from the binding.
 
 Read the [shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md)
 for server URL validation and login selection. The helper is
@@ -54,7 +56,7 @@ Keep scope, assignee, status, ordering, and display count separate:
 
 | Dimension | Default | User overrides |
 | --- | --- | --- |
-| Server and scope | Bound product, otherwise bound project | A conflicting scope requires clarification or `/zentao-init` |
+| Server and scope | Bound project | An explicit whole-product request may use the bound product; an unbound server/project/product requires clarification or `/zentao-init` |
 | Assignee | Selected login's account | A named assignee; `所有人` / `all assignees` removes this filter |
 | Status | `active` | `已解决` → `resolved`; `已关闭` → `closed`; `全部` / `all` → all statuses |
 | Additional filters | None | Severity, priority (`pri`), keywords in `title` or `steps` |
@@ -64,6 +66,9 @@ Keep scope, assignee, status, ordering, and display count separate:
 `指派给我` identifies the current assignee; it does not mean opened by me or
 ever assigned to me. It retains the default `active` status unless the user
 requests another status. `全部` changes status only, preserving scope and assignee.
+Only an explicit phrase such as `整个产品` / `whole product` changes to the bound
+product scope. If no product is bound, explain the missing binding and direct
+the user to `/zentao-init`; do not silently broaden to an unbound product.
 
 Combine different filters with AND unless the user requests OR. Multiple
 requested values within a field, such as severity 1 or 2, are alternatives.
@@ -89,7 +94,7 @@ execution details, not questions the user needs to answer.
 After pagination completes:
 
 1. Combine pages and de-duplicate by Bug ID.
-2. Apply the bound scope and requested assignee, status, severity, priority,
+2. Apply the selected project or explicit bound-product scope and requested assignee, status, severity, priority,
    and keyword conditions to the combined rows.
 3. Apply the requested global ordering. Missing, empty, or `0` priority/severity
    sorts after explicit ranks. Use ID as a stable final tie-breaker.
@@ -108,14 +113,19 @@ Lead with the actual server, account, query scope, and filters. Example:
 
 ```text
 服务器：https://zentao.example.com/zentao · 账号：dev1
-产品：#6 供应链移动端 · 项目上下文：#12 供应链研发项目
-范围：该产品内，指派给 dev1，active
+项目：#12 供应链研发项目 · 绑定产品：#6 供应链移动端
+范围：该项目内，指派给 dev1，active
 共 8 条
 ```
 
 Show a compact table with ID, severity, priority, title, status, and opened date.
 Include assignee when querying other/all assignees. For project-only bindings,
 say that the product is not configured and identify the project as the scope.
+For an explicit whole-product view, include the Bug's project and a repository
+scope label: `当前项目` for a matching positive project ID, `跨项目，当前仓库不可直接修复`
+for another positive project ID, or `项目归属待确认` when absent/unusable. Never
+present product membership alone as proof a Bug can be fixed in this repository;
+the fix-bug workflow still verifies its own scope before editing.
 Omit unavailable display fields with a brief explanation. Preserve technical
 status values. Do not include full steps, attachments, or resolution details.
 

@@ -20,7 +20,7 @@ Handle:
   choice-based selection from read-only CLI results;
 - validating an existing `.zentao` against its bound service;
 - migrating a version 1 mapping by confirming its missing server;
-- replacing an existing mapping only after the user approves the exact change.
+- replacing an existing mapping within the user's explicitly selected scope.
 
 Do not:
 
@@ -59,8 +59,8 @@ Names are data, not shell syntax.
 Keep the skill instructions and internal reasoning in English. Communicate with
 the user in the language they are using unless they request another language.
 
-Make server, account (when ambiguous), product, project, and final write
-selections choice-based:
+Make unresolved server, account, product, and project selections choice-based.
+Honor exact choices already supplied in this task:
 
 - Prefer the client's native structured choice or question tool when one is
   available.
@@ -75,9 +75,12 @@ selections choice-based:
   user to reply with the option number only. This is a fallback, not a request
   for an object name.
 
-Before creating a new file, offer `Create .zentao`, `Choose again`, and `Cancel`.
-Before replacing an existing file, offer `Update .zentao`, `Keep current`, and
-`Cancel`. Do not interpret silence or an unrelated reply as confirmation.
+Explicit server/product/project selections authorize creating or updating that
+binding after validation; do not ask for another generic write confirmation.
+For inferred choices or an unresolved replacement, show the complete proposed
+mapping and offer `Create .zentao` or `Update .zentao`, `Choose again` or
+`Keep current`, and `Cancel`. Never interpret silence as a selection. An explicit
+preview-only request permits no write until the user authorizes it.
 
 ## File contract
 
@@ -175,7 +178,7 @@ Resolve the server before any product/project query:
 2. Otherwise retain a valid version 2 mapping's server.
 3. For a new mapping or version 1 migration, show distinct saved server URLs
    as choices. With one saved server, propose it and include it in the final
-   confirmation. With multiple servers, require a selection before querying;
+   selection if it remains inferred. With multiple servers, require a selection before querying;
    the global current profile is not evidence of repository ownership.
 
 If an explicit address has no matching saved login, report that address and
@@ -190,7 +193,7 @@ configuration. Do not switch the global profile, even temporarily.
 For an existing version 2 mapping with an explicitly changed server, show the
 old and proposed URLs before querying. Re-select and validate the product and
 project on the new server; old IDs are not portable identities. Keep the file
-unchanged until the final update confirmation.
+unchanged until all proposed binding choices are authorized and verified.
 
 ### 4. Resolve the product
 
@@ -208,8 +211,9 @@ node <connection-script> run --server '<server>' --profile '<profile-key>' -- pr
 
 If an explicit name resolves to one exact match, use it as the proposed choice.
 If only one product is available, propose it. Otherwise present the returned
-products as choices. Even for a sole or exact match, let the user confirm it as
-part of the final product/project preview. A repository-name similarity may be
+products as choices. An explicit ID or an exact name supplied by the user is an
+authorized selection once verified; a sole inferred candidate still needs a
+choice. A repository-name similarity may be
 highlighted in the choices, but it is not evidence strong enough to select a
 product silently.
 
@@ -233,8 +237,8 @@ node <connection-script> run --server '<server>' --profile '<profile-key>' -- pr
 
 If an explicit name resolves to one exact match, use it as the proposed choice.
 If only one project is available, propose it. Otherwise present the returned
-projects as choices. Even for a sole or exact match, let the user confirm it as
-part of the final product/project preview. When a non-null product was selected
+projects as choices. Reuse verified explicit choices; ask only for an inferred
+candidate that the user has not selected. When a non-null product was selected
 and the CLI returns product membership for the project, verify that the selected
 project is compatible with it. If the response does not expose that
 relationship, do not invent or claim that it was verified.
@@ -246,13 +250,11 @@ installed version instead of guessing. Do not assume a `props` subcommand exists
 ### 6. Preview and write
 
 Once the project and any non-null product are verified, show the absolute
-destination and the complete JSON document, then use the choice-based
-confirmation described above.
-
-Create a new `.zentao` only after the user chooses `Create .zentao`. For an
-existing file whose bytes would change, show a compact old-to-new
-schema/server/product/project diff and replace it only after the user chooses
-`Update .zentao`. Preserve all unrelated workspace files.
+destination and the complete JSON document (or a compact old-to-new diff for an
+update). If all binding choices are already authorized, write directly. Otherwise
+use the choice-based selection described above for only the unresolved proposal.
+Preserve all unrelated workspace files. Check-only and preview-only requests
+leave the file unchanged.
 
 Use the available workspace file-editing mechanism rather than shell
 redirection. After writing, read the file back and parse it again to confirm it

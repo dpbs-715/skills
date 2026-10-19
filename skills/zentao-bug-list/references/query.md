@@ -41,16 +41,18 @@ response, inspect the list without `--pick` through the same helper.
 
 ```sh
 node <connection-script> run --server '<server>' --profile '<exact-key>' -- \
-  bug --product=<product-id> --orderBy=id_asc \
+  bug --project=<project-id> --orderBy=id_asc \
   --page=1 --recPerPage=1000 \
-  --pick=id,title,severity,pri,status,assignedTo,openedDate
+  --pick=id,title,severity,pri,status,assignedTo,openedDate,product,project
 ```
 
-For a project-only binding, replace `--product=<product-id>` with
-`--project=<project-id>`. Add `steps` when keyword matching is requested.
+Only for an explicit whole-bound-product request, replace `--project=<project-id>`
+with `--product=<product-id>`. Add `steps` when keyword matching is requested.
 Apply the requested assignee and other filters after aggregation. The endpoint
-supplies the bound scope; do not additionally restrict to the display-context
-project when the binding selects a product.
+supplies the selected scope. In whole-product mode, keep other projects in the
+results and use the returned project field for repository scope labels; in
+default mode, match the bound project on personal-list rows. A product binding
+alone never broadens the default project query.
 
 Do not rely on this endpoint's `browseType` to mean assigned to the current
 login. Some deployed project endpoints ignore it. Matching `assignedTo` from

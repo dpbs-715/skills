@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "/zentao-bug-list。当前 Git 仓库根目录有合法的 .zentao，产品是 #6，项目是 #12；zentao profile 的当前账号是 dev1。请列出我待处理的 Bug。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Validates only the Git-root version-2 binding, pins the login matching its server through the helper, prefers my bugs --browseType=assignedTo when supported, fetches raw pages and then filters product 6/current account/active. Globally orders ranked priority/severity before unspecified values and displays at most 20 rows with exact scope and filtered count. Makes no writes or unnecessary follow-up questions.",
+      "expected_output": "Validates only the Git-root version-2 binding, pins the login matching its server through the helper, prefers my bugs --browseType=assignedTo when supported, fetches raw pages and then filters project 12/current account/active even though product 6 is bound. Globally orders ranked priority/severity before unspecified values and displays at most 20 rows with exact scope and filtered count. Makes no writes or unnecessary follow-up questions.",
       "files": []
     },
     {
@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "/zentao-bug-list 所有人、全部状态，建议我先处理哪三个。当前项目配置有效，查询结果中多个 Bug 的优先级和严重程度相同。 除明确给出的异常外，.zentao 为 schemaVersion 2，server=https://a.example.com/zentao，存在对应的有效登录。",
-      "expected_output": "Removes the assignee and status filters, includes an assignee column, shows the exact project and product scope, recommends at most three Bugs using only structured priority, severity, and age evidence, reports ties honestly, and does not infer business impact or inspect Bug details or source code.",
+      "expected_output": "Removes the assignee and status filters while retaining the bound project scope, includes an assignee column, shows the project and optional product binding, recommends at most three Bugs using only structured priority, severity, and age evidence, reports ties honestly, and does not infer business impact or inspect Bug details or source code.",
       "files": []
     },
     {
@@ -68,13 +68,13 @@
     },
     {
       "id": 11,
-      "prompt": "/zentao-bug-list。合法 version 2 绑定产品 #6、项目 #9，账号 limingda。CLI 0.3.0 帮助把 my bugs 的 browseType 写成 assignedtome；同一账号用 assignedtome 得 0 条，用区分大小写的 assignedTo 得 7 条（1 active、6 resolved），都在产品 #6。",
-      "expected_output": "Uses the verified assignedTo browse value despite stale help, filters the complete seven raw rows to the one active match in product 6, labels that scope/status and does not report account-wide total 1 or declare the personal API broken.",
+      "prompt": "/zentao-bug-list。合法 version 2 绑定产品 #6、项目 #9，账号 limingda。CLI 0.3.0 帮助把 my bugs 的 browseType 写成 assignedtome；同一账号用 assignedtome 得 0 条，用区分大小写的 assignedTo 得 7 条（1 active、6 resolved），都在产品 #6、项目 #9。",
+      "expected_output": "Uses the verified assignedTo browse value despite stale help, filters the complete seven raw rows to the one active match in project 9, labels that scope/status and does not report account-wide total 1 or declare the personal API broken.",
       "files": [],
       "expectations": [
         "查询命令使用区分大小写的 assignedTo",
         "默认队列保留 active 并得到可信的 1 条结果",
-        "保留产品范围，项目仅作展示上下文"
+        "默认使用项目 #9 范围，产品绑定不扩大查询"
       ]
     },
     {
@@ -85,13 +85,13 @@
     },
     {
       "id": 13,
-      "prompt": "/zentao-bug-list 全部。version 2 绑定产品 #6、项目 #9、dev1 登录。my bugs 返回 dev1 的 7 条（1 active、6 resolved），产品都是 #6，其中两条在项目 #10。",
-      "expected_output": "Removes only the status filter, retains product 6 and dev1, includes all seven rows including project 10 because project 9 is display context, reports exact filtered count 7 and uses the personal entry. Does not treat 全部 as all assignees.",
+      "prompt": "/zentao-bug-list 全部。version 2 绑定产品 #6、项目 #9、dev1 登录。my bugs 返回 dev1 的 7 条（1 active、6 resolved），产品都是 #6，其中五条在项目 #9、两条在项目 #10。",
+      "expected_output": "Removes only the status filter, retains project 9 and dev1, excludes project 10, reports exact filtered count 5 and uses the personal entry. Does not treat 全部 as all assignees or an implicit whole-product request.",
       "files": [],
       "expectations": [
         "全部仅取消状态条件，保留当前指派人",
-        "产品范围包含项目 #10 的两条 Bug",
-        "结果明确 7 条，且不编造缺失行字段"
+        "项目范围排除项目 #10 的两条 Bug",
+        "结果明确 5 条，且不编造缺失行字段"
       ]
     },
     {
@@ -102,14 +102,26 @@
     },
     {
       "id": 15,
-      "prompt": "/zentao-bug-list。version 2 绑定产品 #6，dev1 登录。my bugs 正确使用 assignedTo，响应成功且 pager.total=0，也没有任何已知的同范围非空结果。",
-      "expected_output": "Reports an empty result for product 6/dev1/active, does not automatically try unrelated browse values, broaden filters, or diagnose version/permissions/API failure.",
+      "prompt": "/zentao-bug-list。version 2 绑定产品 #6、项目 #9，dev1 登录。my bugs 正确使用 assignedTo，响应成功且 pager.total=0，也没有任何已知的同范围非空结果。",
+      "expected_output": "Reports an empty result for project 9/dev1/active, does not automatically try unrelated browse values, broaden filters, or diagnose version/permissions/API failure.",
       "files": []
     },
     {
       "id": 16,
-      "prompt": "/zentao-bug-list 严重程度 1 和 2，登录相关，最近 10 个。合法 version 2 绑定产品 #6、dev1 已登录。响应有两页，页1没有 steps 投影，页2包含标题不含登录但 steps 含登录的 severity=2 Bug；页2首次请求超时。",
+      "prompt": "/zentao-bug-list 严重程度 1 和 2，登录相关，最近 10 个。合法 version 2 绑定产品 #6、项目 #9、dev1 已登录。响应有两页，页1没有 steps 投影，页2包含项目 #9 下标题不含登录但 steps 含登录的 severity=2 Bug；页2首次请求超时。",
       "expected_output": "Includes steps in the list projection or inspects the unprojected list, treats severity 1 and 2 as alternatives AND keyword/default assignee/active/scope conditions, and searches both title and steps. Retries page 2 with the same profile or labels data incomplete, never a complete zero. After success globally sorts by openedDate descending and displays at most 10 without showing full steps.",
+      "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "/zentao-bug-list 整个产品、全部状态。version 2 绑定产品 #6、项目 #9、dev1 登录。my bugs 返回产品 #6 下 dev1 的三条 Bug，project 分别为 9、10、0。",
+      "expected_output": "Uses the explicitly requested bound product 6 without restricting to project 9, keeps dev1 and removes only the status filter. Includes all three rows with project and repository-scope labels: current project for 9, cross-project/current repository cannot directly fix for 10, ownership unverified for 0. Does not fetch Bug details or claim all three are safe to fix in this repository.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "/zentao-bug-list 整个产品。version 2 绑定 project=#9、product=null，dev1 已登录。",
+      "expected_output": "Explains that whole-product scope is unavailable because no product is bound, directs the user to zentao-init for that missing binding, and does not guess a product or silently substitute project scope.",
       "files": []
     }
   ]

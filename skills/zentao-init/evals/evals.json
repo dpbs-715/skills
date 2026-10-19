@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "/zentao-init。当前目录是一个 Git 仓库，根目录还没有 .zentao。zentao CLI 已登录，可以访问多个产品和多个项目。请初始化当前项目。",
-      "expected_output": "Resolves the Git root, discovers saved CLI profile metadata through connection.mjs profiles, selects the server before products/projects when several servers exist, selects an account on that server, and pins its exact profile key for all helper-mediated reads. Presents objects as ID-and-name choices and confirms the final write. The version 2 file contains exactly schemaVersion, server, product, and project; no account or credential is persisted.",
+      "expected_output": "Resolves the Git root, discovers saved CLI profile metadata through connection.mjs profiles, selects the server before products/projects when several servers exist, selects an account on that server, and pins its exact profile key for all helper-mediated reads. Presents unresolved objects as ID-and-name choices, reuses selections as write authorization, and asks only for remaining inferred binding choices. The version 2 file contains exactly schemaVersion, server, product, and project; no account or credential is persisted.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "/zentao-init 产品 6 项目 12。请把当前仓库关联到这两个禅道对象。",
-      "expected_output": "Selects or proposes a server from saved logins before validating product 6 and project 12 using the bound connection helper. Previews version 2 JSON including the normalized server URL, asks for final choice-based write confirmation, and preserves the global profile, workspace, credentials, and unrelated files.",
+      "expected_output": "Selects or proposes a server from saved logins before validating the explicitly authorized product 6 and project 12 using the bound connection helper. Shows version 2 JSON including the normalized server URL, asks only for an unresolved inferred server choice, and writes once all selections are authorized without a second generic confirmation. Preserves the global profile, workspace, credentials, and unrelated files.",
       "files": []
     },
     {
@@ -28,7 +28,7 @@
     {
       "id": 5,
       "prompt": "/zentao-init。当前账号已经登录，zentao product --all --pick=id,name --format=json 成功返回 data: []，但账号可以访问多个项目。",
-      "expected_output": "Does not claim that an empty successful product response proves a permission problem and does not stop initialization. Offers choice-based options to continue without a product, retry, or cancel. If the user continues, sets product to null, presents accessible projects as ID-and-name choices, and previews a strict .zentao document with schemaVersion 2, the selected server, product null, and the selected project before requesting final write confirmation.",
+      "expected_output": "Does not claim that an empty successful product response proves a permission problem and does not stop initialization. Offers choice-based options to continue without a product, retry, or cancel. If the user continues, sets product to null, presents accessible projects as ID-and-name choices, and shows a strict .zentao document with schemaVersion 2, the selected server, product null, and the selected project. Reuses these selections as write authorization instead of asking for another generic confirmation.",
       "files": []
     },
     {
@@ -40,13 +40,25 @@
     {
       "id": 7,
       "prompt": "/zentao-init。旧 .zentao 为 {\"schemaVersion\":1,\"product\":null,\"project\":{\"id\":9,\"name\":\"项目\"}}。CLI 当前登录 B，A 和 B 都有同名项目 #9。",
-      "expected_output": "Explains the missing server binding, asks to choose a server before remote validation, treats old IDs as candidates only, validates on the chosen service, previews the version 1 to 2 migration, and writes only after the final update choice. Does not stamp B onto the file automatically.",
+      "expected_output": "Explains the missing server binding, asks to choose a server before remote validation, treats old IDs as candidates only, validates on the chosen service, shows the version 1 to 2 migration, and asks only for unresolved inferred product/project choices. Writes after those choices are authorized without an extra generic update confirmation. Does not stamp B onto the file automatically.",
       "files": []
     },
     {
       "id": 8,
       "prompt": "/zentao-init 地址 https://new.example.com/zentao 产品 6 项目 12。CLI 只有 https://old.example.com 的登录。",
       "expected_output": "Stops before product/project calls or writes, identifies new.example.com/zentao as the required service, asks for terminal login there, and does not use old.example.com or collect credentials.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "/zentao-init 地址 https://a.example.com/zentao 产品 6 项目 12。当前是新仓库；存在该服务器唯一有效登录，对象都能读取。",
+      "expected_output": "Validates the explicitly selected server, product and project, shows the resulting mapping and writes it directly without a generic final approval question. Uses the isolated helper and preserves global login configuration.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "/zentao-init 地址 https://a.example.com/zentao 产品 6 项目 12。先只预览，不写文件；该服务器已登录。",
+      "expected_output": "Validates and previews the exact mapping but makes no write because preview-only intent narrows authorization despite explicit binding selections.",
       "files": []
     }
   ]
