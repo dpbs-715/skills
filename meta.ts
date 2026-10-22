@@ -5,6 +5,7 @@ export const Skill = {
     Apifox: 'apifox',
     ApifoxInit: 'apifox-init',
     TeamWorkflow: 'team-workflow',
+    TypesafeAi: 'typesafe-ai',
     BeforeYouBuild: 'before-you-build',
     VisualDesignFoundations: 'visual-design-foundations',
     FrontendDesign: 'frontend-design',
@@ -97,6 +98,12 @@ export const localSkillSources = [
 ] as const satisfies readonly LocalSkillSource[]
 
 export const vendors: Record<string, VendorSkillMeta> = {
+    'typesafe-ai-skills': {
+        source: 'https://github.com/typesafe-ai/skills.git',
+        skills: {
+            'typesafe-ai': Skill.TypesafeAi,
+        },
+    },
     'gathered-scenes-zine-skill': {
         source: 'https://github.com/Zeejay0/gathered-scenes-zine-skill.git',
         skills: {

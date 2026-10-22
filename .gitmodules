@@ -7,3 +7,6 @@
 [submodule "vendor/gsap-skills"]
 	path = vendor/gsap-skills
 	url = https://github.com/greensock/gsap-skills.git
+[submodule "vendor/typesafe-ai-skills"]
+	path = vendor/typesafe-ai-skills
+	url = https://github.com/typesafe-ai/skills.git

@@ -41,6 +41,7 @@ This inventory covers the skills configured in `meta.ts` and every repository ro
 | [review-pr](skills/review-pr/SKILL.md) | Review PRs/MRs and merge when the required checks pass. |
 | [submit](skills/submit/SKILL.md) | Run the issue, branch, commit/push, and PR/MR submission workflow. |
 | [team-workflow](skills/team-workflow/SKILL.md) | Coordinate repository roles and report each subagent's contributions. |
+| [typesafe-ai](vendor/typesafe-ai-skills/skills/typesafe-ai/SKILL.md) | Build typed AI decision workflows with TypeSafe's System One models, including Jev. |
 | [zentao-bug-list](skills/zentao-bug-list/SKILL.md) | List, filter, and prioritize bugs within the project's ZenTao scope. |
 | [zentao-fix-bug](skills/zentao-fix-bug/SKILL.md) | Investigate and fix one scoped ZenTao bug. |
 | [zentao-init](skills/zentao-init/SKILL.md) | Configure or validate a project's ZenTao mapping. |
