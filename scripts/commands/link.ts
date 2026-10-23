@@ -203,6 +203,7 @@ export async function runLink(args: string[]): Promise<void> {
   // the given directories (no per-target filtering, no rule linking).
   if (targets.length > 0) {
     await renderLocalSkillSources()
+    await renderAgents()
     printResults(await createSkillLinks({ targets }))
     return
   }

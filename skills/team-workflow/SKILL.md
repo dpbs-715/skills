@@ -1,11 +1,11 @@
 ---
 name: team-workflow
-description: Use when the user explicitly asks to organize, delegate, or run work with multiple agents or a team workflow. Select roles from this repository's agents directory, coordinate parallel or sequential tasks, collect results, and verify the combined deliverable.
+description: Use when the user asks for multiple agents or a team workflow, or applicable agent-routing instructions request delegation of bounded specialist work. Bind repository roles, coordinate tasks, collect results, and verify the combined deliverable. Direct use of a role without delegation does not need this skill.
 ---
 
 # Team Workflow
 
-Use this skill as the entry point for work the user wants handled by multiple agents. Build an ad hoc team for the current task using roles from `{{REPO_ROOT}}/agents/`. This skill owns task coordination; each role owns its specialist instructions.
+Use this skill for user-requested collaboration or delegation requested by applicable [agent-routing rules]({{REPO_ROOT}}/rules/agent-routing/RULES.md). Build the smallest useful team for the current task using roles from `{{REPO_ROOT}}/agents/`. This skill owns task coordination; each role owns its specialist instructions. Respect a user's request to avoid delegation, and apply relevant roles directly instead.
 
 1. Start from the user's concrete task and build the smallest useful task plan. Select roles and dependencies for this run. Keep the plan in the current task; save a reusable template under `{{REPO_ROOT}}/teams/` only when the user asks.
 2. Inspect the selected roles under `{{REPO_ROOT}}/agents/`, reading their agent.json and AGENT.md. If no role fits a needed task, use a general agent with a clearly scoped assignment instead of inventing a specialist.
@@ -14,6 +14,8 @@ Use this skill as the entry point for work the user wants handled by multiple ag
 5. Avoid assigning overlapping edits to the same files. When isolation is available and useful, give coding agents separate worktrees or branches. Keep the final integration with the coordinating agent.
 6. Collect each result with the role used, skills actually used, evidence, changed files, unresolved questions, and verification. Resolve conflicting findings against sources and tests, then verify the assembled result. When the user changes scope, update affected assignments and check their results against the latest scope before accepting them.
 7. Report the final outcome and include the completion report below. Identify work that could not be completed and why.
+
+Reuse an active or accepted assignment for the same role and objective instead of dispatching it again when a document links back to this workflow. Follow the routing rules' per-agent loading deduplication. Include in each subagent assignment that it should perform the assigned work without restarting team selection or delegating further unless explicitly required. New findings can justify a bounded follow-up; a repeated reference alone cannot.
 
 ## Role configuration
 

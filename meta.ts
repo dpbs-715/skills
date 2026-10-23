@@ -2,6 +2,7 @@ import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/li
 
 // Use a const object instead of enum because Node strips types only for erasable syntax.
 export const Skill = {
+    AgentRouting: 'agent-routing',
     Apifox: 'apifox',
     ApifoxInit: 'apifox-init',
     TeamWorkflow: 'team-workflow',
@@ -42,6 +43,15 @@ export const Skill = {
 } as const
 
 export const localSkillSources = [
+    {
+        description: 'Select repository roles and load their rules and specialist skills for product requirements, UI design, frontend implementation, visual artwork, Three.js, or GSAP tasks, even when the user does not name a role. Delegate bounded specialist work when useful; handle small tasks directly.',
+        instructions: ['Assess role needs before substantive work; load only the configuration relevant to the task.'],
+        kind: 'document',
+        name: Skill.AgentRouting,
+        shortDescription: 'automatic role selection',
+        source: 'rules/agent-routing/RULES.md',
+        title: 'Agent Routing',
+    },
     { kind: 'directory', name: Skill.Apifox, path: 'skills/apifox' },
     { kind: 'directory', name: Skill.ApifoxInit, path: 'skills/apifox-init' },
     { kind: 'directory', name: Skill.TeamWorkflow, path: 'skills/team-workflow' },
@@ -168,6 +178,7 @@ export const installableSkills = [
 ]
 
 export const alwaysOnInstructionSkills = [
+    Skill.AgentRouting,
     Skill.EngineeringRules,
     Skill.ProblemSolvingRules,
     Skill.ProjectWorkspaces,
@@ -177,6 +188,20 @@ const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
 const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSet.has(name))
 
 export const linkTargets: readonly LinkTarget[] = [
+    {
+        file: '~/.codex/AGENTS.md',
+        preferExisting: ['AGENTS.override.md'],
+        kind: 'markdown-section',
+        section: 'agent-routing',
+        source: 'generated/agent-routing/SKILL.md',
+    },
+    {
+        file: '~/.pi/agent/AGENTS.md',
+        preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
+        kind: 'markdown-section',
+        section: 'agent-routing',
+        source: 'generated/agent-routing/SKILL.md',
+    },
     {
         file: '~/.codex/AGENTS.md',
         preferExisting: ['AGENTS.override.md'],
@@ -211,6 +236,7 @@ export const linkTargets: readonly LinkTarget[] = [
             { key: '*', value: 'ask' },
             { key: '~/.config/opencode/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+            { key: '{{REPO_ROOT}}/agents/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/generated/**', value: 'allow' },
         ],

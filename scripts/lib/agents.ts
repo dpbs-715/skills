@@ -9,6 +9,7 @@ import { pathExists, repoRoot } from './utils.ts'
 const agentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const formats: readonly AgentFormat[] = ['claude', 'kimi-code', 'opencode', 'pi']
 export const GENERATED_AGENTS_DIR = join('generated', 'agents')
+export const GENERATED_AGENT_INDEX = join(GENERATED_AGENTS_DIR, 'INDEX.md')
 
 interface AgentManifest {
   agentOnlySkills?: string[]
@@ -97,11 +98,7 @@ function renderAgent(root: string, agent: { manifest: AgentManifest, body: strin
   return `${frontmatter.join('\n')}\n\n${body}\n\n## Shared rules\n\n${rules}\n\n## Role skills\n\n${skills}${agentOnlySection}\n\nUse these skills when relevant to the assigned task. The user may explicitly request another available skill.\n\nReturn a concise, self-contained result to the delegating agent. Include the role name, task outcome, skills actually used, deliverables, and checks or blockers.\n`
 }
 
-export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
-  content: string
-  format: AgentFormat
-  name: string
-}>> {
+async function readAgents(root: string): Promise<Array<{ manifest: AgentManifest, body: string }>> {
   const sourceDir = join(root, 'agents')
   if (!await pathExists(sourceDir))
     return []
@@ -110,7 +107,28 @@ export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name)
     .sort()
-  const agents = await Promise.all(entries.map(directory => readAgent(root, directory)))
+  return Promise.all(entries.map(directory => readAgent(root, directory)))
+}
+
+export async function expectedAgentIndex(root = repoRoot()): Promise<string | undefined> {
+  const agents = await readAgents(root)
+  if (agents.length === 0)
+    return undefined
+
+  const link = (label: string, path: string) => `[${label}](${path.includes(' ') ? `<${path}>` : path})`
+  const roles = agents.map(({ manifest }) => {
+    const directory = join(root, 'agents', manifest.name)
+    return `- **${manifest.name}**: ${manifest.description.trim().replace(/\s+/g, ' ')}\n  Read ${link('AGENT.md', join(directory, 'AGENT.md'))} and ${link('agent.json', join(directory, 'agent.json'))}.`
+  })
+  return `# Repository Roles\n\nGenerated from agents/*/agent.json by pnpm skills link. Edit the role sources, not this index. Descriptions help select a role; reading this index does not load its instructions or skills.\n\n${roles.join('\n\n')}\n`
+}
+
+export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
+  content: string
+  format: AgentFormat
+  name: string
+}>> {
+  const agents = await readAgents(root)
 
   return formats.flatMap(format => agents.map(agent => ({
     content: renderAgent(root, agent, format),
@@ -121,6 +139,7 @@ export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
 
 export async function renderAgents(root = repoRoot()): Promise<string[]> {
   const files = await expectedAgentFiles(root)
+  const index = await expectedAgentIndex(root)
   if (files.length === 0) {
     await rm(join(root, GENERATED_AGENTS_DIR), { force: true, recursive: true })
     return []
@@ -134,6 +153,8 @@ export async function renderAgents(root = repoRoot()): Promise<string[]> {
       await writeFile(join(targetDir, `${file.name}.md`), file.content)
   }
 
+  if (index !== undefined)
+    await writeFile(join(root, GENERATED_AGENT_INDEX), index)
   return files.filter(file => file.format === formats[0]).map(file => file.name)
 }
 

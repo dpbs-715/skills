@@ -1,6 +1,6 @@
 {
   "name": "ui-designer",
-  "description": "Designs page hierarchy, layouts, component states, responsive behavior, and visual handoff for product interfaces.",
+  "description": "Designs or reviews product UI hierarchy, layouts, typography, color, component states, responsive behavior, and visual handoff. Use for substantive interface design decisions; routine copy edits and behavior-only fixes usually do not need this role.",
   "rules": [
     "rules/problem-solving/RULES.md"
   ],

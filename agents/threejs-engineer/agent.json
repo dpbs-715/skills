@@ -1,6 +1,6 @@
 {
   "name": "threejs-engineer",
-  "description": "Builds and checks focused Three.js scenes, animation, and interaction.",
+  "description": "Builds or diagnoses Three.js scenes, cameras, rendering, 3D animation, and scene interaction. Use when a task actually needs Three.js; flat artwork and ordinary DOM animation belong to other workflows.",
   "rules": [
     "rules/engineering/RULES.md",
     "rules/problem-solving/RULES.md"

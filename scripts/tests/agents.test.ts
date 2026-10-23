@@ -4,11 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { agentOnlySkills, installableSkills, linkTargets } from '../../meta.ts'
+import { agentOnlySkills, installableSkills, linkTargets, localSkillSources } from '../../meta.ts'
 import { cleanupUnusedEntries } from '../commands/cleanup.ts'
 import { linkAll, unlinkAll } from '../commands/link.ts'
 import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'
 import { validateSkills } from '../lib/validation.ts'
+import { repoRoot } from '../lib/utils.ts'
 
 async function fixture(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'skills-agents-'))
@@ -76,6 +77,68 @@ test('an agent-only skill is rendered for its role but excluded from general ski
     assert.match(claude, /generated\/before-you-build\/SKILL\.md/)
     assert.match(kimi, /generated\/before-you-build\/SKILL\.md/)
     assert.doesNotMatch(claude.split('---')[1], /before-you-build/)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('role index follows manifest changes, supports spaced paths, and is validated', async () => {
+  const root = await fixture()
+  const spacedRoot = `${root} with spaces`
+  await rename(root, spacedRoot)
+  const indexPath = join(spacedRoot, 'generated/agents/INDEX.md')
+  const options = { root: spacedRoot, agentOnlySkills: [], installableSkills: [], localSkillSources: [] }
+  try {
+    await renderAgents(spacedRoot)
+    const index = await readFile(indexPath, 'utf8')
+    assert.match(index, /\*\*reviewer\*\*: Reviews assigned changes\./)
+    assert.ok(index.includes(`[AGENT.md](<${spacedRoot}/agents/reviewer/AGENT.md>)`))
+    assert.ok(index.includes(`[agent.json](<${spacedRoot}/agents/reviewer/agent.json>)`))
+    assert.deepEqual((await validateSkills(options)).issues, [])
+
+    const manifestPath = join(spacedRoot, 'agents/reviewer/agent.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+    await writeFile(manifestPath, JSON.stringify({ ...manifest, description: 'Reviews API contracts.' }))
+    assert.ok((await validateSkills(options)).issues.some(issue =>
+      issue.path === 'generated/agents/INDEX.md' && issue.code === 'stale-generated-agent',
+    ))
+    await renderAgents(spacedRoot)
+    assert.match(await readFile(indexPath, 'utf8'), /Reviews API contracts/)
+    await rm(indexPath)
+    assert.deepEqual((await validateSkills(options)).issues.map(issue => issue.code), ['missing-generated-agent'])
+    await renderAgents(spacedRoot)
+    assert.deepEqual((await validateSkills(options)).issues, [])
+  }
+  finally {
+    await rm(spacedRoot, { recursive: true, force: true })
+  }
+})
+
+test('routing links load the generated role index and unlink only their managed section', async () => {
+  const root = await fixture()
+  const source = localSkillSources.find(source => source.name === 'agent-routing')
+  assert.ok(source && source.kind === 'document')
+  const configured = linkTargets.find(target => target.kind === 'markdown-section' && target.section === 'agent-routing')
+  assert.ok(configured && configured.kind === 'markdown-section')
+  const host = join(root, 'host')
+  const file = join(host, 'AGENTS.md')
+  const original = '# User instructions\n\n<!-- skills-managed:project-workspaces:start -->\nDiscovery\n<!-- skills-managed:project-workspaces:end -->\n'
+  try {
+    await mkdir(join(root, 'rules/agent-routing'), { recursive: true })
+    await writeFile(join(root, source.source), await readFile(join(repoRoot(), source.source)))
+    await mkdir(host)
+    await writeFile(file, original)
+    const options = { root, localSkillSources: [source], targets: [{ ...configured, file }] }
+    await linkAll(options)
+    const linked = await readFile(file, 'utf8')
+    assert.ok(linked.startsWith(original))
+    assert.ok(linked.includes(`[role index](${root}/generated/agents/INDEX.md)`))
+    assert.doesNotMatch(linked, /\{\{REPO_ROOT\}\}/)
+    assert.match(await readFile(join(root, 'generated/agents/INDEX.md'), 'utf8'), /\*\*reviewer\*\*/)
+    assert.equal((await linkAll(options))[0].status, 'exists')
+    await unlinkAll(options)
+    assert.equal(await readFile(file, 'utf8'), original)
   }
   finally {
     await rm(root, { recursive: true, force: true })
@@ -194,6 +257,7 @@ for (const change of ['rename', 'delete-all'] as const) {
       const before = await validateSkills(validationOptions)
       assert.equal(before.ok, false)
       assert.deepEqual(before.issues.filter(issue => issue.code === 'unexpected-generated-agent').map(issue => issue.path).sort(), [
+        ...(change === 'delete-all' ? ['generated/agents/INDEX.md'] : []),
         'generated/agents/claude/reviewer.md',
         'generated/agents/kimi-code/reviewer.md',
         'generated/agents/opencode/reviewer.md',

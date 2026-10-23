@@ -50,10 +50,11 @@ This inventory covers the skills configured in `meta.ts` and every repository ro
 
 ### Rules and Knowledge
 
-These document sources are rendered as skills. Engineering and problem-solving rules also become always-on instructions for configured tools that use rule directories.
+These document sources are rendered as skills. Sources in `alwaysOnInstructionSkills` also become always-on instructions for configured tools that use rule directories.
 
 | Skill | Source | Purpose |
 | --- | --- | --- |
+| `agent-routing` | [Agent routing rules](rules/agent-routing/RULES.md) | Select specialist roles, load their capabilities, and delegate when useful. |
 | `engineering-rules` | [Engineering rules](rules/engineering/RULES.md) | Guide implementation, structure, and code review. |
 | `problem-solving-rules` | [Problem-solving rules](rules/problem-solving/RULES.md) | Investigate symptoms and address root causes. |
 | `project-workspaces` | [Project workspace rules](rules/project-workspaces/RULES.md) | Discover associated repositories before work and load their instructions when needed. |
@@ -161,6 +162,14 @@ For a skill used only by a role, register its name in `agentOnlySkills` in `meta
 
 `pnpm skills link` renders each role to `generated/agents/<tool>/<name>.md` and links it into the native agent directory for Claude Code, Kimi Code, OpenCode, and Pi. Claude receives its native `skills` preload field; OpenCode receives `mode: subagent`; the other fields and body are shared. `pnpm skills unlink` removes only links owned by this repository. Edit `agents/`, never the generated files.
 
+The same command generates `generated/agents/INDEX.md` from the role manifests, with each role's description and source paths. Keep selection criteria and useful exclusions in `agent.json`'s `description`; the index is regenerated and checked by validation when roles change, are renamed, or are removed.
+
+The [agent-routing rules](rules/agent-routing/RULES.md) assess specialist needs without requiring the user to name a role. Small or tightly coupled tasks use the role's methods in the main chat; bounded tasks can be delegated when independent judgment, isolation, or parallel work helps. Both modes require reading the selected `AGENT.md`, manifest, rules, and relevant skills. Trivial edits skip role loading. User requests to avoid subagents take precedence. Role selection remains a model judgment, not a deterministic keyword dispatcher.
+
+Routing instructions deduplicate configuration already loaded or being read within each agent, including references through symlinks or generated copies. Back-references do not restart routing or dispatch the same assignment again. Subagent assignments prohibit further delegation unless explicitly required. These are model instructions rather than a programmatic recursion lock.
+
+Codex and Pi receive this routing entry in a managed section of their global instruction file, preserving user content and existing override precedence. Claude and OpenCode receive it through their always-loaded rule targets. Kimi receives it as a discoverable skill; this repository does not configure an always-loaded Kimi routing entry. On hosts without native role selection, delegation uses the actual available subagent tools with explicit role configuration paths. No Codex native role files are generated.
+
 | Tool | Agent destination | Notes |
 | --- | --- | --- |
 | Claude Code | `~/.claude/agents` | Skills in the manifest are preloaded. |
@@ -168,7 +177,7 @@ For a skill used only by a role, register its name in `agentOnlySkills` in `meta
 | OpenCode | `~/.config/opencode/agents` | Generated role runs as a subagent. |
 | Pi | `~/.pi/agent/agents` | Requires a Pi subagent extension that reads this directory; Pi does not activate roles from files alone. |
 
-The `team-workflow` skill forms an ad hoc team for the current task. It explicitly binds each subagent to an installed role or passes the role's instructions, rules, and relevant skill paths to a generic subagent. The lead agent checks prerequisite outputs before starting dependent work and verifies the combined result. Completion reports map each subagent task to the repository role actually used, work completed, deliverables, checks, and status. Reusable templates are saved only when the user asks.
+The `team-workflow` skill forms an ad hoc team for user-requested collaboration or delegation requested by the routing rules. Direct role use does not require this skill. It explicitly binds each subagent to an installed role or passes the role's instructions, rules, and relevant skill paths to a generic subagent. The lead agent checks prerequisite outputs before starting dependent work and verifies the combined result. Completion reports map each subagent task to the repository role actually used, work completed, deliverables, checks, and status. Reusable templates are saved only when the user asks.
 
 ## Team Templates
 
@@ -296,10 +305,10 @@ By default this first renders configured `localSkillSources`, then applies the `
 | Destination | Kind | Receives |
 | --- | --- | --- |
 | `~/.codex/skills` | skill | all `installableSkills` |
-| `~/.codex/AGENTS.md` | markdown-section | managed project discovery instructions; prefers an existing nonempty `AGENTS.override.md` |
+| `~/.codex/AGENTS.md` | markdown-section | managed project discovery and role routing instructions; prefers an existing nonempty `AGENTS.override.md` |
 | `~/.pi/agent/skills` | skill | all `installableSkills` |
-| `~/.pi/agent/AGENTS.md` | markdown-section | managed project discovery instructions; prefers an existing higher-precedence context file |
-| `~/.kimi-code/skills` | skill | all `installableSkills`, including the two shared rule skills |
+| `~/.pi/agent/AGENTS.md` | markdown-section | managed project discovery and role routing instructions; prefers an existing higher-precedence context file |
+| `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
 | `~/.config/opencode/opencode.json` | json-array | ensures `instructions` includes `~/.config/opencode/rules/*.md` |
@@ -315,7 +324,7 @@ only that section, retaining the user's surrounding instructions and private map
 
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi also receive a managed global instruction section specifically for project discovery; other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi also receive managed global instruction sections for project discovery and role routing; other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 

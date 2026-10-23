@@ -6,7 +6,7 @@ import {
   installableSkills as defaultInstallableSkills,
   localSkillSources as defaultLocalSkillSources,
 } from '../../meta.ts'
-import { expectedAgentFiles, GENERATED_AGENTS_DIR } from './agents.ts'
+import { expectedAgentFiles, expectedAgentIndex, GENERATED_AGENT_INDEX, GENERATED_AGENTS_DIR } from './agents.ts'
 import type { DirectorySkillSource, LocalSkillSource } from './metaTypes.ts'
 import {
   GENERATED_SKILLS_DIR,
@@ -242,9 +242,15 @@ async function validateAgentOnlySkills(
 }
 
 async function validateAgents(root: string, issues: ValidationIssue[]): Promise<void> {
-  let expected: Awaited<ReturnType<typeof expectedAgentFiles>>
+  let expected: Array<{ content: string, path: string }>
   try {
-    expected = await expectedAgentFiles(root)
+    expected = (await expectedAgentFiles(root)).map(agent => ({
+      content: agent.content,
+      path: join(GENERATED_AGENTS_DIR, agent.format, `${agent.name}.md`),
+    }))
+    const index = await expectedAgentIndex(root)
+    if (index !== undefined)
+      expected.push({ content: index, path: GENERATED_AGENT_INDEX })
   }
   catch (error) {
     addIssue(issues, 'invalid-agent', 'agents', error instanceof Error ? error.message : String(error))
@@ -253,7 +259,7 @@ async function validateAgents(root: string, issues: ValidationIssue[]): Promise<
 
   const expectedPaths = new Set<string>()
   for (const agent of expected) {
-    const relPath = join(GENERATED_AGENTS_DIR, agent.format, `${agent.name}.md`)
+    const relPath = agent.path
     expectedPaths.add(relPath)
     const path = join(root, relPath)
     if (!await pathExists(path)) {

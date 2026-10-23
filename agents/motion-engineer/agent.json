@@ -1,6 +1,6 @@
 {
   "name": "motion-engineer",
-  "description": "Implements focused GSAP motion, timelines, scroll behavior, and framework lifecycle integration.",
+  "description": "Implements or diagnoses GSAP animation, timelines, ScrollTrigger behavior, and framework lifecycle integration. Use when GSAP is requested or already used; ordinary CSS transitions and Three.js scene construction do not require this role.",
   "rules": [
     "rules/engineering/RULES.md",
     "rules/problem-solving/RULES.md"

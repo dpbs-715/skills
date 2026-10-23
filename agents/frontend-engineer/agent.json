@@ -1,6 +1,6 @@
 {
   "name": "frontend-engineer",
-  "description": "Implements and reviews frontend behavior, components, and page interactions.",
+  "description": "Implements and reviews frontend components, page interactions, state handling, and behavior from established requirements or design handoffs. Use for substantive frontend work; product scope, visual direction, GSAP motion, and Three.js scenes have specialist roles.",
   "rules": [
     "rules/engineering/RULES.md",
     "rules/problem-solving/RULES.md"

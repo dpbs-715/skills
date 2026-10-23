@@ -89,7 +89,7 @@ test('linkTargets excludes always-on instructions from Claude skills and links t
   assert.equal(claudeInstructionsTarget.kind, 'rule')
   assert.deepEqual(
     [...claudeInstructionsTarget.include].sort(),
-    ['engineering-rules', 'problem-solving-rules', 'project-workspaces'],
+    ['agent-routing', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
   )
 })
 
@@ -117,7 +117,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
   assert.ok(!opencodeSkills.include.includes('engineering-rules'))
   assert.deepEqual(
     [...opencodeRules.include].sort(),
-    ['engineering-rules', 'problem-solving-rules', 'project-workspaces'],
+    ['agent-routing', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
   )
   assert.equal(opencodeInstructions.property, 'instructions')
   assert.deepEqual(opencodeInstructions.include, ['~/.config/opencode/rules/*.md'])
@@ -126,6 +126,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
     { key: '*', value: 'ask' },
     { key: '~/.config/opencode/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/skills/**', value: 'allow' },
+    { key: '{{REPO_ROOT}}/agents/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
     { key: '{{REPO_ROOT}}/generated/**', value: 'allow' },
   ])

@@ -78,12 +78,19 @@ test('linkAll and unlinkAll handle global sections and leave missing host direct
   assert.equal(await readFile(target.file, 'utf8'), '')
 })
 
-test('default targets bootstrap Codex and Pi while Claude gets the always-loaded rule', () => {
+test('default targets bootstrap discovery and routing for Codex/Pi and rule-based hosts', () => {
   for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
-    assert.ok(linkTargets.some(target => target.kind === 'markdown-section' && target.file === file))
+    for (const section of ['agent-routing', 'project-workspaces']) {
+      assert.ok(linkTargets.some(target => target.kind === 'markdown-section'
+        && target.file === file && target.section === section))
+    }
   }
-  const claude = linkTargets.find(target => target.kind === 'rule' && target.dir === '~/.claude/rules')
-  assert.ok(claude && claude.kind === 'rule' && claude.include.includes('project-workspaces'))
+  for (const dir of ['~/.claude/rules', '~/.config/opencode/rules']) {
+    const target = linkTargets.find(target => target.kind === 'rule' && target.dir === dir)
+    assert.ok(target && target.kind === 'rule')
+    assert.ok(target.include.includes('agent-routing'))
+    assert.ok(target.include.includes('project-workspaces'))
+  }
 })
 
 test.after(async () => {

@@ -1,6 +1,6 @@
 {
   "name": "visual-artist",
-  "description": "Creates visual artwork and poster concepts from user-provided scenes or images.",
+  "description": "Creates scene-based visual artwork, editorial compositions, and poster concepts from user-provided scenes or images. Use for artwork and composition; product interface layout and frontend implementation belong to other roles.",
   "rules": [
     "rules/problem-solving/RULES.md"
   ],

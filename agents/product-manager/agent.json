@@ -1,6 +1,6 @@
 {
   "name": "product-manager",
-  "description": "Clarifies user needs and turns product requests into testable scope and acceptance criteria.",
+  "description": "Clarifies unclear product needs, scope tradeoffs, user flows, and acceptance criteria. Checks uncertain demand, value, or adoption for new products and MVPs; preserves established requirements for routine fixes and technical investigation.",
   "rules": [
     "rules/engineering/RULES.md",
     "rules/problem-solving/RULES.md"
