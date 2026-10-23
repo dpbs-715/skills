@@ -7,8 +7,10 @@
   Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md)
   for source selection, writes, and explicit migration. Token values never enter
   either binding store.
-- `~/.config/apifox-skills/credentials.json` owns this machine's named tokens.
-  This is separate from the native CLI's `~/.apifox/config.toml`.
+- `{{REPO_ROOT}}/local/apifox/credentials.json` owns this checkout's named tokens.
+  This private directory is gitignored and separate from the native CLI's
+  `~/.apifox/config.toml`. The path is anchored to the skills checkout, regardless
+  of the current business repository or installed skill symlink.
 - The helper supplies the selected `--project`, `--api-base-url`, and
   `--access-token` on each child process. It never logs in, switches accounts,
   or updates the CLI's global configuration.
@@ -71,9 +73,9 @@ The private file has this shape (placeholder only):
 ```
 
 Use the helper in the user's terminal to create/rotate one alias while retaining
-other aliases. The default store is created outside the repository, with file
-mode `0600` and a new parent directory mode `0700` on POSIX. No `.gitignore`
-change is needed. A developer can give their own token the same alias used by
+other aliases. The default store is created in the ignored `local/apifox/`
+directory, with file mode `0600` and a new parent directory mode `0700` on POSIX.
+A developer can give their own token the same alias used by
 shared repository bindings. Changing an alias's server requires revalidating its
 project bindings; the runner rejects old bindings to a different server.
 
@@ -88,6 +90,12 @@ writers are rejected with a lock-file error; do not delete an active writer's
 lock. Native CLI logins remain independent; do not copy secrets into chat to
 import them. `--credentials <private-file>` explicitly selects an alternate
 local store, primarily for isolated tests; never derive this path from repo data.
+
+The former `~/.config/apifox-skills/credentials.json` location is no longer read
+automatically. When explicitly migrating an existing store, validate it, copy
+its complete contents without printing tokens, refuse to overwrite a different
+destination, and verify aliases, bytes, and private permissions before removing
+the old file. Ordinary credential reads never migrate files.
 
 ## Helper commands
 

@@ -7,3 +7,4 @@ knowledge/notes/
 # Generated from source skills by `pnpm skills link` or `pnpm skills sync`
 /generated/
 /local/project-workspaces/
+/local/apifox/

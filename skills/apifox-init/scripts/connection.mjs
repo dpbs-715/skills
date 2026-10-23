@@ -131,6 +131,7 @@ export async function main(args, { workspaceRoot } = {}) {
   discover --credential <alias> -- project list|get <id>
   run [--root <directory>] [--workspace <name>] [--project <key>] -- <apifox command>
 All modes accept --credentials <private-file> for an explicit local credential store.
+Default credentials: ${credentialsPath(workspaceRoot)}
 Workspace member references take precedence; unmigrated projects retain .apifox/projects.json.
 No global CLI account is switched.`)
     return
@@ -138,7 +139,7 @@ No global CLI account is switched.`)
   const separator = rest.indexOf('--')
   const options = parseOptions(separator < 0 ? rest : rest.slice(0, separator))
   const command = separator < 0 ? [] : rest.slice(separator + 1)
-  const path = resolve(options.credentials ?? credentialsPath())
+  const path = resolve(options.credentials ?? credentialsPath(workspaceRoot))
   if (mode === 'credential-set') {
     if (!options.credential || !options.server) throw new Error('credential-set requires --credential and --server')
     await saveCredential(path, options.credential, options.server)

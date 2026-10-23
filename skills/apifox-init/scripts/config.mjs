@@ -1,12 +1,12 @@
 import { lstat, readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { alias, serverUrl, validateApifoxBinding } from '../../../scripts/lib/integrationContracts.ts'
+import { repoRoot } from '../../../scripts/lib/utils.ts'
 
 export { alias, serverUrl }
 export const validateManifest = validateApifoxBinding
 
-export const credentialsPath = () => join(homedir(), '.config', 'apifox-skills', 'credentials.json')
+export const credentialsPath = (root = repoRoot()) => join(root, 'local', 'apifox', 'credentials.json')
 export const manifestPath = root => join(root, '.apifox', 'projects.json')
 
 function object(value, label) {

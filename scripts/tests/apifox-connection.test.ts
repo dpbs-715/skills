@@ -163,3 +163,34 @@ test('credential-set accepts stdin, preserves other aliases, and writes a privat
   await chmod(c.credentials, 0o644)
   await assert.rejects(c.run(['credentials']), /private/)
 })
+
+test('default credentials belong to the skills checkout regardless of cwd or legacy home config', async t => {
+  const c = await setup(t)
+  const store = join(c.root, 'local', 'apifox', 'credentials.json')
+  const legacyDirectory = join(c.root, 'home', '.config', 'apifox-skills')
+  await mkdir(legacyDirectory, { recursive: true })
+  const legacy = join(legacyDirectory, 'credentials.json')
+  const legacyContents = JSON.stringify({ schemaVersion: 1, credentials: {
+    legacy: { server: serverA, token: 'legacy-secret-for-tests' },
+  } })
+  await writeFile(legacy, legacyContents, { mode: 0o600 })
+  const invoke = (args: string[], input?: string) => spawnSync(process.execPath, [
+    '--input-type=module', '-e',
+    'const helper = await import(process.argv[1]); await helper.main(JSON.parse(process.argv[2]), {workspaceRoot: process.argv[3]})',
+    new URL('../../skills/apifox-init/scripts/connection.mjs', import.meta.url).href,
+    JSON.stringify(args), c.root,
+  ], { cwd: c.root, env: { ...c.env, HOME: join(c.root, 'home') }, input, encoding: 'utf8', timeout: 10_000 })
+
+  const empty = invoke(['credentials'])
+  assert.equal(empty.status, 0, empty.stderr)
+  assert.deepEqual(JSON.parse(empty.stdout), { credentials: [] })
+  const saved = invoke(['credential-set', '--credential', 'work', '--server', serverA], 'local-secret-for-tests\n')
+  assert.equal(saved.status, 0, saved.stderr)
+  assert.ok(!saved.stdout.includes('local-secret'))
+  assert.equal((await stat(store)).mode & 0o777, 0o600)
+  assert.equal((await stat(join(c.root, 'local', 'apifox'))).mode & 0o777, 0o700)
+  const listed = invoke(['credentials'])
+  assert.equal(listed.status, 0, listed.stderr)
+  assert.deepEqual(JSON.parse(listed.stdout), { credentials: [{ name: 'work', server: serverA }] })
+  assert.equal(await readFile(legacy, 'utf8'), legacyContents)
+})

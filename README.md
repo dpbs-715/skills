@@ -198,8 +198,10 @@ one credential; different aliases can hold multiple tokens, including tokens for
 the same account. An explicit project key, saved default, or sole project selects
 the connection. Ambiguous selections require a choice.
 
-Tokens live only in `~/.config/apifox-skills/credentials.json` (mode `0600`), configured
-through the helper's hidden terminal prompt. The `apifox` skill uses the shared
+Tokens live in this skills checkout's gitignored `local/apifox/credentials.json`
+(mode `0600`, parent directory `0700`), configured through the helper's hidden
+terminal prompt. The former `~/.config/apifox-skills/credentials.json` location
+requires explicit migration and is no longer read automatically. The `apifox` skill uses the shared
 connection helper to supply the project, server and token per command without
 switching global CLI accounts. See the [connection contract](skills/apifox-init/references/connection.md)
 for configuration examples and commands. The previous upstream Apifox submodule
