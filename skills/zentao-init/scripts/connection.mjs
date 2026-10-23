@@ -5,6 +5,8 @@ import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
+import { fileURLToPath } from 'node:url'
+import { resolveProjectBinding } from '../../../scripts/lib/projectBindings.ts'
 
 const execFileAsync = promisify(execFile)
 const requestTimeoutMs = 10_000
@@ -40,8 +42,8 @@ function normalizeServer(server) {
 
 function parseArguments(args) {
   const [action, ...rest] = args
-  if (!['profiles', 'run'].includes(action))
-    throw new Error('Usage: connection.mjs profiles [--config path] | run --server URL --profile exact-key [--config path] -- version|product|project|bug|my [id/options]')
+  if (!['profiles', 'inspect', 'run'].includes(action))
+    throw new Error('Usage: connection.mjs profiles [--config path] | inspect [--root directory] [--workspace name] | run --root directory|--server URL --profile exact-key [--workspace name] [--config path] -- version|product|project|bug|my [id/options]')
   const separator = rest.indexOf('--')
   const options = separator < 0 ? rest : rest.slice(0, separator)
   const command = separator < 0 ? [] : rest.slice(separator + 1)
@@ -49,19 +51,25 @@ function parseArguments(args) {
   for (let index = 0; index < options.length; index += 2) {
     const option = options[index]
     const value = options[index + 1]
-    if (!['--config', '--server', '--profile'].includes(option)
+    if (!['--config', '--server', '--profile', '--root', '--workspace'].includes(option)
         || !value?.trim() || value.startsWith('--') || parsed[option.slice(2)] !== undefined)
       throw new Error('Expected unique --config, --server, and --profile options with nonempty values.')
     parsed[option.slice(2)] = value
   }
   if (action === 'profiles') {
-    if (parsed.server || parsed.profile || separator >= 0)
+    if (parsed.server || parsed.profile || parsed.root || parsed.workspace || separator >= 0)
       throw new Error('The profiles command only accepts --config.')
   }
+  else if (action === 'inspect') {
+    if (parsed.server || parsed.profile || parsed.config || separator >= 0)
+      throw new Error('inspect accepts only --root and --workspace')
+  }
   else {
-    if (!parsed.server || !parsed.profile)
+    if ((!parsed.server && !parsed.root) || !parsed.profile)
       throw new Error('A repository server URL and exact profile key are required; run zentao-init first.')
-    parsed.server = normalizeServer(parsed.server)
+    if (parsed.workspace && !parsed.root)
+      throw new Error('--workspace requires --root for a bound read')
+    if (parsed.server) parsed.server = normalizeServer(parsed.server)
     validateReadCommand(command)
   }
   return parsed
@@ -213,8 +221,16 @@ function parseVersionOutput(output) {
   return { cli, serverVersion: server[1], server: server[2] }
 }
 
-async function run() {
-  const options = parseArguments(process.argv.slice(2))
+export async function run(args = process.argv.slice(2), { workspaceRoot } = {}) {
+  const options = parseArguments(args)
+  if (options.action === 'inspect' || (options.action === 'run' && options.root)) {
+    const resolved = await resolveProjectBinding(options.root ?? process.cwd(), 'zentao', { root: workspaceRoot, workspace: options.workspace })
+    if (options.action === 'inspect') return resolved
+    if (!resolved.binding) throw new Error('ZenTao binding is missing; run zentao-init')
+    if (options.server && options.server !== resolved.binding.server)
+      throw new Error('Requested server conflicts with the effective binding; no request was sent')
+    options.server = resolved.binding.server
+  }
   const directory = await mkdtemp(join(tmpdir(), 'zentao-connection-'))
   const temporaryConfig = join(directory, 'zentao.json')
   const controller = new AbortController()
@@ -258,10 +274,12 @@ async function run() {
   }
 }
 
-try {
-  console.log(JSON.stringify(await run(), null, 2))
-}
-catch (error) {
-  console.error(error.message)
-  process.exitCode = 1
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    console.log(JSON.stringify(await run(), null, 2))
+  }
+  catch (error) {
+    console.error(error.message)
+    process.exitCode = 1
+  }
 }

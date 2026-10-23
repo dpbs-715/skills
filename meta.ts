@@ -28,6 +28,8 @@ export const Skill = {
     EngineeringRules: 'engineering-rules',
     Mock: 'mock',
     PersonalKnowledge: 'personal-knowledge',
+    ProjectInit: 'project-init',
+    ProjectWorkspaces: 'project-workspaces',
     ProblemSolvingRules: 'problem-solving-rules',
     Psql: 'psql',
     PsqlInit: 'psql-init',
@@ -53,6 +55,16 @@ export const localSkillSources = [
     { kind: 'directory', name: Skill.Commit, path: 'skills/commit' },
     { kind: 'directory', name: Skill.Dcr, path: 'skills/dcr' },
     { kind: 'directory', name: Skill.Mock, path: 'skills/mock' },
+    { kind: 'directory', name: Skill.ProjectInit, path: 'skills/project-init' },
+    {
+        description: 'Discover related repositories before starting work and load their instructions and tool configuration when needed. Applies to every new session and working-directory change; initialization remains user-triggered through project-init.',
+        instructions: ['Run the read-only discovery workflow before the first substantive task in a repository.'],
+        kind: 'document',
+        name: Skill.ProjectWorkspaces,
+        shortDescription: 'related project discovery',
+        source: 'rules/project-workspaces/RULES.md',
+        title: 'Project Workspaces',
+    },
     {
         description: 'Use when defining requirements or scope, choosing implementation approaches, or writing, modifying, or reviewing code.',
         instructions: [
@@ -158,12 +170,27 @@ export const installableSkills = [
 export const alwaysOnInstructionSkills = [
     Skill.EngineeringRules,
     Skill.ProblemSolvingRules,
+    Skill.ProjectWorkspaces,
 ] as const
 
 const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
 const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSet.has(name))
 
 export const linkTargets: readonly LinkTarget[] = [
+    {
+        file: '~/.codex/AGENTS.md',
+        preferExisting: ['AGENTS.override.md'],
+        kind: 'markdown-section',
+        section: 'project-workspaces',
+        source: 'generated/project-workspaces/SKILL.md',
+    },
+    {
+        file: '~/.pi/agent/AGENTS.md',
+        preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
+        kind: 'markdown-section',
+        section: 'project-workspaces',
+        source: 'generated/project-workspaces/SKILL.md',
+    },
     { dir: '~/.codex/skills', kind: 'skill', include: installableSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: installableSkills },
     { dir: '~/.kimi-code/skills', kind: 'skill', include: installableSkills },

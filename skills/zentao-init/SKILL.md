@@ -1,12 +1,12 @@
 ---
 name: zentao-init
-description: Initialize, inspect, migrate, or update the project-local `.zentao` mapping to a specific ZenTao server, one required project, and an optional product through choice-based user interaction. Use whenever the user invokes `/zentao-init` or `$zentao-init`, asks to initialize ZenTao for the current repository, bind or change its ZenTao address/product/project, create `.zentao`, or validate an existing mapping. Do not use for listing or changing bugs, stories, tasks, builds, or other ZenTao business objects.
-compatibility: Requires Node.js and an installed, authenticated `zentao` CLI supporting `--config` (verified with 0.2.0). Git resolves the project root automatically.
+description: Initialize, inspect, migrate, or update a workspace ZenTao binding, retaining .zentao for unregistered repositories. Select a server, one required project, and an optional product. Use for /zentao-init, $zentao-init, binding or changing ZenTao address/product/project, migrating .zentao, or validating a binding. Does not change ZenTao business objects.
+compatibility: Requires Node.js 24+ and an installed, authenticated `zentao` CLI supporting `--config` (verified with 0.2.0). Git resolves the project root automatically.
 ---
 
 # ZenTao Init
 
-Create and maintain the smallest useful project-local ZenTao context. The file
+Create and maintain the smallest useful ZenTao context. The binding
 maps one code repository to one ZenTao server, one project, and, when accessible,
 one product. Object IDs only identify objects within that server.
 
@@ -14,11 +14,11 @@ one product. Object IDs only identify objects within that server.
 
 Handle:
 
-- initializing `.zentao` in the current Git repository root;
+- initializing a workspace resource for a registered member, or `.zentao` for an unregistered repository;
 - selecting its server from saved CLI logins or an explicit address;
 - resolving a required project and an optional product from explicit IDs or
   choice-based selection from read-only CLI results;
-- validating an existing `.zentao` against its bound service;
+- validating the effective binding against its bound service;
 - migrating a version 1 mapping by confirming its missing server;
 - replacing an existing mapping within the user's explicitly selected scope.
 
@@ -78,14 +78,17 @@ Honor exact choices already supplied in this task:
 Explicit server/product/project selections authorize creating or updating that
 binding after validation; do not ask for another generic write confirmation.
 For inferred choices or an unresolved replacement, show the complete proposed
-mapping and offer `Create .zentao` or `Update .zentao`, `Choose again` or
+mapping and offer `Create binding` or `Update binding`, `Choose again` or
 `Keep current`, and `Cancel`. Never interpret silence as a selection. An explicit
 preview-only request permits no write until the user authorizes it.
 
 ## File contract
 
-Write UTF-8 JSON with a trailing newline to `<git-root>/.zentao` using exactly
-one of these shapes. When a product is accessible, store it normally:
+Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md)
+before choosing storage. Registered members write a resource with
+`project binding-save zentao`; unregistered repositories retain UTF-8 JSON at
+`<git-root>/.zentao`. Both use exactly one of these binding shapes. When a
+product is accessible, store it normally:
 
 ```json
 {
@@ -141,7 +144,12 @@ stop before writing and report its resolved target.
 ### 1. Resolve the repository root
 
 Run `git rev-parse --show-toplevel` from the user's current working directory.
-Use the returned absolute directory as the only location for `.zentao`.
+Use the returned absolute directory as the repository identity. Discover its
+workspace and resolve `project binding zentao --cwd <root>`. Keep returned
+`source`, `file`, `workspace`, `member`, and `resource` metadata throughout the
+invocation. For a registered but unmigrated member, retain the old binding while
+preparing the requested init change, then save to the selected workspace.
+Do not initialize a workspace implicitly. Select `--workspace` if ambiguous.
 
 If the command fails, do not silently initialize an arbitrary directory. Ask
 the user to identify or confirm the intended project directory, then place the
@@ -149,7 +157,9 @@ file directly in that directory.
 
 ### 2. Inspect an existing mapping
 
-Check `<git-root>/.zentao` before querying ZenTao.
+Resolve the effective binding before querying ZenTao. An explicit workspace
+reference owns the binding; do not read or repair a conflicting legacy file.
+Without a reference, check `<git-root>/.zentao` with the legacy rules below.
 
 - If it is a symbolic link, stop before writing.
 - If it is valid JSON matching the file contract, retain it while validating
@@ -254,7 +264,13 @@ destination and the complete JSON document (or a compact old-to-new diff for an
 update). If all binding choices are already authorized, write directly. Otherwise
 use the choice-based selection described above for only the unresolved proposal.
 Preserve all unrelated workspace files. Check-only and preview-only requests
-leave the file unchanged.
+leave the file unchanged. For a workspace resource update, show its referencing
+members and ensure the requested scope includes them; create another resource
+when only the current member should change. Preserve other resources and member
+references. Use `project binding-save zentao` for registered members and re-read
+the effective binding. Only unregistered repositories use the legacy write
+workflow below. An explicit import of a valid old file uses
+`project binding-import zentao`, preserving that file byte-for-byte.
 
 Use the available workspace file-editing mechanism rather than shell
 redirection. After writing, read the file back and parse it again to confirm it
@@ -265,7 +281,7 @@ matches the contract. Do not modify the global ZenTao workspace.
 For a successful creation or update, report:
 
 ```md
-Created `.zentao` at `<absolute path>`.
+Created binding at `<absolute path>` (workspace/member/resource or repository-local).
 
 - Product: `#<id> <name>`
 - Project: `#<id> <name>`
@@ -284,8 +300,8 @@ available from the CLI response, say so explicitly.
 
 ## Downstream contract
 
-Bug skills require version 2 and resolve the server and object scope from the
-repository's `.zentao`. They do not fall back to the global profile's server or
+Bug skills require version 2 and resolve the server and object scope through
+`project binding zentao` or connection-helper `inspect`. They do not fall back to the global profile's server or
 workspace. A Bug ID, matching object name, or repeated numeric ID is not a
 server override. A request conflicting with the binding must be clarified or
 handled with `/zentao-init`; it must not silently change the query destination.

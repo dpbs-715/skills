@@ -15,6 +15,7 @@ This repository separates always-on preferences from task-specific skills:
 - `agents/` contains reusable role definitions. Each role has an `agent.json` manifest and an `AGENT.md` instruction body.
 - `teams/` may contain reusable workflows once a task pattern has proven useful. Each task in `team.json` names an agent and its prerequisite task IDs.
 - `generated/` contains rendered agent definitions and rendered or synced installable skill bundles that are symlinked into tool directories.
+- `local/project-workspaces/` contains private, Git-ignored maps of related local repositories.
 - `vendor/` contains synchronized third-party skill repositories.
 - `meta.ts` is the link configuration: which local directory or document sources render into `generated/` (`localSkillSources`), which generated bundles link into agents (`installableSkills`), which document-backed skills are also delivered as always-on instructions (`alwaysOnInstructionSkills`), the per-destination link/config table (`linkTargets`), and vendored skill mappings. Type definitions live in `scripts/lib/metaTypes.ts`.
 
@@ -37,6 +38,7 @@ This inventory covers the skills configured in `meta.ts` and every repository ro
 | [mock](skills/mock/SKILL.md) | Simulate a request flow and identify applicable tools, skills, and rules. |
 | [psql](skills/psql/SKILL.md) | Query and manage PostgreSQL through local CLI connections. |
 | [psql-init](skills/psql-init/SKILL.md) | Configure a project's PostgreSQL connection mapping. |
+| [project-init](skills/project-init/SKILL.md) | Register, inspect, or update related local repositories without moving them. |
 | [push](skills/push/SKILL.md) | Push local commits to a remote. |
 | [review-pr](skills/review-pr/SKILL.md) | Review PRs/MRs and merge when the required checks pass. |
 | [submit](skills/submit/SKILL.md) | Run the issue, branch, commit/push, and PR/MR submission workflow. |
@@ -54,6 +56,7 @@ These document sources are rendered as skills. Engineering and problem-solving r
 | --- | --- | --- |
 | `engineering-rules` | [Engineering rules](rules/engineering/RULES.md) | Guide implementation, structure, and code review. |
 | `problem-solving-rules` | [Problem-solving rules](rules/problem-solving/RULES.md) | Investigate symptoms and address root causes. |
+| `project-workspaces` | [Project workspace rules](rules/project-workspaces/RULES.md) | Discover associated repositories before work and load their instructions when needed. |
 | `personal-knowledge` | Local `knowledge/INDEX.md`; see [Knowledge Notes](#knowledge-notes) | Find private reusable notes through a lightweight index. |
 
 The knowledge index and notes are gitignored. Run `pnpm skills note reindex` to create the index on a fresh checkout.
@@ -123,6 +126,7 @@ pnpm skills check     # fetch submodules and report upstream updates
 pnpm skills cleanup   # report unused submodules/generated skills (pass --yes to remove)
 pnpm skills validate  # validate local sources, generated skills, and metadata
 pnpm skills note      # manage private knowledge notes (list, reindex, add)
+pnpm skills project   # discover related repositories and manage private YAML maps
 ```
 
 Run `pnpm skills` with no arguments to see this list.
@@ -179,7 +183,8 @@ Add a skill name to `installableSkills` in `meta.ts` when its generated bundle s
 ## Apifox Project Bindings
 
 The repo-owned `apifox-init` skill selects projects and credential aliases and writes
-`.apifox/projects.json` in the current code repository. Multiple projects can share
+a workspace resource for registered members, retaining `.apifox/projects.json`
+for unregistered repositories. Multiple projects can share
 one credential; different aliases can hold multiple tokens, including tokens for
 the same account. An explicit project key, saved default, or sole project selects
 the connection. Ambiguous selections require a choice.
@@ -205,6 +210,79 @@ pnpm skills note add command-notes/example --title "Example" --summary "Short re
 
 `note reindex` scans markdown files under `knowledge/notes/`, skips hidden directories such as `.obsidian`, preserves existing summaries and tags when possible, and rewrites `knowledge/INDEX.md`. `note add` creates a new note and refuses to overwrite an existing one.
 
+## Related Projects
+
+Use `project-init` explicitly from any member repository to associate frontend,
+backend, and mobile projects at their existing locations. One map per workspace
+is saved under `local/project-workspaces/<name>.yaml` in this skills checkout.
+Maps are Git-ignored, do not install inside the skill bundle, and are not copied
+to member repositories or `~/.config`.
+
+```text
+/project-init Associate this frontend with /work/scm-api and /mobile/scm
+/project-init Check this project's associations and available agent entry points
+```
+
+After the one-time `pnpm skills link`, Codex and Pi receive a managed section in
+their global `AGENTS.md` (or an existing higher-precedence instruction file),
+and Claude Code receives `~/.claude/rules/project-workspaces.md`. Existing user
+instructions are preserved. These rules tell the agent to run read-only
+discovery before the first substantive task, without a wrapper command or extra
+session arguments. They are model instructions, not enforced startup hooks;
+native instruction loading and host permissions still govern execution.
+
+Discovery matches repository roots, subdirectories, symlinks, and Git worktrees.
+It retains the active worktree's checkout and rules. Unregistered repositories
+continue normally; missing members remain listed as unavailable; malformed maps
+are reported without automatic repair. Changes to maps are live-read without
+re-linking. Moving this skills checkout requires re-linking its absolute paths.
+
+The helper commands emit JSON and can also be used directly:
+
+```bash
+pnpm skills project list
+pnpm skills project discover --cwd /work/scm-web
+pnpm skills project inspect --cwd /work/scm-api
+pnpm skills project save --input /tmp/scm.yaml
+# Explicitly replace an existing valid map after preparing its complete content:
+pnpm skills project save --input /tmp/scm.yaml --replace
+```
+
+Maps contain project paths, descriptions, and optional directional `uses`
+relationships, plus optional `resources` and explicit per-member `bindings`.
+Target instructions, skills, roles, MCP configuration candidates,
+and Serena settings are discovered from live files when needed. Configuration
+discovery does not connect tools, copy credentials, or expand permissions. See
+the [workspace contract](skills/project-init/references/workspaces.md) for the
+schema and update workflow.
+
+### Integration Bindings
+
+ZenTao, PostgreSQL, and Apifox share the workspace binding resolver. Definitions
+live in `resources.<kind>.<name>` and members reference them through
+`bindings.<kind>`. A shared resource can serve several members; `uses` alone
+does not inherit a database or external-service binding. Resource values retain
+the existing integration schemas, including PG service defaults and Apifox
+multi-project selection. Logins, database routing/authentication, and actual
+tokens remain in their machine-local stores.
+
+```bash
+pnpm skills project binding psql --cwd /work/scm-api
+pnpm skills project binding-save psql --cwd /work/scm-api --workspace scm --resource backend --input /tmp/pg-binding.json
+pnpm skills project binding-import zentao --cwd /work/scm-api --workspace scm --resource main
+```
+
+An explicit workspace reference is authoritative. Members without one retain
+`.zentao`, `.psql`, or `.apifox/projects.json`. Multiple workspace providers
+require an explicit selector; malformed maps and invalid references never fall
+back. Init skills save to the selected workspace when the member is registered;
+ordinary queries and check-only requests do not migrate anything. Explicit
+imports preserve old file bytes and reject conflicting resources. Shared
+resource updates report all referencing members. Concurrent map writes are
+rejected rather than silently overwriting another integration's changes; reload
+the latest map before retrying. See the
+[integration contract](skills/project-init/references/integrations.md).
+
 ## Linking Skills
 
 The repository keeps local sources under `skills/`, `rules/`, and `knowledge/`, then renders generated bundles under `generated/`. Link configured `installableSkills` into local agent skill directories with:
@@ -218,6 +296,9 @@ By default this first renders configured `localSkillSources`, then applies the `
 | Destination | Kind | Receives |
 | --- | --- | --- |
 | `~/.codex/skills` | skill | all `installableSkills` |
+| `~/.codex/AGENTS.md` | markdown-section | managed project discovery instructions; prefers an existing nonempty `AGENTS.override.md` |
+| `~/.pi/agent/skills` | skill | all `installableSkills` |
+| `~/.pi/agent/AGENTS.md` | markdown-section | managed project discovery instructions; prefers an existing higher-precedence context file |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including the two shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
@@ -228,9 +309,13 @@ By default this first renders configured `localSkillSources`, then applies the `
 
 Skill directories are populated only when they already exist (the tool is installed); missing ones are skipped, not created. Rule directories and JSON config files are created when their parent agent config directory exists.
 
+Managed Markdown sections are also written only when their parent host directory
+exists. Re-linking updates the section without duplicating it; unlinking removes
+only that section, retaining the user's surrounding instructions and private maps.
+
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (currently the engineering and problem-solving rule sets) are therefore linked into `~/.claude/rules` as markdown pointing at the repo's `RULES.md`, and excluded from `~/.claude/skills`, so they always apply when Claude works. opencode receives the same split, but its `opencode.json` also needs an `instructions` glob for the rules directory; the `json-array` row keeps that configured. Codex and Agents read the rule sets as skills via `~/.codex/skills` / `~/.agents/skills` and are unaffected. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi also receive a managed global instruction section specifically for project discovery; other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 

@@ -6,7 +6,8 @@ import { createInterface } from 'node:readline/promises'
 import { Writable } from 'node:stream'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
-import { alias, credentialsPath, manifestPath, readJson, selectCredential, selectProject, serverUrl, validateCredentials } from './config.mjs'
+import { alias, credentialsPath, readJson, selectCredential, selectProject, serverUrl, validateCredentials } from './config.mjs'
+import { resolveProjectBinding } from '../../../scripts/lib/projectBindings.ts'
 
 const execute = promisify(execFile)
 const scopedResources = new Set([
@@ -59,7 +60,7 @@ function parseOptions(args) {
   const result = {}
   for (let i = 0; i < args.length; i += 2) {
     const name = args[i]
-    if (!['--root', '--project', '--credential', '--credentials', '--server'].includes(name) || !args[i + 1] || Object.hasOwn(result, name.slice(2)))
+    if (!['--root', '--workspace', '--project', '--credential', '--credentials', '--server'].includes(name) || !args[i + 1] || Object.hasOwn(result, name.slice(2)))
       throw new Error('Invalid or duplicate helper option')
     result[name.slice(2)] = args[i + 1]
   }
@@ -118,18 +119,20 @@ async function saveCredential(path, name, server) {
   }
 }
 
-export async function main(args) {
+export async function main(args, { workspaceRoot } = {}) {
   const [mode, ...rest] = args
   if (!mode || mode === '--help') {
     console.log(`Apifox connection helper
   credentials                              List credential aliases and servers (no tokens)
   credential-set --credential <alias> --server <url>
                                            Read token from a hidden terminal prompt or stdin
-  inspect [--root <directory>]             Inspect project bindings and local credential availability
+  inspect [--root <directory>] [--workspace <name>]
+                                           Inspect effective bindings and local credential availability
   discover --credential <alias> -- project list|get <id>
-  run [--root <directory>] [--project <key>] -- <apifox command>
+  run [--root <directory>] [--workspace <name>] [--project <key>] -- <apifox command>
 All modes accept --credentials <private-file> for an explicit local credential store.
-The repository manifest is .apifox/projects.json. No global CLI account is switched.`)
+Workspace member references take precedence; unmigrated projects retain .apifox/projects.json.
+No global CLI account is switched.`)
     return
   }
   const separator = rest.indexOf('--')
@@ -160,9 +163,12 @@ The repository manifest is .apifox/projects.json. No global CLI account is switc
   }
   if (!['inspect', 'run'].includes(mode)) throw new Error('Unknown helper mode')
   const root = await rootDirectory(options.root)
-  const manifest = await readJson(manifestPath(root))
+  const resolved = await resolveProjectBinding(root, 'apifox', { root: workspaceRoot, workspace: options.workspace })
+  if (!resolved.binding) throw new Error('Apifox binding is missing; run apifox-init')
+  const manifest = resolved.binding
   if (mode === 'inspect') {
-    console.log(JSON.stringify({ ...manifest, projects: manifest.projects.map(project => {
+    const { binding: _binding, ...source } = resolved
+    console.log(JSON.stringify({ ...manifest, source, projects: manifest.projects.map(project => {
       let status = 'configured; connectivity untested'
       try { selectCredential(config, project.credential, project.server) }
       catch (error) { status = error.message }

@@ -5,7 +5,7 @@ description: Use Apifox CLI for repository-bound API queries and edits, schemas,
 
 # Apifox
 
-Requires Node.js, Apifox CLI, and bindings created by apifox-init. CLI help and schema output are authoritative.
+Requires Node.js 24+, Apifox CLI, and bindings created by apifox-init. CLI help and schema output are authoritative.
 
 Execute the requested Apifox work in the selected repository-bound project.
 Respond in the user's language. Read
@@ -16,6 +16,9 @@ first. The helper is `{{REPO_ROOT}}/skills/apifox-init/scripts/connection.mjs`.
 
 1. Inspect bindings with helper `inspect`; when missing or invalid, use
    `apifox-init`. Never guess a project or borrow the CLI's current account.
+   The helper resolves workspace resources before legacy repository files.
+   Pin its source metadata; when several workspaces provide bindings, select
+   `--workspace <name>` explicitly and keep it on every helper call.
 2. Resolve an explicit project key, then the saved default or sole project.
    When ambiguous, offer project key/name/server choices. Keep that key fixed
    for reads, writes, and verification; a numeric resource ID cannot select it.

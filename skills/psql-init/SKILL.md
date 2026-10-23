@@ -1,7 +1,7 @@
 ---
 name: psql-init
-description: Initialize, inspect, or update a project's .psql by discovering locally configured PostgreSQL services and letting the user select which belong to the project. Use for /psql-init, $psql-init, requests to bind project database connections, or check missing local services. Does not query business data or modify local credentials.
-compatibility: Requires local PostgreSQL connection service configuration; psql is needed only for requested connection verification.
+description: Initialize, inspect, migrate, or update PostgreSQL service bindings in a registered workspace, retaining .psql for unregistered projects. Discover local services and let the user select project membership. Use for /psql-init, $psql-init, binding database connections, or checking missing local services. Does not query business data or modify local credentials.
+compatibility: Requires Node.js 24+, Git, and local PostgreSQL connection service configuration; psql is needed only for requested connection verification.
 ---
 
 # psql-init
@@ -11,7 +11,7 @@ Read [the shared project contract](references/project.md) before proceeding.
 
 ## Workflow
 
-1. Resolve the project root and inspect any `.psql` using the shared contract.
+1. Resolve the project root and effective binding using the shared contract.
    Preserve the current manifest while preparing changes. For malformed files
    or unsupported versions, explain the issue and prepare a replacement only
    when the user requests repair; do not silently discard entries.
@@ -30,10 +30,17 @@ Read [the shared project contract](references/project.md) before proceeding.
    preserve an existing default if retained; if removed, ask for a new default
    or no default. Preserve existing project services unless the user explicitly
    deselects/removes them; absence from this machine is not removal authorization.
-5. After the user's selections, write the manifest using the shared
+5. After the user's selections, write the binding using the shared
    contract, then read it back and validate it. The selections authorize this
    project-only change; no additional generic confirmation is needed. Report
    added/removed services, default, and the absolute manifest path.
+
+For registered members use the workspace resource destination. Before changing
+a shared resource, identify every referencing member and ensure they are in the
+requested scope; otherwise use a separate resource. Preserve all unrelated map
+content. Unregistered repositories keep the `.psql` destination. Import an old
+`.psql` only on a migration request, retaining it afterward. Do not create a
+workspace merely because psql-init was invoked.
 
 Service entries initially contain `name` and `dbname`. Add other project
 metadata only for an actual user need, and preserve existing metadata on

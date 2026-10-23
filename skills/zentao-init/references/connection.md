@@ -7,7 +7,14 @@ uses its global current profile, which may belong to another repository.
 
 ## Server identity
 
-Version 2 `.zentao` contains exactly `schemaVersion`, `server`, `product`, and
+Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md).
+Resolve `node <connection-script> inspect --root '<repository>'` before a bound
+read. It returns the validated binding plus effective source metadata without
+reading credentials or contacting ZenTao. Explicit workspace references take
+precedence; unmigrated members retain `.zentao`. Add `--workspace '<name>'` to
+inspect and bound runs when more than one workspace provides a binding.
+
+A version 2 binding contains exactly `schemaVersion`, `server`, `product`, and
 `project`. The latter two fields retain the version 1 object contract. Version
 1 has no server binding and must be migrated with init before any Bug query.
 
@@ -67,12 +74,20 @@ Re-discovery must not silently select a different account mid-query.
 ## Run a bound read
 
 ```sh
-node <connection-script> run --server '<server>' --profile '<exact-key>' -- bug 42
-node <connection-script> run --server '<server>' --profile '<exact-key>' -- product --all --pick=id,name
+node <connection-script> run --root '<repository>' --profile '<exact-key>' -- bug 42
+node <connection-script> run --root '<repository>' --profile '<exact-key>' -- product --all --pick=id,name
 ```
 
 Replace placeholders with verified values and quote shell arguments safely, or
-use a process argument array. The helper emits JSON. Each invocation:
+use a process argument array. The helper emits JSON.
+
+For `run --root`, the helper resolves the effective binding before reading the
+CLI credential copy, uses its server, and rejects a conflicting `--server`.
+Carry the selected `--workspace` on every page when needed. Initialization can
+still use `run --server '<candidate>' --profile ...` without `--root` to validate
+an explicitly selected candidate before saving; Bug workflows use bound reads.
+
+Each invocation:
 
 - creates its own temporary directory with mode `0700` and an opaque config
   copy with mode `0600`, outside the repository;

@@ -8,6 +8,7 @@ import {
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
 import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'
 import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'
+import { ensureMarkdownSection, removeMarkdownSections } from '../lib/markdownInstructions.ts'
 import type { LinkTarget, LocalSkillSource } from '../lib/metaTypes.ts'
 import {
   createSkillLinks,
@@ -69,6 +70,13 @@ export async function linkAll({
   const results: LinkResult[] = []
 
   for (const target of targets) {
+    if (target.kind === 'markdown-section') {
+      const file = homePath(target.file)
+      if (await pathExists(dirname(file)))
+        results.push(await ensureMarkdownSection({ ...target, file }, root))
+      continue
+    }
+
     if (target.kind === 'agent') {
       const dir = homePath(target.dir)
       if (!await pathExists(dirname(dir)))
@@ -137,6 +145,11 @@ export async function unlinkAll({
   const results: LinkResult[] = []
 
   for (const target of targets) {
+    if (target.kind === 'markdown-section') {
+      results.push(...await removeMarkdownSections({ ...target, file: homePath(target.file) }))
+      continue
+    }
+
     if (target.kind === 'json-array' || target.kind === 'json-object')
       continue
 

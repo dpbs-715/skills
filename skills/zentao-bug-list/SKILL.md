@@ -1,7 +1,7 @@
 ---
 name: zentao-bug-list
-description: List, filter, sort, and summarize the current repository's ZenTao Bugs. Use for /zentao-bug-list, $zentao-bug-list, requests for assigned or pending Bugs, status/severity/priority/keyword filters, and requests to prioritize a Bug queue. Uses the project-root .zentao server and product/project binding. Read-only; single-Bug investigation, code fixes, and Bug state changes belong to other workflows.
-compatibility: Requires Git, Node.js, a version 2 project-root .zentao, and a logged-in zentao CLI supporting --config. Prefers my bugs; supports scoped Bug lists when that entry is unavailable.
+description: List, filter, sort, and summarize the current repository's ZenTao Bugs using its effective workspace or legacy binding. Use for /zentao-bug-list, $zentao-bug-list, assigned or pending Bugs, status/severity/priority/keyword filters, and prioritizing a Bug queue. Read-only; single-Bug fixes and state changes belong to other workflows.
+compatibility: Requires Git, Node.js 24+, a version 2 effective ZenTao binding, and a logged-in zentao CLI supporting --config. Prefers my bugs; supports scoped Bug lists when unavailable.
 ---
 
 # ZenTao Bug List
@@ -12,8 +12,11 @@ filter and sort once, then show the result in the user's language.
 
 ## 1. Resolve the binding and login
 
-Run `git rev-parse --show-toplevel`. Read only the Git-root `.zentao`, rejecting
-symbolic links. Require strict UTF-8 JSON with exactly these top-level keys:
+Run `git rev-parse --show-toplevel`, then connection-helper
+`inspect --root <repository>` to resolve the effective binding. Pin its source
+metadata and selected `--workspace` for this task. The unified resolver uses an
+explicit workspace resource before any legacy `.zentao`; invalid maps or
+references never fall back. The returned `binding` has these fields:
 
 ```json
 {

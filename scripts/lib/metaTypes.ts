@@ -55,4 +55,12 @@ export interface JsonObjectConfigTarget {
   path: readonly string[]
 }
 
-export type LinkTarget = DirectoryLinkTarget | AgentLinkTarget | JsonArrayConfigTarget | JsonObjectConfigTarget
+export interface MarkdownSectionTarget {
+  file: string
+  kind: 'markdown-section'
+  preferExisting?: readonly string[]
+  section: string
+  source: string
+}
+
+export type LinkTarget = DirectoryLinkTarget | AgentLinkTarget | JsonArrayConfigTarget | JsonObjectConfigTarget | MarkdownSectionTarget

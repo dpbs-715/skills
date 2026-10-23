@@ -2,7 +2,11 @@
 
 ## Ownership
 
-- `<repository>/.apifox/projects.json` owns project bindings, never token values.
+- An explicit member `bindings.apifox` reference owns project bindings in the
+  workspace map. Unmigrated members retain `<repository>/.apifox/projects.json`.
+  Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md)
+  for source selection, writes, and explicit migration. Token values never enter
+  either binding store.
 - `~/.config/apifox-skills/credentials.json` owns this machine's named tokens.
   This is separate from the native CLI's `~/.apifox/config.toml`.
 - The helper supplies the selected `--project`, `--api-base-url`, and
@@ -47,7 +51,7 @@ HTTP(S), without user info, queries, or fragments; normalize trailing slashes.
 Reject unexpected fields, invalid references, symlink manifests and symlink
 `.apifox` directories before writing. Preserve unrelated CLI files.
 
-No `.apifox/projects.json` means uninitialized; do not infer a binding from
+Only an effective `source: none` means uninitialized; do not infer a binding from
 native `settings.json`, the repository name, or the CLI's current account.
 An existing native `settings.json` project ID can be offered as a candidate,
 but validate it through a chosen alias before adding it.
@@ -101,6 +105,15 @@ node <helper> run --root <repository> --project backend -- endpoint list
 node <helper> run --root <repository> --project backend -- endpoint get <id> --branch <branch>
 node <helper> run --root <repository> --project backend -- cli-schema get <schema-key>
 ```
+
+`inspect` and `run` use the unified workspace resolver automatically. `inspect`
+includes effective source metadata; `--workspace <name>` selects an ambiguous
+workspace for either command. A workspace reference is authoritative even when
+the old file conflicts or is malformed. No reference retains the legacy file;
+invalid workspace maps or unknown selectors never fall back. Write workspace
+bindings with `project binding-save apifox`, and import old manifests only when
+requested with `project binding-import apifox`. Both preserve local tokens and
+unrelated native CLI files. The binding schema above remains unchanged.
 
 Selection order: explicit project **key**, saved default, sole bound project.
 Otherwise ask the user. Unknown keys never fall back. Keep the selected key

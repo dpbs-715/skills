@@ -8,6 +8,7 @@ import { run as runCleanup } from './commands/cleanup.ts'
 import { run as runInit } from './commands/init.ts'
 import { runLink, runUnlink } from './commands/link.ts'
 import { run as runNote } from './commands/note.ts'
+import { run as runProject } from './commands/project.ts'
 import { run as runStatus } from './commands/status.ts'
 import { run as runSync } from './commands/sync.ts'
 import { run as runValidate } from './commands/validate.ts'
@@ -27,6 +28,7 @@ const COMMANDS: Record<string, Command> = {
   cleanup: { summary: 'Report unused submodules and generated skills; pass --yes to remove', run: runCleanup },
   validate: { summary: 'Validate local sources, generated skills, and skill metadata', run: runValidate },
   note: { summary: 'Manage private knowledge notes: list, reindex, or add', run: runNote },
+  project: { summary: 'Discover related repositories and manage local workspace maps', run: runProject },
 }
 
 function printHelp(): void {

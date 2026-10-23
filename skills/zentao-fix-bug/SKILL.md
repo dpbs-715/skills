@@ -1,7 +1,7 @@
 ---
 name: zentao-fix-bug
-description: Fix one ZenTao Bug in the current code repository by reading its detail from the server bound in the project-root `.zentao`, verifying its project/product scope, diagnosing the root cause, modifying code, and running relevant verification. Use whenever the user invokes `/zentao-fix-bug` or `$zentao-fix-bug`, or explicitly asks to implement a code fix for a numbered ZenTao Bug. Do not use to list Bugs, only inspect a Bug, or assign, resolve, close, or otherwise change its ZenTao state.
-compatibility: Requires Git, Node.js, a version 2 project-root `.zentao`, an authenticated `zentao` CLI supporting `--config` (verified with 0.2.0), and a writable code repository.
+description: Fix one ZenTao Bug in the current repository using its effective workspace or legacy binding, verifying project/product scope, diagnosing the cause, modifying code, and running verification. Use for /zentao-fix-bug, $zentao-fix-bug, or implementing a code fix for a numbered ZenTao Bug. Does not list Bugs or change ZenTao state.
+compatibility: Requires Git, Node.js 24+, a version 2 effective ZenTao binding, an authenticated `zentao` CLI supporting --config (verified with 0.2.0), and a writable code repository.
 ---
 
 # ZenTao Fix Bug
@@ -27,7 +27,7 @@ Do not:
 - list or prioritize a Bug queue;
 - assign, confirm, resolve, close, activate, edit, comment on, or delete the Bug;
 - change the global current ZenTao profile or workspace;
-- create or rewrite `.zentao`;
+- create or rewrite ZenTao bindings in maps or `.zentao`;
 - create a branch, commit, push, or open a pull request unless the user asks;
 - discard, overwrite, or reformat unrelated working-tree changes.
 
@@ -55,8 +55,11 @@ the user in the language they are using unless they request another language.
 
 ## Project contract
 
-Resolve the repository root with `git rev-parse --show-toplevel` and read only
-`<git-root>/.zentao`. Accept the strict schema used by `zentao-init`:
+Resolve the root with `git rev-parse --show-toplevel`, then use connection-helper
+`inspect --root <repository>` to obtain the effective `binding` and its source.
+An explicit workspace resource takes precedence over legacy `.zentao` files;
+invalid maps and references never fall back. Pin a selected `--workspace` for
+every bound read. Accept the strict schema used by `zentao-init`:
 
 ```json
 {
@@ -90,7 +93,7 @@ safely, explain the exact overlap and ask for direction.
 
 Read [the shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md).
 The connection script is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`.
-Use `node <connection-script> profiles`, match saved logins to `.zentao.server`,
+Use `node <connection-script> profiles`, match saved logins to `binding.server`,
 and select the account using the shared rules. Retain the exact profile key
 throughout the investigation. If none match, stop before querying the Bug or
 editing code and show terminal login guidance for the bound server.
@@ -99,7 +102,7 @@ Read the Bug through the helper, which verifies the destination and selects the
 profile only in a temporary configuration:
 
 ```sh
-node <connection-script> run --server '<server>' --profile '<profile-key>' -- bug <bug-id>
+node <connection-script> run --root '<repository>' --profile '<profile-key>' -- bug <bug-id>
 ```
 
 Released CLI versions differ in JSON shape. Accept either a Bug object at the
@@ -117,8 +120,8 @@ Verify repository scope before changing code. Server identity is checked before
 the request, then object ownership is checked in the response; coincidentally
 matching project or Bug IDs on another service do not satisfy either check:
 
-- if the Bug exposes a positive project ID, it must equal `.zentao.project.id`;
-- otherwise, if `.zentao.product` is non-null and the Bug exposes a positive
+- if the Bug exposes a positive project ID, it must equal `binding.project.id`;
+- otherwise, if `binding.product` is non-null and the Bug exposes a positive
   product ID, those IDs must match;
 - if the Bug exposes a different positive project or product ID, stop and show
   both mappings;

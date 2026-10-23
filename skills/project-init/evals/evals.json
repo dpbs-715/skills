@@ -1,0 +1,23 @@
+{
+  "skill_name": "project-init",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/project-init 把当前前端和 /work/scm-api、/mobile/scm 关联起来，两个客户端都调用 api。",
+      "expected_output": "Identify the current root, inspect supplied paths, gather only missing map name or member identity details, save one private YAML map, verify discovery from members, and distinguish found tool configuration from usable tools.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/project-init 检查现有 scm 关联，其中 mobile 在本机暂时不存在。",
+      "expected_output": "Read existing maps and inspect available members without modifying the map, deleting mobile, or testing MCP connections.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/project-init 后端从旧目录搬到了 /work/services/scm-api，更新 scm，其他关联保持不变。",
+      "expected_output": "Read the existing map, validate the new api path, preserve other members and dependencies including unchanged unavailable members, explicitly replace the map, and verify it without moving repositories or changing host configuration.",
+      "files": []
+    }
+  ]
+}

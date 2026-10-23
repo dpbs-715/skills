@@ -14,7 +14,7 @@ with verified values using safely quoted arguments or a process argument array.
 ### Personal list
 
 ```sh
-node <connection-script> run --server '<server>' --profile '<exact-key>' -- \
+node <connection-script> run --root '<repository>' --profile '<exact-key>' -- \
   my bugs --browseType=assignedTo --orderBy=id_asc \
   --page=1 --recPerPage=200 \
   --pick=id,title,severity,pri,status,assignedTo,openedDate,product,project
@@ -40,7 +40,7 @@ response, inspect the list without `--pick` through the same helper.
 ### Scoped list
 
 ```sh
-node <connection-script> run --server '<server>' --profile '<exact-key>' -- \
+node <connection-script> run --root '<repository>' --profile '<exact-key>' -- \
   bug --project=<project-id> --orderBy=id_asc \
   --page=1 --recPerPage=1000 \
   --pick=id,title,severity,pri,status,assignedTo,openedDate,product,project

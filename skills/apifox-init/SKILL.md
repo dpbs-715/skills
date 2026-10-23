@@ -5,9 +5,10 @@ description: Initialize, inspect, or update repository bindings to multiple Apif
 
 # Apifox Init
 
-Requires Node.js and Apifox CLI; command shapes verified against CLI 2.2.11. Git discovers the repository root.
+Requires Node.js 24+ and Apifox CLI; command shapes verified against CLI 2.2.11. Git discovers the repository root.
 
-Maintain `.apifox/projects.json` in the user's code repository. One repository
+Maintain workspace resources for registered members, retaining
+`.apifox/projects.json` for unregistered repositories. One repository
 can bind several projects, servers, and credential aliases. One credential can
 serve several projects; several aliases can hold different tokens for the same
 account. Use English instructions and respond in the user's language.
@@ -19,9 +20,10 @@ or validation. Its helper is
 ## Workflow
 
 1. Resolve the root with `git rev-parse --show-toplevel`. Outside Git, ask for
-   the intended directory. Inspect `.apifox/projects.json` and the existing
-   `.apifox` directory; preserve native CLI files such as `settings.json`.
-   Use helper `inspect --root <root>` for an existing manifest. Invalid JSON,
+   the intended directory. Resolve `project binding apifox --cwd <root>` using
+   the shared workspace contract, and preserve native files such as
+   `.apifox/settings.json`. Use helper `inspect --root <root>` for an existing
+   binding; pass a selected `--workspace` when needed. Invalid JSON,
    unsupported fields/versions, or symlinks require explaining the problem
    before a requested repair, not silently replacing the file.
 2. Run `apifox --version` and inspect relevant `--help` locally. If missing,
@@ -53,7 +55,12 @@ or validation. Its helper is
    credential, and default selections authorize that binding; do not request
    redundant approval. Ask a choice question for inferred selections or an
    unresolved replacement. Never treat silence as a selection. Write with the
-   workspace file tools and read it back through `inspect`.
+   workspace binding helper for registered members (`project binding-save
+   apifox`) or the legacy file destination when unregistered, and read it back
+   through `inspect`. Before changing a shared resource, show its referencing
+   members and keep the update within the user's requested scope; use a separate
+   resource otherwise. Import old files only on an explicit migration request,
+   using `project binding-import apifox` and retaining the original file.
 
 For check-only requests, preserve file bytes and report each project's local
 credential availability. If remote validation was requested, read each bound

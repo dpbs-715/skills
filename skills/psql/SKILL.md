@@ -1,7 +1,7 @@
 ---
 name: psql
 description: Use the user's installed PostgreSQL psql CLI and saved local connections to query, inspect, export, or modify database data. Trigger when the user invokes `/psql` or `$psql`, or explicitly asks to use their psql CLI. Execute the requested work, including authorized writes, instead of only providing SQL.
-compatibility: Requires the local psql CLI, reachable PostgreSQL, and local connection services. A project .psql created by psql-init is preferred but optional.
+compatibility: Requires Node.js 24+, Git, the local psql CLI, reachable PostgreSQL, and local connection services. Workspace bindings or a legacy .psql are preferred but optional.
 ---
 
 # psql
@@ -17,10 +17,12 @@ the actual connection from local configuration and the current request.
    `/usr/local/opt/libpq/bin/psql`. Use the existing executable; do not install
    software or edit shell configuration as part of a database request.
 2. Read [the project connection contract]({{REPO_ROOT}}/skills/psql-init/references/project.md).
-   Check the project root for `.psql`. Prefer a valid manifest when present.
-   If absent, use local service discovery as described below; initialization
-   is optional. If present but invalid, report the problem and direct the user
-   to `/psql-init` rather than silently ignoring an existing binding.
+   Resolve `project binding psql --cwd <project-root>` and use its `binding`.
+   An explicit workspace reference takes precedence over `.psql`; preserve the
+   returned source throughout the task. If several workspaces provide bindings,
+   ask which one and pass `--workspace`. Only `source: none` permits local
+   service discovery; initialization is optional. Invalid configuration is an
+   error, never a reason to fall back or change services.
 3. With a valid manifest, select an exact service name from it: an explicit name
    in this request, then the user's selection in this task, then
    `defaultService`. If none applies, offer only the project's services as
