@@ -1,6 +1,6 @@
 ---
 name: cpush
-description: Use only when explicitly invoked as cpush, c-p, c&p, cnp, commit-push, "commit and push", or when the user asks to commit local repository changes and then push them in one workflow. Reuse the existing commit and push skills instead of duplicating their rules.
+description: Use only when explicitly invoked as cpush, c-p, c&p, cnp, commit-push, "commit and push", or when the user asks to commit local repository changes and then push them in one workflow. Reuse commit and push, including push's automatic integration of remote updates for unpublished local commits.
 ---
 
 # Commit And Push
@@ -21,15 +21,18 @@ rules from the underlying skills. Read and follow them in order:
    more intentional commits.
 3. If there are no uncommitted changes, skip the commit phase.
 4. Follow the `push` skill to push any local commits that should go to the
-   current branch remote.
+   resolved destination, including its preflight fetch, automatic integration,
+   and bounded retry rules.
 5. Report both phases together.
 
 If the commit phase discovers unrelated work, use the `commit` skill's split or
 ask behavior before pushing anything.
 
-If the push phase discovers an ambiguous remote, rejected push, or missing
-upstream that is not clearly resolvable, use the `push` skill's safety behavior
-and stop after reporting the next step.
+Invocation authorizes both phases and the automatic recovery allowed by `push`.
+Do not stop merely because the remote has new commits or Git returns
+`fetch first` / `non-fast-forward`; follow `push` to check and recover. Forward
+explicit user restrictions such as "do not rebase" to the push phase. Stop only
+when its checks or retry limit leave a specific blocker.
 
 If there are no uncommitted changes and no local commits to push, say there is
 nothing to commit or push.
@@ -69,6 +72,10 @@ Notes:
 ```
 
 If only a push happened, say so explicitly.
+
+After integration, report the final commit hashes and any commits already
+present upstream, following `push`. If commit succeeded but push is blocked,
+report the retained commits and exact blocker; do not claim full success.
 
 If nothing happened, say:
 
