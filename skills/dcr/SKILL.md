@@ -33,6 +33,26 @@ If no target is provided:
 When reviewing pasted diffs without repository context, state that the review is
 limited to the supplied diff.
 
+## Review Execution
+
+If the current session implemented any changes under review, including through
+coding subagents, delegate the review to one fresh subagent that did not
+participate in the implementation when subagent tools are available, unless
+the user requests direct review or prohibits delegation. This gives the changes
+an independent assessment.
+Otherwise, review directly. If delegation is unavailable or fails, complete the
+review directly and briefly state the fallback and any remaining coverage gaps.
+
+Give the reviewer the repository path, full review target, requirements, known
+validation results, and this skill's instructions. Prefer fresh context over
+inheriting the development conversation so implementation reasoning does not
+bias the review. Keep the original review scope and standards unchanged.
+
+The assigned reviewer reviews directly, without editing files or delegating
+further. It returns findings with evidence and test gaps using this skill's
+output format. The lead agent verifies findings against the code, removes
+duplicates, and owns the final report.
+
 ## Required Context
 
 Do not rely on the diff alone when repository context is available. Read enough
