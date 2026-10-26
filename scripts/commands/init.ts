@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-import { vendors as defaultVendors } from '../../meta.ts'
+import { initConfig, vendors as defaultVendors } from '../lib/config.ts'
 import {
   createGitRunner,
   getProjects,
@@ -94,5 +94,6 @@ function printInitResults(results: InitResult[]): void {
 }
 
 export async function run(): Promise<void> {
+  console.log(`${await initConfig()}: meta.ts`)
   printInitResults(await initSubmodules())
 }

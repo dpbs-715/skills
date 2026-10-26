@@ -17,11 +17,37 @@ This repository separates always-on preferences from task-specific skills:
 - `generated/` contains rendered agent definitions and rendered or synced installable skill bundles that are symlinked into tool directories.
 - `local/project-workspaces/` contains private, Git-ignored maps of related local repositories.
 - `vendor/` contains synchronized third-party skill repositories.
-- `meta.ts` is the link configuration: which local directory or document sources render into `generated/` (`localSkillSources`), which generated bundles link into agents (`installableSkills`), which document-backed skills are also delivered as always-on instructions (`alwaysOnInstructionSkills`), the per-destination link/config table (`linkTargets`), and vendored skill mappings. Type definitions live in `scripts/lib/metaTypes.ts`.
+- `meta.template.ts` contains committed defaults; `meta.ts` is the Git-ignored local link configuration: which local directory or document sources render into `generated/` (`localSkillSources`), which generated bundles link into agents (`installableSkills`), which document-backed skills are also delivered as always-on instructions (`alwaysOnInstructionSkills`), the per-destination link/config table (`linkTargets`), and vendored skill mappings. Type definitions live in `scripts/lib/metaTypes.ts`.
+
+## Local Configuration
+
+`meta.ts` is private to each checkout and is not tracked by Git. The shared
+`meta.template.ts` provides defaults for a new machine. Scripts read configuration
+through `scripts/lib/config.ts`: an existing `meta.ts` takes precedence; otherwise
+they use the template without creating files. Help, status, and project discovery
+therefore work on a fresh clone before configuration is initialized. An error in
+an existing local configuration is reported rather than falling back to defaults.
+
+Run `pnpm skills init` to copy the template to `meta.ts` if it is missing, then
+initialize the configured vendor submodules. To customize destinations before
+initializing submodules, copy the template first:
+
+```bash
+cp -n meta.template.ts meta.ts
+```
+
+Edit `meta.ts` for this machine's skills, vendors, and tool destinations. For
+example, remove a tool's `linkTargets` entries when you do not use it locally.
+Edit `meta.template.ts` when changing shared defaults for future installations.
+Existing local configurations are never overwritten by initialization or template
+updates; merge shared changes into your local file when needed.
+
+When updating from a revision that tracked `meta.ts`, back up that file outside
+the checkout before pulling, then restore it afterward as your local configuration.
 
 ## Current Entries
 
-This inventory covers the skills configured in `meta.ts` and every repository role. Links point to source entries; installable bundles are rendered or synced into `generated/`.
+This inventory covers the shared defaults in `meta.template.ts` and every repository role. Links point to source entries; installable bundles are rendered or synced into `generated/`.
 
 ### General Skills
 
@@ -122,7 +148,7 @@ pnpm skills status    # show configured skills, their roles, and submodule state
 pnpm skills link      # symlink configured skills into local agent skill directories
 pnpm skills unlink    # remove skill symlinks created by this repo
 pnpm skills sync      # update submodules, then sync vendored skills into generated/
-pnpm skills init      # add missing vendor git submodules from meta.ts
+pnpm skills init      # create local meta.ts if missing, then initialize vendor submodules
 pnpm skills check     # fetch submodules and report upstream updates
 pnpm skills cleanup   # report unused submodules/generated skills (pass --yes to remove)
 pnpm skills validate  # validate local sources, generated skills, and metadata

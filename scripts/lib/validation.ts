@@ -5,7 +5,7 @@ import {
   agentOnlySkills as defaultAgentOnlySkills,
   installableSkills as defaultInstallableSkills,
   localSkillSources as defaultLocalSkillSources,
-} from '../../meta.ts'
+} from './config.ts'
 import { expectedAgentFiles, expectedAgentIndex, GENERATED_AGENT_INDEX, GENERATED_AGENTS_DIR } from './agents.ts'
 import type { DirectorySkillSource, LocalSkillSource } from './metaTypes.ts'
 import {

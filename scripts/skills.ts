@@ -23,7 +23,7 @@ const COMMANDS: Record<string, Command> = {
   link: { summary: 'Symlink configured skills into local agent skill directories', run: runLink },
   unlink: { summary: 'Remove skill symlinks created by this repo', run: runUnlink },
   sync: { summary: 'Update submodules, then sync vendored skills into generated/', run: runSync },
-  init: { summary: 'Add missing vendor git submodules from meta.ts', run: runInit },
+  init: { summary: 'Create local meta.ts if missing, then initialize vendor submodules', run: runInit },
   check: { summary: 'Fetch submodules and report upstream updates', run: runCheck },
   cleanup: { summary: 'Report unused submodules and generated skills; pass --yes to remove', run: runCleanup },
   validate: { summary: 'Validate local sources, generated skills, and skill metadata', run: runValidate },

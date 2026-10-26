@@ -1,7 +1,7 @@
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
-import { localSkillSources as defaultLocalSkillSources } from '../../meta.ts'
+import { localSkillSources as defaultLocalSkillSources } from './config.ts'
 import type { DocumentSkillSource, LocalSkillSource } from './metaTypes.ts'
 import { pathExists, repoRoot } from './utils.ts'
 

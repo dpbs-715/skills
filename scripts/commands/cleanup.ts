@@ -5,7 +5,7 @@ import {
   installableSkills as defaultInstallableSkills,
   localSkillSources as defaultLocalSkillSources,
   vendors as defaultVendors,
-} from '../../meta.ts'
+} from '../lib/config.ts'
 import {
   createGitRunner,
   getExistingSubmodulePaths,

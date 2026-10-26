@@ -2,6 +2,7 @@
 /.obsidian/
 .DS_Store
 node_modules/
+/meta.ts
 knowledge/INDEX.md
 knowledge/notes/
 # Generated from source skills by `pnpm skills link` or `pnpm skills sync`

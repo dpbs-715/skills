@@ -4,7 +4,7 @@ import {
   alwaysOnInstructionSkills as defaultAlwaysOnInstructionSkills,
   localSkillSources as defaultLocalSkillSources,
   linkTargets as defaultLinkTargets,
-} from '../../meta.ts'
+} from '../lib/config.ts'
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
 import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'
 import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'

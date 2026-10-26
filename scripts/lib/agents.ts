@@ -1,7 +1,7 @@
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 
-import { agentOnlySkills, installableSkills } from '../../meta.ts'
+import { agentOnlySkills, installableSkills } from './config.ts'
 import type { AgentFormat } from './metaTypes.ts'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'

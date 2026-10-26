@@ -1,7 +1,7 @@
 import { mkdir, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { installableSkills as defaultInstallableSkills } from '../../meta.ts'
+import { installableSkills as defaultInstallableSkills } from './config.ts'
 import { GENERATED_SKILLS_DIR, SKILL_FILE } from './skillRendering.ts'
 import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'

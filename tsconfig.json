@@ -12,6 +12,7 @@
   },
   "include": [
     "meta.ts",
+    "meta.template.ts",
     "scripts/**/*.ts"
   ]
 }

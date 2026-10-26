@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { linkTargets } from '../../meta.ts'
+import { linkTargets } from '../../meta.template.ts'
 import { linkAll, unlinkAll } from '../commands/link.ts'
 import { ensureMarkdownSection, removeMarkdownSections } from '../lib/markdownInstructions.ts'
 import type { MarkdownSectionTarget } from '../lib/metaTypes.ts'

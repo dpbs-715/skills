@@ -1,3 +1,5 @@
+// Shared defaults. Run `pnpm skills init` to create your Git-ignored meta.ts.
+// Customize meta.ts for this machine; edit this template only to change shared defaults.
 import type { LinkTarget, LocalSkillSource, VendorSkillMeta } from './scripts/lib/metaTypes.ts'
 
 // Use a const object instead of enum because Node strips types only for erasable syntax.

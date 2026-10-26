@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
 
-import { linkTargets } from '../../meta.ts'
+import { linkTargets } from '../../meta.template.ts'
 import { linkAll, runUnlink, unlinkAll } from '../commands/link.ts'
 import { ensureJsonArrayEntries, ensureJsonObjectEntries } from '../lib/jsonConfig.ts'
 import { createInstructionLinks, removeInstructionLinks } from '../lib/instructionLinks.ts'

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { agentOnlySkills, installableSkills, linkTargets, localSkillSources } from '../../meta.ts'
+import { agentOnlySkills, installableSkills, linkTargets, localSkillSources } from '../../meta.template.ts'
 import { cleanupUnusedEntries } from '../commands/cleanup.ts'
 import { linkAll, unlinkAll } from '../commands/link.ts'
 import { createAgentLinks, removeAgentLinks, renderAgents } from '../lib/agents.ts'

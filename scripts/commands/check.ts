@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import { vendors as defaultVendors } from '../../meta.ts'
+import { vendors as defaultVendors } from '../lib/config.ts'
 import {
   createGitRunner,
   getProjects,
