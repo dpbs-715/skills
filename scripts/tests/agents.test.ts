@@ -115,7 +115,7 @@ test('role index follows manifest changes, supports spaced paths, and is validat
   }
 })
 
-test('routing links load the generated role index and unlink only their managed section', async () => {
+test('routing entries lead to the full skill and generated role index, and unlink only their section', async () => {
   const root = await fixture()
   const source = localSkillSources.find(source => source.name === 'agent-routing')
   assert.ok(source && source.kind === 'document')
@@ -127,13 +127,17 @@ test('routing links load the generated role index and unlink only their managed 
   try {
     await mkdir(join(root, 'rules/agent-routing'), { recursive: true })
     await writeFile(join(root, source.source), await readFile(join(repoRoot(), source.source)))
+    await writeFile(join(root, configured.source), await readFile(join(repoRoot(), configured.source)))
     await mkdir(host)
     await writeFile(file, original)
     const options = { root, localSkillSources: [source], targets: [{ ...configured, file }] }
     await linkAll(options)
     const linked = await readFile(file, 'utf8')
     assert.ok(linked.startsWith(original))
-    assert.ok(linked.includes(`[role index](${root}/generated/agents/INDEX.md)`))
+    const skill = join(root, 'generated/agent-routing/SKILL.md')
+    assert.ok(linked.includes(skill))
+    assert.doesNotMatch(linked, /\[role index\]/)
+    assert.ok((await readFile(skill, 'utf8')).includes(`[role index](${root}/generated/agents/INDEX.md)`))
     assert.doesNotMatch(linked, /\{\{REPO_ROOT\}\}/)
     assert.match(await readFile(join(root, 'generated/agents/INDEX.md'), 'utf8'), /\*\*reviewer\*\*/)
     assert.equal((await linkAll(options))[0].status, 'exists')

@@ -194,7 +194,7 @@ The [agent-routing rules](rules/agent-routing/RULES.md) assess specialist needs 
 
 Routing instructions deduplicate configuration already loaded or being read within each agent, including references through symlinks or generated copies. Back-references do not restart routing or dispatch the same assignment again. Subagent assignments prohibit further delegation unless explicitly required. These are model instructions rather than a programmatic recursion lock.
 
-Codex and Pi receive this routing entry in a managed section of their global instruction file, preserving user content and existing override precedence. Claude and OpenCode receive it through their always-loaded rule targets. Kimi receives it as a discoverable skill; this repository does not configure an always-loaded Kimi routing entry. On hosts without native role selection, delegation uses the actual available subagent tools with explicit role configuration paths. No Codex native role files are generated.
+Codex and Pi receive a short routing entry from `rules/agent-routing/ENTRY.md` in a managed section of their global instruction file, preserving user content and existing override precedence. It directs relevant tasks to the full generated skill by path; the duplicate skill-list entry is omitted. Claude and OpenCode receive the full rules through their always-loaded rule targets. Kimi receives them as a discoverable skill; this repository does not configure an always-loaded Kimi routing entry. On hosts without native role selection, delegation uses the actual available subagent tools with explicit role configuration paths. No Codex native role files are generated.
 
 | Tool | Agent destination | Notes |
 | --- | --- | --- |
@@ -263,7 +263,9 @@ to member repositories or `~/.config`.
 After the one-time `pnpm skills link`, Codex and Pi receive a managed section in
 their global `AGENTS.md` (or an existing higher-precedence instruction file),
 and Claude Code receives `~/.claude/rules/project-workspaces.md`. Existing user
-instructions are preserved. These rules tell the agent to run read-only
+instructions are preserved. The Codex/Pi section comes from the short
+`rules/project-workspaces/ENTRY.md`; the full generated skill remains available
+by path without a duplicate skill-list entry. These rules tell the agent to run read-only
 discovery before the first substantive task, without a wrapper command or extra
 session arguments. They are model instructions, not enforced startup hooks;
 native instruction loading and host permissions still govern execution.
@@ -332,15 +334,15 @@ By default this first renders configured `localSkillSources`, then applies the `
 
 | Destination | Kind | Receives |
 | --- | --- | --- |
-| `~/.codex/skills` | skill | all `installableSkills` |
-| `~/.codex/AGENTS.md` | markdown-section | managed project discovery and role routing instructions; prefers an existing nonempty `AGENTS.override.md` |
-| `~/.pi/agent/skills` | skill | all `installableSkills` |
-| `~/.pi/agent/AGENTS.md` | markdown-section | managed project discovery and role routing instructions; prefers an existing higher-precedence context file |
+| `~/.codex/skills` | skill | `installableSkills` minus `agent-routing` and `project-workspaces` |
+| `~/.codex/AGENTS.md` | markdown-section | short project discovery and role routing entries; prefers an existing nonempty `AGENTS.override.md` |
+| `~/.pi/agent/skills` | skill | `installableSkills` minus `agent-routing` and `project-workspaces` |
+| `~/.pi/agent/AGENTS.md` | markdown-section | short project discovery and role routing entries; prefers an existing higher-precedence context file |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
 | `~/.config/opencode/opencode.json` | json-array | ensures `instructions` includes `~/.config/opencode/rules/*.md` |
-| `~/.agents/skills` | skill | all `installableSkills` |
+| `~/.agents/skills` | skill | same filtered skill list as `~/.codex/skills` |
 | `~/.claude/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.claude/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
 
@@ -349,10 +351,17 @@ Skill directories are populated only when they already exist (the tool is instal
 Managed Markdown sections are also written only when their parent host directory
 exists. Re-linking updates the section without duplicating it; unlinking removes
 only that section, retaining the user's surrounding instructions and private maps.
+Entry sources expand `{{REPO_ROOT}}` when linked. Edit the entry sources and
+full rules in this checkout, rather than editing generated managed sections.
 
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi also receive managed global instruction sections for project discovery and role routing; other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive short managed global entries for project discovery and role routing, with full workflows read by path when required; their skill directories omit those two entries. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+
+`frontend-design` is maintained as a UI-designer-only bundle in this checkout.
+Disable an independently installed global copy in its owning manager (for example,
+CC Switch) rather than overwriting a foreign symlink during `link`. The linker
+preserves foreign links and does not manage another tool's installation settings.
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 

@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 
 import type { MarkdownSectionTarget } from './metaTypes.ts'
+import { REPO_ROOT_TOKEN } from './skillRendering.ts'
 import type { LinkResult } from './symlink.ts'
 import { pathExists } from './utils.ts'
 
@@ -42,6 +43,7 @@ export async function ensureMarkdownSection(target: MarkdownSectionTarget, root:
   const existed = await pathExists(file)
   const original = existed ? await readFile(file, 'utf8') : ''
   const source = (await readFile(join(root, target.source), 'utf8'))
+    .replaceAll(REPO_ROOT_TOKEN, root)
     .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
     .trim()
   const { start, end } = markers(target.section)

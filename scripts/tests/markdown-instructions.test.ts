@@ -57,6 +57,45 @@ test('global override files receive the section and existing symlinks are preser
   assert.equal(await readFile(actual, 'utf8'), 'Override preferences without trailing newline')
 })
 
+test('short entry sources expand checkout paths without embedding the full skill', async () => {
+  const { root, target } = await fixture()
+  await mkdir(join(root, 'generated', 'project-workspaces'), { recursive: true })
+  const skill = join(root, 'generated', 'project-workspaces', 'SKILL.md')
+  await writeFile(skill, '# Full discovery workflow\nDetailed instructions stay here.\n')
+  await writeFile(join(root, 'source.md'), '# Discovery\nRead `{{REPO_ROOT}}/generated/project-workspaces/SKILL.md`.\n')
+
+  await ensureMarkdownSection(target, root)
+  const content = await readFile(target.file, 'utf8')
+  assert.ok(content.includes(skill))
+  assert.doesNotMatch(content, /\{\{REPO_ROOT\}\}|Detailed instructions/)
+  assert.equal((await ensureMarkdownSection(target, root)).status, 'exists')
+})
+
+test('linking short context entries removes duplicate owned skill links and retains full bundles', async () => {
+  const { root, host, target } = await fixture()
+  const dir = join(host, 'skills')
+  await mkdir(dir)
+  for (const name of ['agent-routing', 'project-workspaces', 'mock']) {
+    const source = join(root, 'generated', name)
+    await mkdir(source, { recursive: true })
+    await writeFile(join(source, 'SKILL.md'), `# ${name}\n`)
+    await symlink(source, join(dir, name))
+  }
+  await symlink('/tmp/foreign-skill', join(dir, 'foreign'))
+  const options = {
+    root, localSkillSources: [],
+    targets: [target, { dir, kind: 'skill' as const, include: ['mock'] }],
+  }
+  await linkAll(options)
+  for (const name of ['agent-routing', 'project-workspaces']) {
+    await assert.rejects(readlink(join(dir, name)), /ENOENT/)
+    assert.equal(await readFile(join(root, 'generated', name, 'SKILL.md'), 'utf8'), `# ${name}\n`)
+  }
+  assert.equal(await readlink(join(dir, 'mock')), join(root, 'generated', 'mock'))
+  assert.equal(await readlink(join(dir, 'foreign')), '/tmp/foreign-skill')
+  assert.ok((await linkAll(options)).every(result => result.status === 'exists'))
+})
+
 test('malformed managed markers fail without overwriting user content', async () => {
   const { root, target } = await fixture()
   const original = '<!-- skills-managed:project-workspaces:start -->\nUser content\n'
@@ -82,7 +121,8 @@ test('default targets bootstrap discovery and routing for Codex/Pi and rule-base
   for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
     for (const section of ['agent-routing', 'project-workspaces']) {
       assert.ok(linkTargets.some(target => target.kind === 'markdown-section'
-        && target.file === file && target.section === section))
+        && target.file === file && target.section === section
+        && target.source === `rules/${section}/ENTRY.md`))
     }
   }
   for (const dir of ['~/.claude/rules', '~/.config/opencode/rules']) {
@@ -91,6 +131,17 @@ test('default targets bootstrap discovery and routing for Codex/Pi and rule-base
     assert.ok(target.include.includes('agent-routing'))
     assert.ok(target.include.includes('project-workspaces'))
   }
+  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills']) {
+    const target = linkTargets.find(target => target.kind === 'skill' && target.dir === dir)
+    assert.ok(target && target.kind === 'skill')
+    assert.ok(!target.include.includes('agent-routing'))
+    assert.ok(!target.include.includes('project-workspaces'))
+    assert.ok(target.include.includes('mock'))
+  }
+  const kimi = linkTargets.find(target => target.kind === 'skill' && target.dir === '~/.kimi-code/skills')
+  assert.ok(kimi && kimi.kind === 'skill')
+  assert.ok(kimi.include.includes('agent-routing'))
+  assert.ok(kimi.include.includes('project-workspaces'))
 })
 
 test.after(async () => {

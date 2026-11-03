@@ -189,37 +189,42 @@ export const alwaysOnInstructionSkills = [
 const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
 const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSet.has(name))
 
+// These rules are bootstrapped by global context; retain their generated bundles
+// for direct reads without advertising duplicate skill entries on Codex/Pi.
+const contextRuleSkills = new Set<string>([Skill.AgentRouting, Skill.ProjectWorkspaces])
+const contextHostSkills = installableSkills.filter(name => !contextRuleSkills.has(name))
+
 export const linkTargets: readonly LinkTarget[] = [
     {
         file: '~/.codex/AGENTS.md',
         preferExisting: ['AGENTS.override.md'],
         kind: 'markdown-section',
         section: 'agent-routing',
-        source: 'generated/agent-routing/SKILL.md',
+        source: 'rules/agent-routing/ENTRY.md',
     },
     {
         file: '~/.pi/agent/AGENTS.md',
         preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
         kind: 'markdown-section',
         section: 'agent-routing',
-        source: 'generated/agent-routing/SKILL.md',
+        source: 'rules/agent-routing/ENTRY.md',
     },
     {
         file: '~/.codex/AGENTS.md',
         preferExisting: ['AGENTS.override.md'],
         kind: 'markdown-section',
         section: 'project-workspaces',
-        source: 'generated/project-workspaces/SKILL.md',
+        source: 'rules/project-workspaces/ENTRY.md',
     },
     {
         file: '~/.pi/agent/AGENTS.md',
         preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
         kind: 'markdown-section',
         section: 'project-workspaces',
-        source: 'generated/project-workspaces/SKILL.md',
+        source: 'rules/project-workspaces/ENTRY.md',
     },
-    { dir: '~/.codex/skills', kind: 'skill', include: installableSkills },
-    { dir: '~/.pi/agent/skills', kind: 'skill', include: installableSkills },
+    { dir: '~/.codex/skills', kind: 'skill', include: contextHostSkills },
+    { dir: '~/.pi/agent/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.kimi-code/skills', kind: 'skill', include: installableSkills },
     {
         dir: '~/.config/opencode/skills',
@@ -246,7 +251,7 @@ export const linkTargets: readonly LinkTarget[] = [
         kind: 'json-object',
         path: ['permission', 'external_directory'],
     },
-    { dir: '~/.agents/skills', kind: 'skill', include: installableSkills },
+    { dir: '~/.agents/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.claude/agents', format: 'claude', kind: 'agent' },
     { dir: '~/.kimi-code/agents', format: 'kimi-code', kind: 'agent' },
     { dir: '~/.config/opencode/agents', format: 'opencode', kind: 'agent' },

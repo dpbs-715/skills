@@ -75,7 +75,7 @@ test('linkTargets excludes always-on instructions from Claude skills and links t
   if (codex.kind !== 'skill' || claudeSkills.kind !== 'skill' || claudeInstructionsTarget.kind !== 'rule')
     assert.fail('Expected directory link targets')
 
-  // Codex keeps the full skill set (unchanged).
+  // Other shared rules remain skills on Codex; global context owns the two bootstrapped rules.
   assert.ok(codex.include.includes('engineering-rules'))
   assert.ok(codex.include.includes('problem-solving-rules'))
 
