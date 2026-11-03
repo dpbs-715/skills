@@ -430,6 +430,37 @@ test('status marks configured submodules that are not checked out', async () => 
   assert.deepEqual(status.tokenEstimate, { largest: [], total: 0 })
 })
 
+test('status follows placeholder and relative document links once, including paths with spaces', async () => {
+  const root = await createTempDir('skills repo ')
+  const sourceDir = join(root, 'skills', 'entry')
+  await mkdir(sourceDir, { recursive: true })
+  await mkdir(join(root, 'rules'))
+  const source = [
+    '# Entry',
+    '[Shared]({{REPO_ROOT}}/rules/shared.md#scope)',
+    '[Same shared](../../rules/shared.md)',
+    '[Spaced](<{{REPO_ROOT}}/rules/with space.md> "Document title")',
+    '`{{REPO_ROOT}}/rules/backtick.md`',
+    '[Remote](https://example.com/ignore.md)',
+    '[Fragment](#local)',
+    '',
+  ].join('\n')
+  const shared = '[Cycle](../skills/entry/SKILL.md)\n'
+  const spaced = 'Space in path\n'
+  const backtick = 'Backtick path\n'
+  await writeFile(join(sourceDir, 'SKILL.md'), source)
+  await writeFile(join(root, 'rules', 'shared.md'), shared)
+  await writeFile(join(root, 'rules', 'with space.md'), spaced)
+  await writeFile(join(root, 'rules', 'backtick.md'), backtick)
+
+  const status = await collectStatus({
+    root, installableSkills: [], localSkillSources: [localSource('entry')], vendors: {},
+  })
+  const tokens = [source, shared, spaced, backtick].reduce((sum, content) => sum + Math.ceil(content.length / 4), 0)
+  assert.equal(status.skills[0].estimatedTokens, tokens)
+  assert.equal(status.tokenEstimate.total, tokens)
+})
+
 test('cleanup removes extra skills only when confirmed', async () => {
   const root = await createTempDir('skills-repo-')
   await mkdir(join(root, 'generated', 'engineering-rules'), { recursive: true })

@@ -9,7 +9,7 @@ import {
 import { getProjects, type Project } from '../lib/git.ts'
 import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
 import { discoverSkills } from '../lib/skillLinks.ts'
-import { GENERATED_SKILLS_DIR } from '../lib/skillRendering.ts'
+import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN } from '../lib/skillRendering.ts'
 import { isDirectoryNonEmpty, pathExists, repoRoot } from '../lib/utils.ts'
 
 export type SkillRole = 'local' | 'installable' | 'vendor'
@@ -126,8 +126,11 @@ function markdownLinkTargets(content: string, sourcePath: string, root: string):
   const backtickPathPattern = /`([^`\n]+)`/g
 
   for (const match of content.matchAll(markdownLinkPattern)) {
-    const rawTarget = match[1].trim().split(/\s+/)[0]
-    const target = rawTarget.replace(/^<|>$/g, '').split('#')[0]
+    const rawTarget = match[1].trim()
+    const linkTarget = rawTarget.startsWith('<')
+      ? rawTarget.slice(1, rawTarget.indexOf('>'))
+      : rawTarget.split(/\s+/)[0]
+    const target = linkTarget.split('#')[0].replaceAll(REPO_ROOT_TOKEN, root)
     if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target))
       continue
 
@@ -135,7 +138,7 @@ function markdownLinkTargets(content: string, sourcePath: string, root: string):
   }
 
   for (const match of content.matchAll(backtickPathPattern)) {
-    const target = match[1].trim()
+    const target = match[1].trim().replaceAll(REPO_ROOT_TOKEN, root)
     if (isAbsolute(target))
       paths.push(target)
   }
