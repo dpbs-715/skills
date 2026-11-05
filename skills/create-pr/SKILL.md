@@ -173,7 +173,11 @@ specified, use the repository's actual default branch rather than assuming
 `main` or `master`.
 
 Fetch only the refs needed to compare source and target. Do not pull, merge, or
-rebase. Verify that both remote refs exist and that the target is not the source.
+rebase. The remote target must exist. A remote-only source must also exist; a
+verified local source may be new to the remote and pushed in step 9. Distinguish
+a confirmed missing source from a failed fetch or authentication check. Compare
+the local source with the fetched target before its first push, and verify the
+remote source afterward. Source and target must not be the same branch.
 
 ### 4. Inspect local and remote state
 

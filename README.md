@@ -126,6 +126,16 @@ Run `pnpm skills status` for the live view derived from `meta.ts`: which skills 
 
 Run `pnpm skills validate` to check that configured local sources, generated skills and agents, team dependencies, skill frontmatter, and repo-local absolute references are still consistent.
 
+Validation parses YAML frontmatter and checks local Markdown destinations and
+evaluation fixtures. See [Skill evaluations](docs/skill-evaluations.md) for the
+distinction between fixture checks and model behavior evaluations.
+
+`cleanup --yes` skips vendor checkouts with local changes (including ignored
+files), commits absent from known remote refs, or an unreadable local state.
+It uses non-force removal and retains submodule Git databases for recovery.
+Skipped entries remain registered and produce a nonzero exit status. Remote
+refs are local evidence; cleanup does not fetch or prove publication elsewhere.
+
 ## Vendored Skills
 
 This repository follows the same broad pattern as `antfu/skills` for projects that already maintain their own skills:

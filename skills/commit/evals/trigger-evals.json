@@ -1,0 +1,6 @@
+[
+  { "query": "commit -ch", "should_trigger": true },
+  { "query": "As the authorized cpush coordinator, run the commit phase for the confirmed changes.", "should_trigger": true },
+  { "query": "Explain what a Git commit contains.", "should_trigger": false },
+  { "query": "Review my local changes; do not commit them.", "should_trigger": false }
+]

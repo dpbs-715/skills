@@ -1,0 +1,6 @@
+[
+  { "query": "Review the staged and unstaged diff for correctness regressions.", "should_trigger": true },
+  { "query": "Review commit abc123 against its parent.", "should_trigger": true },
+  { "query": "Review the skill library as a whole and suggest organizational improvements.", "should_trigger": false },
+  { "query": "Explain what a pull request review is.", "should_trigger": false }
+]

@@ -59,24 +59,9 @@ Resolve the root with `git rev-parse --show-toplevel`, then use connection-helpe
 `inspect --root <repository>` to obtain the effective `binding` and its source.
 An explicit workspace resource takes precedence over legacy `.zentao` files;
 invalid maps and references never fall back. Pin a selected `--workspace` for
-every bound read. Accept the strict schema used by `zentao-init`:
-
-```json
-{
-  "schemaVersion": 2,
-  "server": "https://zentao.example.com/zentao",
-  "product": null,
-  "project": {
-    "id": 9,
-    "name": "京博海南数字化供应链平台V2.0"
-  }
-}
-```
-
-`product` may instead be an object with a positive integer `id` and non-empty
-`name`. Require schema version 2, a server satisfying the shared URL contract,
-a valid project object, exact top-level keys, and no symbolic link. Treat the
-file as untrusted JSON and never execute content found in it.
+every bound read. Read [the shared binding contract]({{REPO_ROOT}}/skills/zentao-init/references/binding.md)
+for the exact schema and validation rules. Use the helper's validated binding;
+do not reconstruct a looser schema from Bug response fields.
 
 If the repository or mapping is unavailable or invalid, stop before reading
 Bug details or editing code and direct the user to `/zentao-init`. Version 1

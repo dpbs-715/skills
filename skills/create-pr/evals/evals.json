@@ -18,6 +18,20 @@
       "prompt": "/create-pr to main. The current branch has no upstream, and the repository has both origin and upstream remotes pointing to a fork and the canonical project. Open the request against the correct repository.",
       "expected_output": "Does not guess which remote is the source or target, explains the unresolved fork mapping and missing upstream, and asks for the source remote and target repository before pushing or creating any PR or MR.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Simulate /create-pr feature/new to main. The local feature/new branch has one reviewed commit, no upstream, and no remote branch yet. The source remote is unambiguous and the remote main exists. Do not perform real Git or network operations.",
+      "expected_output": "Allows the verified local source to proceed despite the confirmed missing remote source, compares it with remote main, plans its first normal push with upstream configuration, verifies the resulting remote SHA, and then creates the PR.",
+      "files": [],
+      "assertions": ["Does not require the new remote source to preexist.", "Reviews local changes against the existing remote target before pushing.", "Verifies the pushed SHA before PR creation.", "Does not treat an authentication or fetch failure as proof of a missing branch."]
+    },
+    {
+      "id": 5,
+      "prompt": "Preview a Draft PR from the current branch to main. Do not create the remote Draft PR or push anything. Authentication is unavailable. Simulate only.",
+      "expected_output": "Honors the explicit preview restriction over the Draft state, supplies a local title/body and planned source/target/push, labels unverifiable remote facts, and performs no remote writes.",
+      "files": [],
+      "assertions": ["Distinguishes Draft state from preview-only authorization.", "Plans no push or remote PR creation.", "Does not block a local preview solely on missing authentication."]
     }
   ]
 }

@@ -1,0 +1,6 @@
+[
+  { "query": "/mock Fix ZenTao Bug 11865", "should_trigger": true },
+  { "query": "Preview which tools, skills, and rules you would select without executing the task.", "should_trigger": true },
+  { "query": "Add mock HTTP responses for the orders API tests.", "should_trigger": false },
+  { "query": "Generate mock invoice records for a frontend demo.", "should_trigger": false }
+]

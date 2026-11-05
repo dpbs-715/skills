@@ -14,9 +14,7 @@ reading credentials or contacting ZenTao. Explicit workspace references take
 precedence; unmigrated members retain `.zentao`. Add `--workspace '<name>'` to
 inspect and bound runs when more than one workspace provides a binding.
 
-A version 2 binding contains exactly `schemaVersion`, `server`, `product`, and
-`project`. The latter two fields retain the version 1 object contract. Version
-1 has no server binding and must be migrated with init before any Bug query.
+Use [the shared binding contract](binding.md) for schema and migration rules.
 
 Parse `server` as an absolute HTTP(S) URL. Reject credentials in the URL, query
 strings, fragments, whitespace, and invalid URLs. Normalize scheme and host

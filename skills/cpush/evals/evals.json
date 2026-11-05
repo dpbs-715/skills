@@ -1,0 +1,26 @@
+{
+  "skill_name": "cpush",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate /cpush -ch for a repository with one coherent uncommitted fix, a known push destination, and no required checks. Do not run Git mutations or contact a real remote; describe the selected skills and actions.",
+      "expected_output": "Uses commit as an authorized dependency despite no standalone commit invocation, then push; forwards Chinese, scopes the commit, and adds no default test run or generic confirmation.",
+      "files": [],
+      "assertions": ["Loads commit and push as dependencies.", "Does not require a separate commit invocation or confirmation.", "Forwards -ch and preserves Conventional Commit tokens.", "Does not add an unrequested test pass."]
+    },
+    {
+      "id": 2,
+      "prompt": "Simulate /cpush when the working tree is clean and the current linear branch has unpublished commits diverging from its verified destination. All fetches and publication checks pass. Do not execute Git or connect to a real remote.",
+      "expected_output": "Skips commit, follows push's automatic integration checks, plans a guarded ordinary rebase and normal push, and reports final hashes rather than asking a redundant approval.",
+      "files": [],
+      "assertions": ["Skips creating an empty commit.", "Applies all publication and clean-worktree prerequisites before integration.", "Plans no force push and no redundant confirmation."]
+    },
+    {
+      "id": 3,
+      "prompt": "Simulate /cpush with one already completed local commit. The push fails with authentication denied. Do not perform real operations.",
+      "expected_output": "Preserves and reports the commit, identifies authentication as the blocker, and stops without rebasing, changing destinations, or claiming there is nothing to push.",
+      "files": [],
+      "assertions": ["Reports the retained commit and failed push separately.", "Does not rebase or force-push to address authentication.", "Does not describe a blocked push as no work."]
+    }
+  ]
+}

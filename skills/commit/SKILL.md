@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Use only when explicitly invoked as commit. Create focused git commits with concise Conventional Commit messages.
+description: Use only when explicitly invoked as commit or called by an authorized coordinating skill such as cpush or submit. Create focused git commits with concise Conventional Commit messages.
 ---
 
 # Git Commit

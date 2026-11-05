@@ -1,0 +1,26 @@
+{
+  "skill_name": "submit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate /submit with two unrelated changes: invoice export and login recovery. No grouping preference has been provided. Do not create resources, mutate Git, or contact real services.",
+      "expected_output": "Identifies the independent scopes and asks one combined grouping question before any write. Does not pick a grouping automatically.",
+      "files": [],
+      "assertions": ["Asks whether to combine, separate, or use custom grouping.", "Plans no writes before grouping is settled.", "Does not infer approval from silence."]
+    },
+    {
+      "id": 2,
+      "prompt": "Simulate /submit to develop -ch for one confirmed fix. The matching Issue and associated branch already exist, changes are committed and pushed, and no PR exists. Do not use real services or mutate Git.",
+      "expected_output": "Verifies and reuses the Issue and branch, avoids duplicate commits and pushes, and resumes with a Chinese PR targeting develop after checking scope and existing requests.",
+      "files": [],
+      "assertions": ["Reuses verified existing resources rather than recreating them.", "Skips completed commit/push work.", "Creates only the missing PR in the plan, targeting develop with -ch."]
+    },
+    {
+      "id": 3,
+      "prompt": "Preview /submit for one confirmed change. Authentication is unavailable. Do not contact real services or modify files or Git.",
+      "expected_output": "Produces one consolidated Issue, branch/base, commit, and PR draft with unresolved remote facts labelled, without requiring login for a local preview or entering write phases.",
+      "files": [],
+      "assertions": ["Provides a complete consolidated preview.", "Does not push or create remote resources.", "Marks unverifiable remote facts without blocking local drafting on authentication."]
+    }
+  ]
+}

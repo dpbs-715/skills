@@ -16,19 +16,10 @@ Run `git rev-parse --show-toplevel`, then connection-helper
 `inspect --root <repository>` to resolve the effective binding. Pin its source
 metadata and selected `--workspace` for this task. The unified resolver uses an
 explicit workspace resource before any legacy `.zentao`; invalid maps or
-references never fall back. The returned `binding` has these fields:
+references never fall back. Read [the shared binding contract]({{REPO_ROOT}}/skills/zentao-init/references/binding.md)
+for the returned `binding` shape and validation rules.
 
-```json
-{
-  "schemaVersion": 2,
-  "server": "https://zentao.example.com/zentao",
-  "product": { "id": 6, "name": "供应链移动端" },
-  "project": { "id": 12, "name": "供应链研发项目" }
-}
-```
-
-`product` may be `null`. Each object otherwise has only a positive integer `id`
-and a non-empty `name`. Default to the bound project, matching the fix-bug
+Default to the bound project, matching the fix-bug
 workflow's project check. An explicit request for the whole bound product may
 use its product ID when non-null; this includes other projects and requires
 the project ownership labels described below. Do not infer a verified
