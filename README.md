@@ -67,6 +67,7 @@ This inventory covers the shared defaults in `meta.template.ts` and every reposi
 | [project-init](skills/project-init/SKILL.md) | Register, inspect, or update related local repositories without moving them. |
 | [push](skills/push/SKILL.md) | Push local commits to a remote. |
 | [review-pr](skills/review-pr/SKILL.md) | Review PRs/MRs and merge when the required checks pass. |
+| [server-ops](skills/server-ops/SKILL.md) | Inspect logs, diagnose incidents, and perform authorized maintenance through local SSH. |
 | [submit](skills/submit/SKILL.md) | Run the issue, branch, commit/push, and PR/MR submission workflow. |
 | [team-workflow](skills/team-workflow/SKILL.md) | Coordinate repository roles and report each subagent's contributions. |
 | [typesafe-ai](vendor/typesafe-ai-skills/skills/typesafe-ai/SKILL.md) | Build typed AI decision workflows with TypeSafe's System One models, including Jev. |
@@ -232,6 +233,36 @@ connection helper to supply the project, server and token per command without
 switching global CLI accounts. See the [connection contract](skills/apifox-init/references/connection.md)
 for configuration examples and commands. The previous upstream Apifox submodule
 has been replaced by these local skills.
+
+## Server Operations
+
+The [server-ops skill](skills/server-ops/SKILL.md) uses local OpenSSH directly
+for service inspection, bounded log queries, incident diagnosis, and explicitly
+authorized maintenance. It adds no remote agent, custom CLI, or MCP dependency.
+Connection routing and credentials remain in the user's existing SSH setup.
+
+Keep optional server/service context in the gitignored
+`local/server-ops/servers.yaml`, using the
+[example inventory](skills/server-ops/assets/servers.example.yaml) as a template.
+Replace the example records with actual SSH aliases, projects, environments,
+and services before using it. Keep passwords, keys, and tokens out of this file.
+An explicitly selected existing SSH alias also works without an inventory.
+Requested registration can be handled by the same skill, for example:
+
+```text
+/server-ops 把 SSH 别名 orders-test 登记为 orders 项目的 test 环境，服务是 orders-api.service
+/server-ops 查看 orders 项目 test 环境的 orders-api 最近 15 分钟的错误日志
+/server-ops 重启 orders-test 的 orders-api 并验证恢复情况
+```
+
+With an existing local `meta.ts`, add `ServerOps: 'server-ops'` to `Skill` and
+`{ kind: 'directory', name: Skill.ServerOps, path: 'skills/server-ops' }` to
+`localSkillSources` if absent, then run `pnpm skills link`. Shared defaults
+already include this entry. The inventory stays outside generated skill bundles.
+See [the inventory contract](skills/server-ops/references/inventory.md) for
+fields and [the simulated scenarios](skills/server-ops/evals/evals.json) for
+qualitative checks. Real-server connectivity is a separate check using a user
+selected target; installing or evaluating the skill does not connect to hosts.
 
 ## Knowledge Notes
 

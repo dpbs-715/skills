@@ -1,0 +1,26 @@
+# Example context only. Replace these aliases with existing ~/.ssh/config Host names.
+# Copy to local/server-ops/servers.yaml in the skills checkout only when setting up.
+# Store no passwords, private keys, tokens, or executable command hooks here.
+schema_version: 1
+servers:
+  - alias: orders-test
+    project: orders
+    environment: test
+    expected_hostname: orders-test-01
+    services:
+      - name: orders-api
+        runtime: systemd
+        unit: orders-api.service
+        workdir: /srv/orders/api
+        log_paths:
+          - /var/log/orders/api.log
+    notes: Test API. The systemd journal is the first log source to check.
+
+  - alias: orders-prod
+    project: orders
+    environment: production
+    services:
+      - name: orders-api
+        runtime: docker
+        container: orders-api
+    notes: Production API. Verify the current container before maintenance.
