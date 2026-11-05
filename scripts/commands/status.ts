@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import { extname, join, relative, resolve } from 'node:path'
 
 import {
   installableSkills as defaultInstallableSkills,
@@ -9,7 +9,8 @@ import {
 import { getProjects, type Project } from '../lib/git.ts'
 import type { LocalSkillSource, VendorSkillMeta } from '../lib/metaTypes.ts'
 import { discoverSkills } from '../lib/skillLinks.ts'
-import { GENERATED_SKILLS_DIR, REPO_ROOT_TOKEN } from '../lib/skillRendering.ts'
+import { GENERATED_SKILLS_DIR } from '../lib/skillRendering.ts'
+import { isRepoPath, localMarkdownReferences } from '../lib/markdownReferences.ts'
 import { isDirectoryNonEmpty, pathExists, repoRoot } from '../lib/utils.ts'
 
 export type SkillRole = 'local' | 'installable' | 'vendor'
@@ -88,11 +89,6 @@ function formatTokenCount(tokens: number): string {
   return tokens.toLocaleString('en-US')
 }
 
-function isRepoPath(root: string, path: string): boolean {
-  const relPath = relative(root, path)
-  return relPath === '' || (!relPath.startsWith('..') && !isAbsolute(relPath))
-}
-
 function isCountedSourcePath(root: string, path: string): boolean {
   const relPath = relative(root, path)
   return COUNTED_SOURCE_DIRS.some(dir => relPath === dir || relPath.startsWith(`${dir}/`))
@@ -121,30 +117,9 @@ async function listCountableFiles(dir: string): Promise<string[]> {
 }
 
 function markdownLinkTargets(content: string, sourcePath: string, root: string): string[] {
-  const paths: string[] = []
-  const markdownLinkPattern = /!?\[[^\]\n]*\]\(([^)\n]+)\)/g
-  const backtickPathPattern = /`([^`\n]+)`/g
-
-  for (const match of content.matchAll(markdownLinkPattern)) {
-    const rawTarget = match[1].trim()
-    const linkTarget = rawTarget.startsWith('<')
-      ? rawTarget.slice(1, rawTarget.indexOf('>'))
-      : rawTarget.split(/\s+/)[0]
-    const target = linkTarget.split('#')[0].replaceAll(REPO_ROOT_TOKEN, root)
-    if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target))
-      continue
-
-    paths.push(resolve(join(sourcePath, '..'), target))
-  }
-
-  for (const match of content.matchAll(backtickPathPattern)) {
-    const target = match[1].trim().replaceAll(REPO_ROOT_TOKEN, root)
-    if (isAbsolute(target))
-      paths.push(target)
-  }
-
-  return paths
-    .filter(path => isRepoPath(root, path) && isCountedSourcePath(root, path) && shouldCountFile(path))
+  return localMarkdownReferences(content, sourcePath, root)
+    .map(reference => reference.path)
+    .filter(path => isCountedSourcePath(root, path) && shouldCountFile(path))
     .sort((left, right) => left.localeCompare(right))
 }
 

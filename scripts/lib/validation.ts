@@ -1,5 +1,6 @@
-import { readdir, readFile } from 'node:fs/promises'
-import { isAbsolute, join, relative } from 'node:path'
+import { access, readdir, readFile } from 'node:fs/promises'
+import { join, relative } from 'node:path'
+import { parseDocument } from 'yaml'
 
 import {
   agentOnlySkills as defaultAgentOnlySkills,
@@ -17,6 +18,8 @@ import {
 } from './skillRendering.ts'
 import { pathExists, repoRoot } from './utils.ts'
 import { readTeams } from './teams.ts'
+import { localMarkdownReferences } from './markdownReferences.ts'
+import { validateSkillEvaluations } from './skillEvaluations.ts'
 
 export type ValidationIssueCode =
   | 'missing-directory-skill'
@@ -29,14 +32,18 @@ export type ValidationIssueCode =
   | 'missing-installable-skill'
   | 'missing-agent-only-skill'
   | 'missing-frontmatter'
+  | 'invalid-frontmatter'
+  | 'invalid-frontmatter-field'
   | 'missing-frontmatter-field'
   | 'skill-name-mismatch'
   | 'missing-absolute-path'
+  | 'missing-markdown-reference'
   | 'invalid-agent'
   | 'missing-generated-agent'
   | 'stale-generated-agent'
   | 'unexpected-generated-agent'
   | 'invalid-team'
+  | 'invalid-evaluation'
 
 export interface ValidationIssue {
   code: ValidationIssueCode
@@ -56,11 +63,6 @@ export interface ValidationOptions {
   root?: string
 }
 
-interface Frontmatter {
-  description?: string
-  name?: string
-}
-
 function addIssue(
   issues: ValidationIssue[],
   code: ValidationIssueCode,
@@ -70,30 +72,20 @@ function addIssue(
   issues.push({ code, message, path })
 }
 
-function isRepoPath(root: string, path: string): boolean {
-  const relPath = relative(root, path)
-  return relPath === '' || (!relPath.startsWith('..') && !isAbsolute(relPath))
-}
-
-async function validateBacktickPaths(
+async function validateReferences(
   root: string,
   sourcePath: string,
   content: string,
   issues: ValidationIssue[],
 ): Promise<void> {
-  const backtickPattern = /`([^`\n]+)`/g
-
-  for (const match of content.matchAll(backtickPattern)) {
-    const path = match[1].trim()
-    if (!isAbsolute(path) || !isRepoPath(root, path))
-      continue
-
-    if (!await pathExists(path)) {
+  for (const reference of localMarkdownReferences(content, join(root, sourcePath), root)) {
+    try { await access(reference.path) }
+    catch {
       addIssue(
         issues,
-        'missing-absolute-path',
+        reference.kind === 'backtick' ? 'missing-absolute-path' : 'missing-markdown-reference',
         sourcePath,
-        `Referenced repo path does not exist: ${path}`,
+        `Referenced repo path is missing or inaccessible: ${reference.path}`,
       )
     }
   }
@@ -111,6 +103,9 @@ async function validateDirectorySkillSource(
     return
   }
 
+  for (const issue of await validateSkillEvaluations(sourceDir, source.name))
+    addIssue(issues, 'invalid-evaluation', relative(root, issue.path), issue.message)
+
   const generatedDir = join(root, GENERATED_SKILLS_DIR, source.name)
   const expectedFiles = await listSkillBundleFiles(sourceDir)
   const actualFiles = await pathExists(generatedDir) ? await listSkillBundleFiles(generatedDir) : []
@@ -121,7 +116,7 @@ async function validateDirectorySkillSource(
     const expected = renderSkillBundleFile(path, await readFile(join(root, sourcePath)), root)
     const markdown = path.toLowerCase().endsWith('.md')
     if (markdown)
-      await validateBacktickPaths(root, sourcePath, expected.toString('utf8'), issues)
+      await validateReferences(root, sourcePath, expected.toString('utf8'), issues)
 
     if (!actualPaths.has(path)) {
       addIssue(
@@ -135,7 +130,7 @@ async function validateDirectorySkillSource(
 
     const actual = await readFile(join(root, generatedRelPath))
     if (markdown)
-      await validateBacktickPaths(root, generatedRelPath, actual.toString('utf8'), issues)
+      await validateReferences(root, generatedRelPath, actual.toString('utf8'), issues)
     if (!actual.equals(expected)) {
       addIssue(
         issues,
@@ -180,7 +175,7 @@ async function validateLocalSkillSources(
     }
 
     const expected = renderDocumentSkill(source, await readFile(sourcePath, 'utf-8'), root)
-    await validateBacktickPaths(root, source.source, expected, issues)
+    await validateReferences(root, source.source, expected, issues)
     if (!await pathExists(generatedPath)) {
       addIssue(
         issues,
@@ -192,7 +187,7 @@ async function validateLocalSkillSources(
     }
 
     const actual = await readFile(generatedPath, 'utf-8')
-    await validateBacktickPaths(root, generatedRelPath, actual, issues)
+    await validateReferences(root, generatedRelPath, actual, issues)
 
     if (actual !== expected) {
       addIssue(
@@ -294,41 +289,21 @@ async function validateTeams(root: string, issues: ValidationIssue[]): Promise<v
   }
 }
 
-function parseFrontmatter(content: string): Frontmatter | undefined {
+function parseFrontmatter(content: string): Record<string, unknown> | undefined {
   const normalized = content.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n'))
     return undefined
 
-  const endIndex = normalized.indexOf('\n---', 4)
-  if (endIndex === -1)
+  const match = /^---\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(normalized)
+  if (!match)
     return undefined
-
-  const fields: Frontmatter = {}
-  const lines = normalized.slice(4, endIndex).split('\n')
-
-  for (const line of lines) {
-    const separatorIndex = line.indexOf(':')
-    if (separatorIndex === -1)
-      continue
-
-    const key = line.slice(0, separatorIndex).trim()
-    const value = unquote(line.slice(separatorIndex + 1).trim())
-    if (key === 'name')
-      fields.name = value
-    if (key === 'description')
-      fields.description = value
-  }
-
-  return fields
-}
-
-function unquote(value: string): string {
-  if (
-    (value.startsWith('"') && value.endsWith('"'))
-    || (value.startsWith('\'') && value.endsWith('\''))
-  )
-    return value.slice(1, -1)
-  return value
+  const document = parseDocument(match[1])
+  if (document.errors.length > 0)
+    throw new Error('Skill frontmatter must be valid YAML with unique keys.')
+  const fields: unknown = document.toJS()
+  if (!fields || typeof fields !== 'object' || Array.isArray(fields))
+    throw new Error('Skill frontmatter must be a YAML mapping.')
+  return fields as Record<string, unknown>
 }
 
 async function validateSkillFrontmatter(
@@ -352,7 +327,12 @@ async function validateSkillFrontmatter(
       continue
 
     const content = await readFile(skillPath, 'utf-8')
-    const frontmatter = parseFrontmatter(content)
+    let frontmatter: Record<string, unknown> | undefined
+    try { frontmatter = parseFrontmatter(content) }
+    catch (error) {
+      addIssue(issues, 'invalid-frontmatter', relPath, error instanceof Error ? error.message : String(error))
+      continue
+    }
     if (!frontmatter) {
       addIssue(
         issues,
@@ -363,29 +343,26 @@ async function validateSkillFrontmatter(
       continue
     }
 
-    if (!frontmatter.name) {
-      addIssue(
-        issues,
-        'missing-frontmatter-field',
-        relPath,
-        `Skill frontmatter is missing name: ${relPath}`,
-      )
+    for (const field of ['name', 'description']) {
+      const value = frontmatter[field]
+      if (value === undefined || value === null || value === '') {
+        addIssue(
+          issues,
+          'missing-frontmatter-field',
+          relPath,
+          `Skill frontmatter is missing ${field}: ${relPath}`,
+        )
+      }
+      else if (typeof value !== 'string' || !value.trim()) {
+        addIssue(issues, 'invalid-frontmatter-field', relPath, `Skill frontmatter ${field} must be a non-empty string.`)
+      }
     }
-    else if (frontmatter.name !== name) {
+    if (typeof frontmatter.name === 'string' && frontmatter.name.trim() && frontmatter.name !== name) {
       addIssue(
         issues,
         'skill-name-mismatch',
         relPath,
         `Skill frontmatter name must equal directory name: expected ${name}, got ${frontmatter.name}`,
-      )
-    }
-
-    if (!frontmatter.description) {
-      addIssue(
-        issues,
-        'missing-frontmatter-field',
-        relPath,
-        `Skill frontmatter is missing description: ${relPath}`,
       )
     }
   }

@@ -54,7 +54,7 @@ export function renderDocumentSkill(
   root: string,
 ): string {
   const metadata = source.shortDescription
-    ? `metadata:\n  short-description: ${source.shortDescription}\n`
+    ? `metadata:\n  short-description: ${JSON.stringify(source.shortDescription)}\n`
     : ''
   const instructions = source.instructions.join('\n\n')
   const documentBody = resolveDocumentLinks(sourceContent, root, source.source)
@@ -63,7 +63,7 @@ export function renderDocumentSkill(
 
   return `---
 name: ${source.name}
-description: ${source.description}
+description: ${JSON.stringify(source.description)}
 ${metadata}---
 
 # ${source.title}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
@@ -204,6 +204,72 @@ description: Use when testing validation.
 
   assert.equal(result.ok, false)
   assert.deepEqual(issueCodes(result), ['missing-frontmatter', 'skill-name-mismatch'])
+})
+
+test('rejects malformed YAML, duplicate keys, non-mappings, and non-string fields', async () => {
+  for (const [frontmatter, code] of [
+    ['name: sample\ndescription: [unterminated', 'invalid-frontmatter'],
+    ['name: sample\nname: other\ndescription: Test', 'invalid-frontmatter'],
+    ['- sample', 'invalid-frontmatter'],
+    ['name: sample\ndescription: true', 'invalid-frontmatter-field'],
+    ['name: sample\ndescription: []', 'invalid-frontmatter-field'],
+    ['name: sample\ndescription: "   "', 'invalid-frontmatter-field'],
+  ]) {
+    const root = await createTempDir('skills-validate-')
+    await writeRepoFile(root, 'generated/sample/SKILL.md', `---\n${frontmatter}\n---\n`)
+    const result = await validateSkills({ root, localSkillSources: [], installableSkills: [], agentOnlySkills: [] })
+    assert.deepEqual(issueCodes(result), [code], frontmatter)
+  }
+})
+
+test('accepts folded YAML descriptions and safely renders punctuation in document metadata', async () => {
+  const root = await createTempDir('skills-validate-')
+  await writeRepoFile(root, 'generated/sample/SKILL.md', '---\nname: sample\ndescription: >-\n  Multi-line description:\n  second line.\n---\n')
+  const source: LocalSkillSource = {
+    kind: 'document', name: 'document', source: 'rules/entry.md', title: 'Entry',
+    description: 'Use when testing: "quoted" metadata.', shortDescription: 'Short: description', instructions: [],
+  }
+  await writeRepoFile(root, source.source, '# Entry\n')
+  await renderLocalSkillSources({ root, localSkillSources: [source] })
+  const result = await validateSkills({ root, localSkillSources: [source], installableSkills: [], agentOnlySkills: [] })
+  assert.deepEqual(result, { issues: [], ok: true })
+})
+
+test('reports missing inline and reference-style Markdown destinations in both bundles', async () => {
+  const { root, options } = await createValidRepo()
+  await writeRepoFile(root, 'skills/engineering-rules/references/guide.md', '[Missing](missing.md#part)\n[Named][guide]\n\n[guide]: <missing space.md> "Title"\n')
+  await renderLocalSkillSources(options)
+  const result = await validateSkills(options)
+  assert.deepEqual(issueCodes(result), Array(4).fill('missing-markdown-reference'))
+})
+
+test('rejects broken symlinks used as Markdown destinations', async () => {
+  const { root, options } = await createValidRepo()
+  await symlink('missing.md', join(root, 'rules', 'broken.md'))
+  await writeRepoFile(root, 'skills/engineering-rules/SKILL.md', `${sourceSkill()}\n[Broken](${REPO_ROOT_TOKEN}/rules/broken.md)\n`)
+  await renderLocalSkillSources(options)
+  assert.deepEqual(issueCodes(await validateSkills(options)), ['missing-markdown-reference', 'missing-markdown-reference'])
+})
+
+test('accepts local links with spaces, titles, escaped parentheses, and fragments; ignores code examples and remote links', async () => {
+  const { root, options } = await createValidRepo()
+  await writeRepoFile(root, 'skills/engineering-rules/references/with space.md', '# Space\n')
+  await writeRepoFile(root, 'skills/engineering-rules/references/guide(v2).md', '# Guide\n')
+  await writeRepoFile(root, 'skills/engineering-rules/references/links.md', [
+    '[Space](<with space.md#heading> "Title")',
+    '[Encoded](with%20space.md)',
+    '[Balanced](guide(v2).md)',
+    '[Escaped](guide\\(v2\\).md)',
+    '[Named][guide]',
+    '[guide]: <with space.md> "Title"',
+    '[Remote](https://example.com/missing.md)',
+    '[Mail](mailto:someone@example.com)',
+    '[Fragment](#section)',
+    '`[Example](missing.md)`',
+    '```md', '[Example](missing.md)', '```', '',
+  ].join('\n'))
+  await renderLocalSkillSources(options)
+  assert.deepEqual(await validateSkills(options), { issues: [], ok: true })
 })
 
 test('reports a missing configured document source', async () => {
