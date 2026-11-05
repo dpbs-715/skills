@@ -117,10 +117,10 @@ remote inspection succeeded.
 
 Examples:
 
-- “看看订单项目测试环境最近为什么一直报错。” Resolve a unique service,
+- “Check why the orders project keeps reporting errors in the test environment.” Resolve a unique service,
   inspect status and bounded logs, explain evidence; do not restart by default.
-- “重启 orders-test 上的订单服务并检查恢复情况。” Reuse the explicit target
+- “Restart the orders service on orders-test and check that it recovers.” Reuse the explicit target
   and authorization, restart the verified service,
   then check status, recent logs, and known readiness behavior.
-- “把这台服务器登记下来，以后用它查日志。” Prepare the private inventory entry
+- “Register this server so we can use it to check logs later.” Prepare the private inventory entry
   from supplied facts, ask only for missing alias/context, and keep secrets in SSH.
