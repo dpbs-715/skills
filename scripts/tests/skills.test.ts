@@ -520,8 +520,8 @@ test('cleanup only removes extra managed submodules when confirmed', async () =>
   assert.deepEqual(confirmed.submodules, [{ path: 'vendor/old', status: 'removed' }])
   assert.deepEqual(calls, [
     ['ls-files', '--error-unmatch', 'vendor/old'],
-    ['submodule', 'deinit', '-f', 'vendor/old'],
-    ['rm', '-f', 'vendor/old'],
+    ['submodule', 'deinit', '--', 'vendor/old'],
+    ['rm', '--', 'vendor/old'],
   ])
 })
 
