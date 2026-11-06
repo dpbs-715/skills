@@ -251,6 +251,13 @@ for service inspection, bounded log queries, incident diagnosis, and explicitly
 authorized maintenance. It adds no remote agent, custom CLI, or MCP dependency.
 Connection routing and credentials remain in the user's existing SSH setup.
 
+There are two connection paths: automatic access with existing keys, agents,
+certificates, or a verified reusable connection; and user authentication in a
+trusted terminal followed by verification and continuation. Password and MFA
+access use the second path. An ordinary terminal login alone is not reusable
+authentication. Jump hosts are checked individually, and sudo access is handled
+separately. See [Authentication and continuation](skills/server-ops/references/authentication.md).
+
 Keep optional server/service context in the gitignored
 `local/server-ops/servers.yaml`, using the
 [example inventory](skills/server-ops/assets/servers.example.yaml) as a template.

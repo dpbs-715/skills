@@ -1,7 +1,7 @@
 ---
 name: server-ops
 description: Connect to the user's servers through local OpenSSH to inspect services, query logs, diagnose incidents, and execute authorized maintenance. Use for /server-ops, SSH server troubleshooting, remote service errors, and requests to register or maintain server/service context. Reuse SSH aliases and private inventory; do not use for merely explaining SSH syntax or unrelated local development.
-compatibility: Requires a local OpenSSH client, reachable SSH servers, and existing authentication. No custom CLI, MCP server, or additional remote agent is required.
+compatibility: Requires a local OpenSSH client and reachable SSH servers. Supports existing noninteractive authentication or user-completed authentication through a trusted terminal. No custom CLI, MCP server, or additional remote agent is required.
 ---
 
 # Server Operations
@@ -9,6 +9,19 @@ compatibility: Requires a local OpenSSH client, reachable SSH servers, and exist
 Use the user's existing SSH access and communicate in their language. Execute
 the requested work when the target and scope are established. Keep connection
 configuration in OpenSSH and service context in a private inventory.
+
+## Connection modes
+
+- **Automatic:** reuse working noninteractive SSH access, including keys,
+  agents, certificates, or a verified reusable connection.
+- **User authentication, then continue:** when a password, MFA, key unlock, or
+  hardware confirmation is needed, give the user a concrete trusted-terminal
+  step. Verify access afterward and resume the original task.
+
+Follow [the authentication workflow](references/authentication.md) for mode
+selection, each jump host, session reuse, and sudo. Do not assume that one
+ordinary terminal login authenticates later SSH commands. Keep connection
+mode and pending work in task context, not in the inventory.
 
 ## Resolve the target
 
@@ -39,7 +52,8 @@ configuration in OpenSSH and service context in a private inventory.
    and `ssh -V`, then announce the selected alias, project/environment if known,
    service, and intended operation. Inspect effective SSH settings only for
    this alias as needed. Keep private key contents and credentials out of tools
-   and chat; use existing agent/key configuration.
+   and chat. Check the selected route's authentication requirements, including
+   jump hosts, before choosing automatic or user-assisted access.
 6. Before service commands on a newly selected target, use a small remote
    identity probe. Compare `expected_hostname` when configured. On mismatch,
    stop before service access or changes; do not rewrite the expected value.
@@ -47,7 +61,9 @@ configuration in OpenSSH and service context in a private inventory.
    environment. OpenSSH host verification remains authoritative for host trust.
 
 If inventory creation or updates are requested, follow the inventory contract.
-Ordinary use never creates files, changes SSH config, or installs dependencies.
+Ordinary use never registers servers, changes SSH config, or installs dependencies.
+Temporary authentication sockets follow the task-owned lifecycle in the
+authentication workflow; keep them outside the inventory and skill bundle.
 
 ## Inspect and diagnose
 
@@ -90,7 +106,9 @@ or diagnose does not itself authorize restarting services or changing files.
    that decision with the proposed action visible. Do not expand a one-service
    request into all-host maintenance, rebooting, pruning, or deleting logs.
 3. Execute the smallest authorized change. Use noninteractive `sudo -n` only
-   when needed and authorized. Do not enable passwordless sudo or copy secrets
+   when needed and authorized. If sudo requires interaction, follow the
+   authentication workflow's separate sudo handoff; SSH login alone does not
+   grant elevated access. Do not enable passwordless sudo or copy secrets
    to make a command work. For file edits, preserve ownership/mode, inspect a
    focused diff, and use an appropriate backup and syntax check before reload.
 4. Verify both the operation's exit status and the resulting service behavior.

@@ -8,23 +8,29 @@ It is not a connection test and may evaluate the user's `Match exec` commands.
 Read only needed output fields; do not dump the full configuration into chat.
 Do not replace working SSH routing with a different address or account.
 
-For unattended inspection, start with this pattern, replacing the example alias
-with the validated target:
+Apply [the authentication workflow](authentication.md) before the first
+connection and whenever access expires. It defines automatic access, user
+authentication, per-hop checks, verified master reuse, and separate sudo access.
+
+For unattended inspection after route preflight, start with this pattern,
+replacing the example alias with the validated target. With an explicitly pinned
+master, use the authentication workflow's reuse pattern instead and retain its
+no-fallback options on every command:
 
 ```sh
 ssh -T -o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 \
   -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 \
-  -o ServerAliveCountMax=2 -- orders-test 'hostname && id -un && uname -s'
+  -o ServerAliveCountMax=2 -o ClearAllForwardings=yes \
+  -- orders-test 'hostname && id -un && uname -s'
 ```
 
 Check probe stdout/stderr and exit status. The `&&` chain stops on failure;
 compare the configured expected hostname before service access.
 
-`BatchMode` avoids credential prompts. Use existing `ssh-agent`, key files, or
-SSH certificate configuration. If password/MFA/key unlocking is required,
-report the exact blocker and let the user authenticate through their trusted
-terminal or supported interactive flow. Do not request passwords in chat,
-print them, pass them as arguments, or install `sshpass` to bypass the blocker.
+`BatchMode` avoids credential prompts. Existing keys, agents, certificates, and
+verified authenticated connections can work automatically. Password/MFA or key
+unlocking goes through the concrete user-authentication and resume steps, not
+an unqualified instruction to "log in once".
 
 Unknown or changed host keys require resolving host trust through a trusted
 fingerprint/source. Do not disable verification, remove known-host entries, or
@@ -70,7 +76,8 @@ inside the script that consume the remaining stdin accidentally.
 - Do not silence failures with `|| true` or present denied access as no results.
   For logs needing elevated access, use `sudo -n` only within authorized scope.
 - A local timeout/disconnection does not prove remote termination. For a change,
-  establish current state before any retry; report an unknown outcome honestly.
+  restore access through the authentication workflow, then establish current
+  state before any retry; report an unknown outcome honestly.
 
 When the execution tool has no deadline and `python3` is already available, this
 local wrapper bounds a read-only check without changing remote configuration:
@@ -92,7 +99,9 @@ sys.exit(result.returncode)
 PY
 ```
 
-Use the actual alias/command and caller output caps. This example inherits
+Use the actual alias/command and caller output caps. For master reuse, add the
+pinned socket and all no-fallback options from the authentication workflow;
+this example alone is not a master-reuse recipe. This example inherits
 stdout/stderr instead of buffering an unlimited result. Do not install Python
 solely for this wrapper; use an existing bounded execution mechanism instead.
 
