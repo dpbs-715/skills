@@ -29,6 +29,7 @@ export const Skill = {
     Commit: 'commit',
     Dcr: 'dcr',
     EngineeringRules: 'engineering-rules',
+    CommunicationRules: 'communication-rules',
     Mock: 'mock',
     PersonalKnowledge: 'personal-knowledge',
     ProjectInit: 'project-init',
@@ -46,6 +47,15 @@ export const Skill = {
 } as const
 
 export const localSkillSources = [
+    {
+        description: 'Use for user-facing replies to explain conclusions, terminology, actions, and verification clearly while preserving necessary detail.',
+        instructions: [],
+        kind: 'document',
+        name: Skill.CommunicationRules,
+        shortDescription: 'clear communication',
+        source: 'rules/communication/RULES.md',
+        title: 'Communication Rules',
+    },
     {
         description: 'Select repository roles and load their rules and specialist skills for product requirements, UI design, frontend implementation, visual artwork, Three.js, or GSAP tasks, even when the user does not name a role. Delegate bounded specialist work when useful; handle small tasks directly.',
         instructions: ['Assess role needs before substantive work; load only the configuration relevant to the task.'],
@@ -182,6 +192,7 @@ export const installableSkills = [
 ]
 
 export const alwaysOnInstructionSkills = [
+    Skill.CommunicationRules,
     Skill.AgentRouting,
     Skill.EngineeringRules,
     Skill.ProblemSolvingRules,
@@ -191,12 +202,26 @@ export const alwaysOnInstructionSkills = [
 const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
 const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSet.has(name))
 
-// These rules are bootstrapped by global context; retain their generated bundles
+// These rules are delivered through global context; retain their generated bundles
 // for direct reads without advertising duplicate skill entries on Codex/Pi.
-const contextRuleSkills = new Set<string>([Skill.AgentRouting, Skill.ProjectWorkspaces])
+const contextRuleSkills = new Set<string>([Skill.AgentRouting, Skill.ProjectWorkspaces, Skill.CommunicationRules])
 const contextHostSkills = installableSkills.filter(name => !contextRuleSkills.has(name))
 
 export const linkTargets: readonly LinkTarget[] = [
+    {
+        file: '~/.codex/AGENTS.md',
+        preferExisting: ['AGENTS.override.md'],
+        kind: 'markdown-section',
+        section: 'communication-rules',
+        source: 'rules/communication/RULES.md',
+    },
+    {
+        file: '~/.pi/agent/AGENTS.md',
+        preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
+        kind: 'markdown-section',
+        section: 'communication-rules',
+        source: 'rules/communication/RULES.md',
+    },
     {
         file: '~/.codex/AGENTS.md',
         preferExisting: ['AGENTS.override.md'],

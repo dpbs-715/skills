@@ -75,7 +75,7 @@ test('linkTargets excludes always-on instructions from Claude skills and links t
   if (codex.kind !== 'skill' || claudeSkills.kind !== 'skill' || claudeInstructionsTarget.kind !== 'rule')
     assert.fail('Expected directory link targets')
 
-  // Other shared rules remain skills on Codex; global context owns the two bootstrapped rules.
+  // Engineering and problem-solving remain skills; communication is global context.
   assert.ok(codex.include.includes('engineering-rules'))
   assert.ok(codex.include.includes('problem-solving-rules'))
 
@@ -89,7 +89,7 @@ test('linkTargets excludes always-on instructions from Claude skills and links t
   assert.equal(claudeInstructionsTarget.kind, 'rule')
   assert.deepEqual(
     [...claudeInstructionsTarget.include].sort(),
-    ['agent-routing', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
+    ['agent-routing', 'communication-rules', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
   )
 })
 
@@ -117,7 +117,7 @@ test('linkTargets configures opencode rules and instructions together', () => {
   assert.ok(!opencodeSkills.include.includes('engineering-rules'))
   assert.deepEqual(
     [...opencodeRules.include].sort(),
-    ['agent-routing', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
+    ['agent-routing', 'communication-rules', 'engineering-rules', 'problem-solving-rules', 'project-workspaces'],
   )
   assert.equal(opencodeInstructions.property, 'instructions')
   assert.deepEqual(opencodeInstructions.include, ['~/.config/opencode/rules/*.md'])

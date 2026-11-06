@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { linkTargets } from '../../meta.template.ts'
+import { linkTargets, localSkillSources } from '../../meta.template.ts'
 import { linkAll, unlinkAll } from '../commands/link.ts'
 import { ensureMarkdownSection, removeMarkdownSections } from '../lib/markdownInstructions.ts'
 import type { MarkdownSectionTarget } from '../lib/metaTypes.ts'
@@ -142,6 +142,56 @@ test('default targets bootstrap discovery and routing for Codex/Pi and rule-base
   assert.ok(kimi && kimi.kind === 'skill')
   assert.ok(kimi.include.includes('agent-routing'))
   assert.ok(kimi.include.includes('project-workspaces'))
+})
+
+test('communication rules load as context instead of optional skills on supported hosts', async () => {
+  const source = localSkillSources.find(source => source.name === 'communication-rules')
+  assert.ok(source && source.kind === 'document')
+  for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
+    const target = linkTargets.find(target => target.kind === 'markdown-section' && target.file === file && target.section === 'communication-rules')
+    assert.ok(target && target.kind === 'markdown-section')
+    assert.equal(target.source, source.source)
+  }
+  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills', '~/.claude/skills', '~/.config/opencode/skills']) {
+    const target = linkTargets.find(target => target.kind === 'skill' && target.dir === dir)
+    assert.ok(target && target.kind === 'skill')
+    assert.ok(!target.include.includes('communication-rules'))
+  }
+  for (const dir of ['~/.claude/rules', '~/.config/opencode/rules']) {
+    const target = linkTargets.find(target => target.kind === 'rule' && target.dir === dir)
+    assert.ok(target && target.kind === 'rule')
+    assert.ok(target.include.includes('communication-rules'))
+  }
+})
+
+test('communication rule installation preserves user content across relink and unlink', async () => {
+  const { root, host } = await fixture()
+  const source = localSkillSources.find(source => source.name === 'communication-rules')
+  assert.ok(source && source.kind === 'document')
+  const rule = await readFile(new URL('../../rules/communication/RULES.md', import.meta.url), 'utf8')
+  const sourceFile = join(root, 'communication.md')
+  await writeFile(sourceFile, rule)
+  const config = { ...source, source: 'communication.md' }
+  const file = join(host, 'AGENTS.md')
+  const original = '# Personal instructions\nUse Chinese.\n'
+  await writeFile(file, original)
+  const rulesDir = join(host, 'rules')
+  const options = {
+    root, localSkillSources: [config], targets: [
+      { file, kind: 'markdown-section' as const, section: 'communication-rules', source: 'communication.md' },
+      { dir: rulesDir, kind: 'rule' as const, include: ['communication-rules'] },
+    ],
+  }
+  await linkAll(options)
+  const installed = await readFile(file, 'utf8')
+  assert.ok(installed.startsWith(original))
+  assert.ok(installed.includes(rule.trim()))
+  assert.equal(await readlink(join(rulesDir, 'communication-rules.md')), join(root, 'generated', 'communication-rules', 'SKILL.md'))
+  assert.ok((await linkAll(options)).every(result => result.status === 'exists'))
+  assert.equal(await readFile(file, 'utf8'), installed)
+  await unlinkAll(options)
+  assert.equal(await readFile(file, 'utf8'), original)
+  await assert.rejects(readlink(join(rulesDir, 'communication-rules.md')), /ENOENT/)
 })
 
 test.after(async () => {

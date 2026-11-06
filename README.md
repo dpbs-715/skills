@@ -82,6 +82,7 @@ These document sources are rendered as skills. Sources in `alwaysOnInstructionSk
 | Skill | Source | Purpose |
 | --- | --- | --- |
 | `agent-routing` | [Agent routing rules](rules/agent-routing/RULES.md) | Select specialist roles, load their capabilities, and delegate when useful. |
+| `communication-rules` | [Communication rules](rules/communication/RULES.md) | Explain conclusions, terminology, actions, and verification clearly without limiting necessary detail. |
 | `engineering-rules` | [Engineering rules](rules/engineering/RULES.md) | Guide implementation, structure, and code review. |
 | `problem-solving-rules` | [Problem-solving rules](rules/problem-solving/RULES.md) | Investigate symptoms and address root causes. |
 | `project-workspaces` | [Project workspace rules](rules/project-workspaces/RULES.md) | Discover associated repositories before work and load their instructions when needed. |
@@ -184,6 +185,15 @@ pnpm skills link
 Synced skills in `generated/` get a `SYNC.md` file with the upstream path, repository URL, git SHA, and sync date. Avoid editing synced skill directories by hand; update the vendor submodule and re-run `pnpm skills sync` instead.
 
 ## Conventions
+
+Communication preferences live in `rules/communication/RULES.md`. They apply to
+user-facing discussion, progress updates, explanations, reviews, and results.
+They preserve necessary detail and impose no point-count limit. Codex and Pi
+receive the full short document in a managed global context section; Claude
+and OpenCode receive it through their always-on rule directories. Kimi keeps
+the document as a discoverable skill; this configuration does not provide it
+an always-on communication entry. Edit the source and run `pnpm skills link`
+to refresh installed copies without replacing surrounding user instructions.
 
 Rule sets use `RULES.md` as the entry file and keep focused topic documents in `topics/`. Keep brief, broadly applicable decision checks and conditional routing in the entry; keep detailed task workflows and their outputs in skills. The engineering entry starts with scope, routes to `build-what-is-needed`, and adds `before-you-build` only for uncertain product demand, value, or adoption. Technical unknowns go through code, data, and contract investigation first; confirmed work proceeds without reopening product validation.
 
@@ -382,10 +392,10 @@ By default this first renders configured `localSkillSources`, then applies the `
 
 | Destination | Kind | Receives |
 | --- | --- | --- |
-| `~/.codex/skills` | skill | `installableSkills` minus `agent-routing` and `project-workspaces` |
-| `~/.codex/AGENTS.md` | markdown-section | short project discovery and role routing entries; prefers an existing nonempty `AGENTS.override.md` |
-| `~/.pi/agent/skills` | skill | `installableSkills` minus `agent-routing` and `project-workspaces` |
-| `~/.pi/agent/AGENTS.md` | markdown-section | short project discovery and role routing entries; prefers an existing higher-precedence context file |
+| `~/.codex/skills` | skill | `installableSkills` minus `communication-rules`, `agent-routing`, and `project-workspaces` |
+| `~/.codex/AGENTS.md` | markdown-section | communication rules plus short discovery/routing entries; prefers an existing nonempty `AGENTS.override.md` |
+| `~/.pi/agent/skills` | skill | `installableSkills` minus `communication-rules`, `agent-routing`, and `project-workspaces` |
+| `~/.pi/agent/AGENTS.md` | markdown-section | communication rules plus short discovery/routing entries; prefers an existing higher-precedence context file |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
@@ -404,7 +414,7 @@ full rules in this checkout, rather than editing generated managed sections.
 
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive short managed global entries for project discovery and role routing, with full workflows read by path when required; their skill directories omit those two entries. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (communication, agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive the communication document in full and short managed entries for project discovery and role routing, with full workflows read by path when required; their skill directories omit these three entries. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 `frontend-design` is maintained as a UI-designer-only bundle in this checkout.
 Disable an independently installed global copy in its owning manager (for example,
