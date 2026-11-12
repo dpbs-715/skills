@@ -1,6 +1,6 @@
 # Architecture
 
-Use these decisions for module design, changes that cross ownership boundaries, and architecture migrations. Scale the analysis to the change; a local edit does not need a full architecture process.
+Use these decisions for API request design, module design, changes that cross ownership boundaries, and architecture migrations. Scale the analysis to the change; a local edit does not need a full architecture process.
 
 ## Trace Behavior Before Changing Boundaries
 
@@ -13,6 +13,8 @@ Use these decisions for module design, changes that cross ownership boundaries, 
 
 ## Preserve And Check Boundaries
 
+- When designing or changing an API request, use a named request type or schema that follows project conventions to bind fields that serve one purpose, such as filters and pagination for a list query or fields for a submission. Keep independent inputs, such as a resource ID in the path, as separate parameters where appropriate.
+- When regrouping inputs for an existing API, preserve the client-facing contract, including field names, where each value is sent, which fields are required, default values, and validation behavior.
 - Reuse the existing command or service path when it owns the behavior. Define the public contract and allowed dependency direction before introducing a new cross-module edge.
 - Use existing architecture checks when available. Know whether they resolve package imports, aliases, dynamic imports, and the intended change range; a passing partial check does not establish whole-project compliance.
 - Separate observed source behavior, declared architecture, and verified test results. Missing paths or planned tests are evidence gaps, not implemented guarantees.
