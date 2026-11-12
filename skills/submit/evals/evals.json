@@ -21,6 +21,13 @@
       "expected_output": "Produces one consolidated Issue, branch/base, commit, and PR draft with unresolved remote facts labelled, without requiring login for a local preview or entering write phases.",
       "files": [],
       "assertions": ["Provides a complete consolidated preview.", "Does not push or create remote resources.", "Marks unverifiable remote facts without blocking local drafting on authentication."]
+    },
+    {
+      "id": 4,
+      "prompt": "Simulate /submit for a fix carried into an isolated worktree. The pushed Issue branch contains the fix and its PR is open. The original checkout still has an unchanged staged copy of one submitted file, a later edit to another submitted file, and a separate staged change. Describe what happens now and what would happen if the push had failed. Do not contact real services or mutate Git.",
+      "expected_output": "Checks the remote branch and the original checkout, then plans to clean the verified duplicate staged file without waiting for merge or asking again. Preserves the later edit and separate staged change. Skips cleanup if the push failed.",
+      "files": [],
+      "assertions": ["Requires verified publication before any local cleanup.", "Cleans only the verified duplicate without a separate confirmation.", "Preserves later edits and unrelated staging.", "Keeps the original changes on push failure."]
     }
   ]
 }

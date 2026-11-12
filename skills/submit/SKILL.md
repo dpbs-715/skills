@@ -39,11 +39,13 @@ Resolve the target from the explicit argument, then a documented project
 submission target, then the repository's actual default branch. Validate refs
 and remote mappings using create-pr; do not guess main, master, or origin.
 
-Invocation authorizes Issue and branch creation, committing, normal pushes, and
-PR/MR creation after scope is settled. Proceed by default without per-phase
-confirmation. Only an explicit request to preview, show the plan first, or avoid
-submission limits the work to inspection and drafting, with no Git or remote
-mutations. Do not implement new features, merge PRs/MRs, or rewrite published history.
+Invocation authorizes Issue and branch creation, committing, normal pushes,
+PR/MR creation, and the scoped local cleanup in step 5 after scope is settled.
+Proceed by default without per-phase confirmation. Honor requests to keep the
+original changes. Only an explicit request to preview, show the plan first, or
+avoid submission limits the work to inspection and drafting, with no Git or
+remote mutations. Do not implement new features, merge PRs/MRs, or rewrite
+published history.
 
 ## 1. Inspect and settle scope
 
@@ -94,6 +96,10 @@ Before the first write, complete one shared preflight for all confirmed groups:
 - Inspect whether each group can reach its branch without losing work or mixing
   scopes. Stop on known conflicts and clarify material ambiguity before creating
   resources; do not repair conflicts as part of preflight.
+- For groups submitted from an isolated worktree, record the original checkout,
+  branch and HEAD, and the exact index entries and on-disk contents, modes, or
+  absence of the paths being transferred. Record which local changes each group
+  carries so step 5 can verify them against the pushed result.
 
 Reuse these findings across phases; recheck only state that changed or must be
 verified immediately before a write. Leave nonessential metadata to its owning
@@ -139,7 +145,7 @@ The confirmed submission scope authorizes carrying that group's changes to its
 associated branch when conflict-free; do not ask again merely because the work
 is uncommitted. This specializes create-issues' standalone dirty-worktree prompt.
 Its batch no-checkout default does not apply to sequential submission of confirmed
-groups. Preserve all original work and unrelated staging. Use isolated worktrees
+groups. Preserve the original work through publication. Use isolated worktrees
 when needed to apply only the group's patches or commits; verify the resulting
 diff before committing. Do not stash, discard, reset, overwrite, or force-push
 user work. Stop on conflicts or an ambiguous transfer instead of repairing
@@ -166,12 +172,36 @@ Reuse a matching open PR/MR instead of creating a duplicate. Do not change its
 title, body, or target without authorization. Attach created PRs to the current
 task when the environment provides that capability.
 
+## 5. Clean up verified local duplicates
+
+After every group has a pushed source branch and a verified PR/MR, clean up the
+duplicate uncommitted changes that were carried from the original checkout to
+isolated worktrees. Verify the current remote source tips contain those exact
+changes, accounting for any rebase during push. Use the published diff or file
+content as evidence. Issue or branch creation alone is insufficient. Run this
+step before reporting completion, with no extra confirmation or wait for merge.
+
+Recheck the original branch and HEAD and compare each candidate path's index
+entry and on-disk state with the recorded state. Only clean paths whose staged
+and unstaged changes are fully accounted for by the verified submission. For
+tracked or staged paths, restore only those literal file paths in the index and
+working tree to the recorded HEAD. For a submitted untracked file, remove only
+that exact file after verifying its current content and mode. Treat both sides
+of a rename as one unit. Recheck immediately before writing and verify the
+result afterwards.
+
+Keep paths with unrelated or later edits, paths with ambiguous staged changes,
+and paths whose recorded state or remote coverage cannot be verified. Keep the
+original checkout in place. Never use a repository-wide reset or clean. If a
+cleanup operation fails, check what actually changed before retrying and report
+any duplicates that remain. A retry may clean only paths it can still verify.
+
 ## Completion and recovery
 
 Report each group's Issue URL, branch and target, commit identifiers, PR/MR URL,
 and actual verification result. Distinguish created resources from reused ones.
-If isolated worktrees were used, report their paths and any original changes
-left in place so they are not accidentally submitted twice.
+If isolated worktrees were used, report their paths, what was cleaned from the
+original checkout, and any duplicates left there with the reason.
 
 On failure, stop subsequent groups and identify completed steps and the blocked
 step. Preserve created resources. On continuation, inspect current state and
