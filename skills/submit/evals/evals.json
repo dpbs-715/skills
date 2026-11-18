@@ -28,6 +28,20 @@
       "expected_output": "Checks the remote branch and the original checkout, then plans to clean the verified duplicate staged file without waiting for merge or asking again. Preserves the later edit and separate staged change. Skips cleanup if the push failed.",
       "files": [],
       "assertions": ["Requires verified publication before any local cleanup.", "Cleans only the verified duplicate without a separate confirmation.", "Preserves later edits and unrelated staging.", "Keeps the original changes on push failure."]
+    },
+    {
+      "id": 5,
+      "prompt": "Simulate /skill:submit -ch to v1.9.0 then test for one confirmed fix. Both target branches exist on the GitLab remote. The local v1.9.0 branch has an unrelated unpushed commit. Assume normal reviews and requirements pass and the associated development branch is eligible for deletion. Describe the proposed workflow without mutating Git or calling real services.",
+      "expected_output": "Plans Chinese output and two reviewed MRs, first from the Issue branch to v1.9.0 and then from remote v1.9.0 to test. Excludes the local version-branch commit. Uses non-closing Issue references and closes the resolved Issue and cleans up only its development branch after final verified integration.",
+      "files": [],
+      "assertions": ["Reviews and verifies the first merge before creating the second MR.", "Uses remote v1.9.0 as the second source and does not push its local commits.", "Defers Issue closure and development branch deletion until test contains the changes.", "Preserves both target branches and guards deletion against new work."]
+    },
+    {
+      "id": 6,
+      "prompt": "Simulate resuming /submit -ch to v1.9.0 then test. The checkout is clean. Verified links identify open Issue #17, its development branch, merged first-leg MR !30 and open v1.9.0-to-test MR !31. The second MR's diff matches the intended promotion, but a required approval is missing. Report what should happen without mutating Git or calling real services.",
+      "expected_output": "Continues the verified workflow from the existing second MR despite the clean checkout. Reports the missing required approval and keeps the Issue and development branch until final verified integration.",
+      "files": [],
+      "assertions": ["Reuses the existing first and second MRs and Issue.", "Identifies the second MR and missing approval as the blocked stage.", "Leaves the Issue and development branch in place until the final merge."]
     }
   ]
 }

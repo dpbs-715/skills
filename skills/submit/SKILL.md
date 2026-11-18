@@ -1,6 +1,6 @@
 ---
 name: submit
-description: Submit existing code changes through a complete Issue, associated branch, commit/push, and PR or MR workflow. Use for /submit, $submit, or requests to run this full workflow. Ask how to group independent features before making changes. Do not use for generic form submission, implementing features, or standalone commit, push, Issue, or PR requests.
+description: Submit existing code changes through an Issue, associated branch, commit/push, and PR or MR. Use for /submit, $submit, or requests to run this full workflow. An explicit to <branch> then <branch> adds two reviewed merges and final Issue and branch cleanup. Ask how to group independent features before making changes. Do not use for generic form submission, implementing features, or standalone commit, push, Issue, or PR requests.
 ---
 
 # Submit
@@ -25,10 +25,11 @@ $submit
 $submit to develop
 $submit to develop -ch
 /submit to develop -en
+/submit -ch to v1.9.0 then test
 ```
 
 Use the current working tree and relevant current-branch commits as input.
-Recognize `-ch` and `-en` anywhere and remove them before parsing `to <target>`.
+Recognize `-ch` and `-en` anywhere and remove them before parsing the targets.
 Default to English; `-ch` selects Chinese and `-en` selects English. Forward
 the selected flag to every underlying skill. Apply it to Issue and PR/MR titles
 and authored bodies, commit message content, and results. Preserve identifiers,
@@ -39,12 +40,21 @@ Resolve the target from the explicit argument, then a documented project
 submission target, then the repository's actual default branch. Validate refs
 and remote mappings using create-pr; do not guess main, master, or origin.
 
+For the explicit `to <first-target> then <final-target>` form, read
+[the two-stage merge workflow](references/merge-chain.md) before preflight.
+Use the first target for the ordinary submission steps. The `then` form
+authorizes both reviews and merges, followed by closure of fully resolved
+Issues and cleanup of their verified development branches. The two-stage guide
+owns those steps and the timing of Issue closure. If a requested chain has a
+missing target or an extra stage, resolve the syntax before any writes.
+
 Invocation authorizes Issue and branch creation, committing, normal pushes,
 PR/MR creation, and the scoped local cleanup in step 5 after scope is settled.
 Proceed by default without per-phase confirmation. Honor requests to keep the
 original changes. Only an explicit request to preview, show the plan first, or
 avoid submission limits the work to inspection and drafting, with no Git or
-remote mutations. Do not implement new features, merge PRs/MRs, or rewrite
+remote mutations. Ordinary submission ends after opening the PR/MR and
+cleaning verified local duplicates. Do not implement new features or rewrite
 published history.
 
 ## 1. Inspect and settle scope
@@ -60,8 +70,8 @@ This matters when a prior isolated worktree submission left the original changes
 in place. Use diffs and commit/patch equivalence, not matching titles or commit
 hashes alone, to distinguish already submitted work from new changes. Exclude
 verified submitted portions from the new submission scope without changing the
-original working tree or index. If everything is already submitted, return the
-existing results and resume only unfinished steps, such as opening a missing PR.
+original working tree or index. If everything is already submitted, resume
+only unfinished steps, such as opening a missing PR, and return verified results.
 For partial overlap, carry only the verified new changes; ask if they cannot be
 separated reliably. Do not reuse a closed or merged PR as an open submission for
 new work.
@@ -165,8 +175,9 @@ tests merely because this wrapper was invoked or claim unperformed checks.
 
 Run create-pr with the explicit associated source branch, resolved target,
 Issue reference, and selected language. Its push phase should recognize the
-already synchronized branch. Use a closing Issue reference only when the
-PR/MR completes the Issue; otherwise use a related reference.
+already synchronized branch. In ordinary submission, use a closing Issue
+reference only when the PR/MR completes the Issue. Use a non-closing reference
+for partial work and for every request in the two-stage merge workflow.
 
 Reuse a matching open PR/MR instead of creating a duplicate. Do not change its
 title, body, or target without authorization. Attach created PRs to the current
@@ -197,6 +208,10 @@ cleanup operation fails, check what actually changed before retrying and report
 any duplicates that remain. A retry may clean only paths it can still verify.
 
 ## Completion and recovery
+
+For `then`, continue with the two-stage guide after preparing the first requests
+and checking for verified local duplicates. On continuation, verified previous
+requests can resume the remaining stages even with a clean working tree.
 
 Report each group's Issue URL, branch and target, commit identifiers, PR/MR URL,
 and actual verification result. Distinguish created resources from reused ones.
