@@ -35,6 +35,7 @@ export const Skill = {
     ProjectInit: 'project-init',
     ProjectWorkspaces: 'project-workspaces',
     ProblemSolvingRules: 'problem-solving-rules',
+    SkillFeedback: 'skill-feedback',
     Psql: 'psql',
     PsqlInit: 'psql-init',
     Push: 'push',
@@ -125,6 +126,14 @@ export const localSkillSources = [
     { kind: 'directory', name: Skill.Push, path: 'skills/push' },
     { kind: 'directory', name: Skill.ReviewPr, path: 'skills/review-pr' },
     { kind: 'directory', name: Skill.ServerOps, path: 'skills/server-ops' },
+    {
+        description: 'Record a reproducible problem caused by a skill, rule, or role maintained by this repository in private local feedback, including defects discovered during another task.',
+        instructions: [],
+        kind: 'document',
+        name: Skill.SkillFeedback,
+        source: 'rules/skill-feedback/RULES.md',
+        title: 'Skill Feedback',
+    },
     { kind: 'directory', name: Skill.Submit, path: 'skills/submit' },
     { kind: 'directory', name: Skill.Psql, path: 'skills/psql' },
     { kind: 'directory', name: Skill.PsqlInit, path: 'skills/psql-init' },
@@ -197,6 +206,7 @@ export const alwaysOnInstructionSkills = [
     Skill.EngineeringRules,
     Skill.ProblemSolvingRules,
     Skill.ProjectWorkspaces,
+    Skill.SkillFeedback,
 ] as const
 
 const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
@@ -204,7 +214,12 @@ const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSe
 
 // These rules are delivered through global context; retain their generated bundles
 // for direct reads without advertising duplicate skill entries on Codex/Pi.
-const contextRuleSkills = new Set<string>([Skill.AgentRouting, Skill.ProjectWorkspaces, Skill.CommunicationRules])
+const contextRuleSkills = new Set<string>([
+    Skill.AgentRouting,
+    Skill.ProjectWorkspaces,
+    Skill.CommunicationRules,
+    Skill.SkillFeedback,
+])
 const contextHostSkills = installableSkills.filter(name => !contextRuleSkills.has(name))
 
 export const linkTargets: readonly LinkTarget[] = [
@@ -249,6 +264,20 @@ export const linkTargets: readonly LinkTarget[] = [
         kind: 'markdown-section',
         section: 'project-workspaces',
         source: 'rules/project-workspaces/ENTRY.md',
+    },
+    {
+        file: '~/.codex/AGENTS.md',
+        preferExisting: ['AGENTS.override.md'],
+        kind: 'markdown-section',
+        section: 'skill-feedback',
+        source: 'rules/skill-feedback/ENTRY.md',
+    },
+    {
+        file: '~/.pi/agent/AGENTS.md',
+        preferExisting: ['AGENTS.override.md', 'AGENTS.md', 'AGENTS.MD', 'CLAUDE.md', 'CLAUDE.MD'],
+        kind: 'markdown-section',
+        section: 'skill-feedback',
+        source: 'rules/skill-feedback/ENTRY.md',
     },
     { dir: '~/.codex/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: contextHostSkills },

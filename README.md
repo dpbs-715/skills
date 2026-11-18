@@ -86,6 +86,7 @@ These document sources are rendered as skills. Sources in `alwaysOnInstructionSk
 | `engineering-rules` | [Engineering rules](rules/engineering/RULES.md) | Guide implementation, structure, and code review. |
 | `problem-solving-rules` | [Problem-solving rules](rules/problem-solving/RULES.md) | Investigate symptoms and address root causes. |
 | `project-workspaces` | [Project workspace rules](rules/project-workspaces/RULES.md) | Discover associated repositories before work and load their instructions when needed. |
+| `skill-feedback` | [Skill Feedback](rules/skill-feedback/RULES.md) | Record reproducible defects in maintained skills, rules, and roles locally. |
 | `personal-knowledge` | Local `knowledge/INDEX.md`; see [Knowledge Notes](#knowledge-notes) | Find private reusable notes through a lightweight index. |
 
 The knowledge index and notes are gitignored. Run `pnpm skills note reindex` to create the index on a fresh checkout.
@@ -165,6 +166,7 @@ pnpm skills check     # fetch submodules and report upstream updates
 pnpm skills cleanup   # report unused submodules/generated skills (pass --yes to remove)
 pnpm skills validate  # validate local sources, generated skills, and metadata
 pnpm skills note      # manage private knowledge notes (list, reindex, add)
+pnpm skills feedback  # enable, disable, or save private local feedback
 pnpm skills project   # discover related repositories and manage private YAML maps
 ```
 
@@ -291,6 +293,54 @@ fields and [the simulated scenarios](skills/server-ops/evals/evals.json) for
 qualitative checks. Real-server connectivity is a separate check using a user
 selected target; installing or evaluating the skill does not connect to hosts.
 
+## Automatic Skill Feedback
+
+The shared feedback rule applies when an agent finds evidence of a reproducible
+defect in this repository's maintained skills, rules, or roles. `pnpm skills link`
+installs a short entry in Codex and Pi's global instructions and configures
+the full rule for always-on rule hosts. Kimi receives it as a discoverable skill.
+The agent reproduces the defect against a maintained source using placeholders,
+then reports the steps, cause, and suggested change. If you use a custom
+`meta.ts`, copy the `SkillFeedback` entry in `Skill` and the `skill-feedback`
+source from `meta.template.ts`. Add the settings for your hosts:
+
+- **Codex and Pi:** copy their `skill-feedback` markdown-section targets and
+  add `Skill.SkillFeedback` to `contextRuleSkills` (or your equivalent filter).
+  This keeps the rule out of the ordinary skill directories, including
+  `~/.agents/skills`, because it already loads via global instructions.
+- **Claude Code and OpenCode:** add `Skill.SkillFeedback` to
+  `alwaysOnInstructionSkills` so the rule loads automatically.
+
+Then run `pnpm skills link`.
+
+Enable local collection once per trusted personal skills checkout:
+
+```bash
+pnpm skills feedback enable
+pnpm skills feedback status
+pnpm skills feedback report --input <private-json-file>
+```
+
+Use `--input -` to pass JSON on standard input without a temporary file. The
+checkout-local `local/skill-feedback/enabled` marker controls collection.
+Reports are Markdown files under the Git-ignored
+`local/skill-feedback/reports/` directory. The command returns an existing path
+for the same component, source, operation, and failure; it does not overwrite
+that report. A report must name an existing maintained source file in the
+checkout. The command checks for existing symlinks along the storage path and
+uses owner-only Unix permissions for new feedback directories and files.
+
+Use a checkout whose files and directories you control. This command is not a
+sandbox for a shared directory: it does not audit access control lists (ACLs)
+or protect against another process moving or replacing directories during a
+write.
+
+Local collection does not contact GitHub, check upstream revisions, or create
+Issues. Use `pnpm skills feedback disable` to stop collecting without deleting
+existing reports. An in-progress report that has already passed its final opt-in
+check may still finish. For trigger criteria, required fields, and what to redact,
+see [Skill Feedback](rules/skill-feedback/RULES.md).
+
 ## Knowledge Notes
 
 Private reusable notes live under `knowledge/notes/`, with `knowledge/INDEX.md` as the lightweight index used by the `personal-knowledge` skill. These files are gitignored by default.
@@ -392,10 +442,10 @@ By default this first renders configured `localSkillSources`, then applies the `
 
 | Destination | Kind | Receives |
 | --- | --- | --- |
-| `~/.codex/skills` | skill | `installableSkills` minus `communication-rules`, `agent-routing`, and `project-workspaces` |
-| `~/.codex/AGENTS.md` | markdown-section | communication rules plus short discovery/routing entries; prefers an existing nonempty `AGENTS.override.md` |
-| `~/.pi/agent/skills` | skill | `installableSkills` minus `communication-rules`, `agent-routing`, and `project-workspaces` |
-| `~/.pi/agent/AGENTS.md` | markdown-section | communication rules plus short discovery/routing entries; prefers an existing higher-precedence context file |
+| `~/.codex/skills` | skill | `installableSkills` minus `communication-rules`, `agent-routing`, `project-workspaces`, and `skill-feedback` |
+| `~/.codex/AGENTS.md` | markdown-section | communication rules plus short discovery, routing, and feedback entries; prefers an existing nonempty `AGENTS.override.md` |
+| `~/.pi/agent/skills` | skill | same filtered skill list as `~/.codex/skills` |
+| `~/.pi/agent/AGENTS.md` | markdown-section | communication rules plus short discovery, routing, and feedback entries; prefers an existing higher-precedence context file |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
@@ -414,7 +464,7 @@ full rules in this checkout, rather than editing generated managed sections.
 
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` (communication, agent-routing, engineering, problem-solving, and project-workspaces) are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. opencode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive the communication document in full and short managed entries for project discovery and role routing, with full workflows read by path when required; their skill directories omit these three entries. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. OpenCode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive the communication document in full and short managed entries for project discovery, role routing, and skill feedback. Those entries load the full workflows by path when needed. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 `frontend-design` is maintained as a UI-designer-only bundle in this checkout.
 Disable an independently installed global copy in its owning manager (for example,

@@ -117,9 +117,9 @@ test('linkAll and unlinkAll handle global sections and leave missing host direct
   assert.equal(await readFile(target.file, 'utf8'), '')
 })
 
-test('default targets bootstrap discovery and routing for Codex/Pi and rule-based hosts', () => {
+test('default targets bootstrap discovery, routing, and feedback for Codex/Pi and rule-based hosts', () => {
   for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
-    for (const section of ['agent-routing', 'project-workspaces']) {
+    for (const section of ['agent-routing', 'project-workspaces', 'skill-feedback']) {
       assert.ok(linkTargets.some(target => target.kind === 'markdown-section'
         && target.file === file && target.section === section
         && target.source === `rules/${section}/ENTRY.md`))
@@ -130,18 +130,50 @@ test('default targets bootstrap discovery and routing for Codex/Pi and rule-base
     assert.ok(target && target.kind === 'rule')
     assert.ok(target.include.includes('agent-routing'))
     assert.ok(target.include.includes('project-workspaces'))
+    assert.ok(target.include.includes('skill-feedback'))
   }
   for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills']) {
     const target = linkTargets.find(target => target.kind === 'skill' && target.dir === dir)
     assert.ok(target && target.kind === 'skill')
     assert.ok(!target.include.includes('agent-routing'))
     assert.ok(!target.include.includes('project-workspaces'))
+    assert.ok(!target.include.includes('skill-feedback'))
     assert.ok(target.include.includes('mock'))
   }
   const kimi = linkTargets.find(target => target.kind === 'skill' && target.dir === '~/.kimi-code/skills')
   assert.ok(kimi && kimi.kind === 'skill')
   assert.ok(kimi.include.includes('agent-routing'))
   assert.ok(kimi.include.includes('project-workspaces'))
+  assert.ok(kimi.include.includes('skill-feedback'))
+})
+
+test('feedback installs from a shared entry and leaves the existing host instructions intact', async () => {
+  const { root, host } = await fixture()
+  const source = localSkillSources.find(source => source.name === 'skill-feedback')
+  const target = linkTargets.find(target => target.kind === 'markdown-section'
+    && target.file === '~/.codex/AGENTS.md' && target.section === 'skill-feedback')
+  assert.ok(source && source.kind === 'document')
+  assert.ok(target && target.kind === 'markdown-section')
+
+  await mkdir(join(root, 'rules', 'skill-feedback'), { recursive: true })
+  for (const path of [source.source, target.source]) {
+    const content = await readFile(new URL(`../../${path}`, import.meta.url), 'utf8')
+    await writeFile(join(root, path), content)
+  }
+  const file = join(host, 'AGENTS.md')
+  const original = '# Personal instructions\nUse Chinese.\n'
+  await writeFile(file, original)
+  const options = { root, localSkillSources: [source], targets: [{ ...target, file }] }
+  await linkAll(options)
+  const installed = await readFile(file, 'utf8')
+  const feedback = join(root, 'generated', 'skill-feedback', 'SKILL.md')
+  assert.ok(installed.startsWith(original))
+  assert.ok(installed.includes(feedback))
+  assert.doesNotMatch(installed, /feedback report|\{\{REPO_ROOT\}\}/)
+  assert.match(await readFile(feedback, 'utf8'), /feedback report/)
+  assert.equal((await linkAll(options))[0].status, 'exists')
+  await unlinkAll(options)
+  assert.equal(await readFile(file, 'utf8'), original)
 })
 
 test('communication rules load as context instead of optional skills on supported hosts', async () => {

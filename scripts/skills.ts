@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { run as runCheck } from './commands/check.ts'
 import { run as runCleanup } from './commands/cleanup.ts'
+import { run as runFeedback } from './commands/feedback.ts'
 import { run as runInit } from './commands/init.ts'
 import { runLink, runUnlink } from './commands/link.ts'
 import { run as runNote } from './commands/note.ts'
@@ -28,6 +29,7 @@ const COMMANDS: Record<string, Command> = {
   cleanup: { summary: 'Report unused submodules and generated skills; pass --yes to remove', run: runCleanup },
   validate: { summary: 'Validate local sources, generated skills, and skill metadata', run: runValidate },
   note: { summary: 'Manage private knowledge notes: list, reindex, or add', run: runNote },
+  feedback: { summary: 'Control and save private local skill feedback', run: runFeedback },
   project: { summary: 'Discover related repositories and manage local workspace maps', run: runProject },
 }
 
