@@ -8,7 +8,10 @@ description: Submit existing code changes through an Issue, associated branch, c
 Requires Git and either GitHub CLI (`gh`) or GitLab CLI (`glab`).
 
 Turn existing changes into one or more reviewable PRs/MRs with associated Issues
-and branches. Reuse these skills; read them and their dependencies during preflight:
+and branches. Load the applicable workflow instructions once per submission.
+Batch independent reads with the initial repository inspection. On continuation,
+load the skills for the remaining stages and reuse verified results from earlier
+stages. The underlying skills are:
 
 - `{{REPO_ROOT}}/skills/create-issues/SKILL.md`
 - `{{REPO_ROOT}}/skills/cpush/SKILL.md` (including its commit and push dependencies)
@@ -112,9 +115,21 @@ Before the first write, complete one shared preflight for all confirmed groups:
   absence of the paths being transferred. Record which local changes each group
   carries so step 5 can verify them against the pushed result.
 
-Reuse these findings across phases; recheck only state that changed or must be
-verified immediately before a write. Leave nonessential metadata to its owning
-skill. For preview-only requests, missing authentication does not block a local
+Collect independent read-only checks together, including the local diff,
+target refs, and any additional commits a second merge would carry. Use those
+results to settle grouping and promotion scope in the same user question when
+both need a decision. Carry forward the verified host, project IDs, branch
+mapping and CLI capabilities. Read help for the specific operation when its
+supported flags matter. Keep dependent writes in order and refresh the remote
+revision, approvals, checks and discussions immediately before merging.
+
+For GitLab API reads in a checkout bound to the intended server, use glab's
+repository context and verify the project ID and namespace. A self-managed
+server can advertise a clone URL with a different hostname from the configured
+remote. Verify that both identify the intended project before proceeding.
+Use normal branch and MR endpoints for the current user's permissions and
+merge status. Query administrative settings only when they answer an outstanding
+requirement. Leave nonessential metadata to its owning skill. For preview-only requests, missing authentication does not block a local
 draft; identify remote facts that could not be verified.
 
 For an explicit preview request, produce one consolidated plan for all groups:
