@@ -127,7 +127,7 @@ export const localSkillSources = [
     { kind: 'directory', name: Skill.ReviewPr, path: 'skills/review-pr' },
     { kind: 'directory', name: Skill.ServerOps, path: 'skills/server-ops' },
     {
-        description: 'Record a reproducible problem caused by a skill, rule, or role maintained by this repository in private local feedback, including defects discovered during another task.',
+        description: 'Record reproducible defects in maintained skills, rules, or roles during any task and remove matching private local reports after verifying a fix.',
         instructions: [],
         kind: 'document',
         name: Skill.SkillFeedback,

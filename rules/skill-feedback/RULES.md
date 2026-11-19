@@ -6,6 +6,8 @@ Collect feedback in a trusted personal checkout only. Do not record ordinary
 business failures or publish feedback externally. If local writes are
 prohibited, summarize the finding in the task response only.
 
+## Record a problem
+
 1. Read the maintained source and reproduce the problem with an isolated
    fixture or a read-only check. For a missing reference, use the maintained
    file that contains it. Make clear what was reproduced locally; do not claim
@@ -33,3 +35,19 @@ prohibited, summarize the finding in the task response only.
    If collection is disabled or saving fails, summarize the finding in the
    task response. Do not enable collection on the
    user's behalf, create an Issue, or retry through a different storage path.
+
+## Remove a resolved report
+
+Treat `local/skill-feedback/reports/` as a queue of open problems. When fixing
+a maintained component, check the reports for its source and observed failure.
+Use the saved report path when available. This also applies to fixes made in
+a later session.
+
+Verify the fix against the report's reproduction on the affected workflow,
+including the installed rule or skill when applicable. Keep the report if the
+change only works around the problem or verification is incomplete.
+
+After verification, remove only the exact matching regular report file in
+that checkout's reports directory and confirm it is gone. An already absent
+report needs no action. Preserve other reports and the collection setting.
+Report the verified fix and cleanup result, including any removal failure.

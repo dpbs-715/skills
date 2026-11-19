@@ -326,8 +326,10 @@ checkout-local `local/skill-feedback/enabled` marker controls collection.
 Reports are Markdown files under the Git-ignored
 `local/skill-feedback/reports/` directory. The command returns an existing path
 for the same component, source, operation, and failure; it does not overwrite
-that report. A report must name an existing maintained source file in the
-checkout. The command checks for existing symlinks along the storage path and
+that report. Reports track open problems. After verifying a repair against its
+reproduction, the agent removes the matching local report. A report must name
+an existing maintained source file in the checkout. The command checks for
+existing symlinks along the storage path and
 uses owner-only Unix permissions for new feedback directories and files.
 
 Use a checkout whose files and directories you control. This command is not a
