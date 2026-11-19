@@ -35,23 +35,28 @@ limited to the supplied diff.
 
 ## Review Execution
 
-If the current session implemented any changes under review, including through
-coding subagents, delegate the review to one fresh subagent that did not
-participate in the implementation when subagent tools are available, unless
-the user requests direct review or prohibits delegation. This gives the changes
-an independent assessment.
-Otherwise, review directly. If delegation is unavailable or fails, complete the
-review directly and briefly state the fallback and any remaining coverage gaps.
+Review directly by default, including changes implemented in the current session.
+When the user requests an independent review, or a specific risk warrants a
+second opinion, use an uninvolved reviewer if available. Honor requests to
+review directly. Give the reviewer the repository path, review target,
+requirements, known checks, and the question to answer. The reviewer applies
+this skill and returns evidence without editing files or delegating further.
+The lead agent verifies the findings and owns the complete review. If a
+requested independent review is unavailable, disclose the fallback.
 
-Give the reviewer the repository path, full review target, requirements, known
-validation results, and this skill's instructions. Prefer fresh context over
-inheriting the development conversation so implementation reasoning does not
-bias the review. Keep the original review scope and standards unchanged.
+## Follow-up Reviews
 
-The assigned reviewer reviews directly, without editing files or delegating
-further. It returns findings with evidence and test gaps using this skill's
-output format. The lead agent verifies findings against the code, removes
-duplicates, and owns the final report.
+Review the full requested diff on the first pass. On a follow-up, use the
+previously reviewed snapshot and findings to identify everything that changed
+since that pass. Verify each claimed fix against its original failure case.
+Review all intervening changes, including edits unrelated to the fix, and trace
+their effects into callers or data contracts where behavior could change.
+
+Carry forward conclusions for unaffected behavior. Reopen a settled point
+when a change or new evidence calls it into question. If the previous review
+coverage or snapshot cannot be established, review the full current target.
+Finish when the prior concerns have a clear status and the intervening changes
+and their effects have been assessed. Report any remaining verification gaps.
 
 ## Required Context
 

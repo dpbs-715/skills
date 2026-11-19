@@ -21,6 +21,20 @@
       "expected_output": "Reports queued state separately from merged, leaves linked Issues open, and does not claim the workflow is complete or start an unrequested background monitor.",
       "files": [],
       "assertions": ["Reports queued rather than merged.", "Leaves Issue closure pending until confirmed merge.", "Does not start an unrequested monitor."]
+    },
+    {
+      "id": 4,
+      "prompt": "Simulate /review-pr 42. Two export paths now duplicate the same field mapping. You verified both against the contract. The sole finding is a P2 maintenance concern about future drift. All repository merge requirements pass. What review do you publish and can the merge proceed? Do not contact a real service.",
+      "expected_output": "Publishes LGTM with the P2 marked advisory and proceeds through the normal authorized merge checks.",
+      "files": [],
+      "assertions": ["Includes the P2 in the passing review.", "Does not request changes or withhold approval because of this P2."]
+    },
+    {
+      "id": 5,
+      "prompt": "Simulate /review-pr 42. CI passes. A verified P2 shows that a supported export with an empty optional note now writes the literal string null. The linked Issue requires an empty cell in that case. What review do you publish and can the merge proceed? Do not contact a real service.",
+      "expected_output": "Cites the supported input, observed output and unmet acceptance criterion. Requests correction and stops before approval or merge.",
+      "files": [],
+      "assertions": ["Explains the evidence that makes the P2 blocking.", "Withholds LGTM and merge despite passing CI."]
     }
   ]
 }
