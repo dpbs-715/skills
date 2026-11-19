@@ -49,6 +49,27 @@
       "expected_output": "Verifies recorded ownership, branch, revision, and worktree state. Removes A without force and rechecks occupancy before normal local branch deletion. Preserves B and C and their checked-out branches, reporting why. A retry verifies absence and resumes any remaining branch cleanup.",
       "files": [],
       "assertions": ["Removes only A before attempting its local branch deletion.", "Preserves ignored files and user-owned worktrees.", "Verifies already absent worktrees on retry and reports retained paths."]
+    },
+    {
+      "id": 8,
+      "prompt": "Simulate /submit -ch to release then merge for one confirmed fix. Remote branches named release and merge both exist. All review requirements pass. The fix fully resolves its Issue under repository policy. Describe the workflow without real writes.",
+      "expected_output": "Plans one Chinese MR from the Issue branch to release, reviews it and verifies the remote merge before verifying Issue closure.",
+      "files": [],
+      "assertions": ["Treats the bare merge operand as the action even when a branch has that name.", "Creates or reuses one MR and reviews it before merging into release.", "Verifies the remote result and Issue state.", "Does not start a promotion or run two-stage branch cleanup."]
+    },
+    {
+      "id": 9,
+      "prompt": "Resume /submit to release then merge -ch. The matching MR is open, the checkout is clean, and a required independent approval is missing. Describe the next action without real writes.",
+      "expected_output": "Reuses the existing MR into release and reports the missing approval. The merge and Issue closure remain pending.",
+      "files": [],
+      "assertions": ["Reuses the matching MR despite the clean checkout.", "Reports the missing approval and leaves the Issue open.", "Plans no duplicate MR or second merge."]
+    },
+    {
+      "id": 10,
+      "prompt": "Preview /submit -ch to release then refs/heads/merge for a single fix. A remote branch named merge exists. Describe the MR directions without real writes.",
+      "expected_output": "Previews two reviewed MRs, first into release and then from remote release into the branch named merge.",
+      "files": [],
+      "assertions": ["Resolves the explicit ref as the second branch.", "Shows both directions and performs no writes."]
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: submit
-description: Submit existing code changes through an Issue, associated branch, commit/push, and PR or MR. Use for /submit, $submit, or requests to run this full workflow. An explicit to <branch> then <branch> adds two reviewed merges and final Issue and branch cleanup. Ask how to group independent features before making changes. Do not use for generic form submission, implementing features, or standalone commit, push, Issue, or PR requests.
+description: Submit existing changes through an Issue, associated branch, commit/push, and PR or MR. Use for /submit, $submit, or requests for this workflow. Use to <target> then merge to review and merge into that target, or to <first> then <final> for two reviewed merges and final cleanup. Ask how to group independent features before making changes. Exclude generic form submission, feature implementation, and standalone commit, push, Issue, or PR requests.
 ---
 
 # Submit
@@ -28,6 +28,7 @@ $submit
 $submit to develop
 $submit to develop -ch
 /submit to develop -en
+/submit -ch to v1.9.0 then merge
 /submit -ch to v1.9.0 then test
 ```
 
@@ -43,14 +44,19 @@ Resolve the target from the explicit argument, then a documented project
 submission target, then the repository's actual default branch. Validate refs
 and remote mappings using create-pr; do not guess main, master, or origin.
 
-For the explicit `to <first-target> then <final-target>` form, read
-[the two-stage merge workflow](references/merge-chain.md) before preflight.
-Use the first target for the ordinary submission steps. The `then` form
-authorizes both reviews and merges, followed by closure of fully resolved
-Issues and cleanup of their verified development branches and temporary worktrees
-created by this submission. The two-stage guide
-owns those steps and the timing of Issue closure. If a requested chain has a
-missing target or an extra stage, resolve the syntax before any writes.
+With `then`, require an explicit target and exactly one operand after `then`.
+Resolve incomplete or extra stages before any writes. Match the exact lowercase
+operand `merge` before interpreting the operand as a branch:
+
+- `to <target> then merge` authorizes review and merge of each group's PR/MR
+  into that target. Load `{{REPO_ROOT}}/skills/review-pr/SKILL.md` and its
+  review dependencies during preflight. For a preview, describe the review
+  and merge conditions and keep the entire workflow read-only.
+- `to <first-target> then <final-target>` authorizes both reviewed merges.
+  Read [the two-stage merge workflow](references/merge-chain.md) before
+  preflight and follow its Issue, branch, and worktree cleanup rules. To name
+  a literal second branch called `merge`, use `then refs/heads/merge` and
+  resolve that exact branch as the final target.
 
 Invocation authorizes Issue and branch creation, committing, normal pushes,
 PR/MR creation, and the scoped local cleanup in step 5 after scope is settled.
@@ -191,7 +197,7 @@ tests merely because this wrapper was invoked or claim unperformed checks.
 
 Run create-pr with the explicit associated source branch, resolved target,
 Issue reference, and selected language. Its push phase should recognize the
-already synchronized branch. In ordinary submission, use a closing Issue
+already synchronized branch. In ordinary submission and `then merge`, use a closing Issue
 reference only when the PR/MR completes the Issue. Use a non-closing reference
 for partial work and for every request in the two-stage merge workflow.
 
@@ -225,9 +231,15 @@ any duplicates that remain. A retry may clean only paths it can still verify.
 
 ## Completion and recovery
 
-For `then`, continue with the two-stage guide after preparing the first requests
-and checking for verified local duplicates. On continuation, verified previous
-requests can resume the remaining stages even with a clean working tree.
+After step 5, for `then merge`, pass each verified PR/MR link and the selected
+language to review-pr. Follow its review, guarded merge, remote verification,
+and resolved-Issue rules. Report the link and actual outcome for each group.
+If a required check or approval blocks a merge, identify the pending request
+and reason. On retry, reuse verified requests and resume unfinished work even
+if the checkout is clean. This mode adds no promotion or branch cleanup step.
+
+For two named targets, continue with the two-stage guide after step 5.
+Verified previous requests can resume the remaining stages with a clean checkout.
 
 Report each group's Issue URL, branch and target, commit identifiers, PR/MR URL,
 and actual verification result. Distinguish created resources from reused ones.
