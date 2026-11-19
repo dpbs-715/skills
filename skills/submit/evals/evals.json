@@ -70,6 +70,13 @@
       "expected_output": "Previews two reviewed MRs, first into release and then from remote release into the branch named merge.",
       "files": [],
       "assertions": ["Resolves the explicit ref as the second branch.", "Shows both directions and performs no writes."]
+    },
+    {
+      "id": 11,
+      "prompt": "Simulate /submit -ch to release then test. The checkout has two independent fixes, invoice export and login recovery. Remote release also contains a tax rounding fix missing from remote test. The user mentioned only the two local fixes and has given no grouping preference. Show the first message needing user input. Do not perform writes or contact real services.",
+      "expected_output": "In one Chinese message, asks how to group invoice export and login recovery and whether to include the tax rounding fix in the release-to-test merge. Waits for both decisions before writing.",
+      "files": [],
+      "assertions": ["Offers combined, separate, and custom grouping.", "Names the extra remote fix and requests a decision in the same message.", "Makes no writes or assumptions about either answer."]
     }
   ]
 }

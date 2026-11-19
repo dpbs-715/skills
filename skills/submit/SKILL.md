@@ -32,6 +32,12 @@ $submit to develop -ch
 /submit -ch to v1.9.0 then test
 ```
 
+Plain `submit to <target>` leaves the PR/MR open. When changes were submitted
+from an isolated worktree, step 5 cleans matching copies from the original
+checkout (including staged changes) once every group's push and PR/MR are
+verified. Later or unrelated edits stay in place. A request to keep the
+original changes skips this cleanup.
+
 Use the current working tree and relevant current-branch commits as input.
 Recognize `-ch` and `-en` anywhere and remove them before parsing the targets.
 Default to English; `-ch` selects Chinese and `-en` selects English. Forward
@@ -63,9 +69,7 @@ PR/MR creation, and the scoped local cleanup in step 5 after scope is settled.
 Proceed by default without per-phase confirmation. Honor requests to keep the
 original changes. Only an explicit request to preview, show the plan first, or
 avoid submission limits the work to inspection and drafting, with no Git or
-remote mutations. Ordinary submission ends after opening the PR/MR and
-cleaning verified local duplicates. Do not implement new features or rewrite
-published history.
+remote mutations. Do not implement new features or rewrite published history.
 
 ## 1. Inspect and settle scope
 
@@ -73,6 +77,12 @@ Inspect repository guidance, status, staged and unstaged diffs, relevant untrack
 files, and current-branch commits relative to the target. Distinguish already
 committed work from new changes. Identify existing Issue/branch/PR associations
 from verified repository evidence or user-provided links.
+
+Batch independent reads of local changes and target refs. For two named
+targets, compare the current remote first target with the remote final target
+before asking about scope. Identify any extra changes the second merge would
+carry beyond the requested work. Use the two-stage guide to recheck the
+actual promotion diff after the first merges.
 
 On repeat invocations, compare candidate changes with the actual content of
 verified associated branches and PRs/MRs, including merged results in the target.
@@ -86,18 +96,17 @@ For partial overlap, carry only the verified new changes; ask if they cannot be
 separated reliably. Do not reuse a closed or merged PR as an open submission for
 new work.
 
-If multiple independent features or fixes are present and the user has not
-already specified their grouping, list them with a short description and ask
-one consolidated question:
+Ask about outstanding scope decisions in a single message before any writes:
 
-- Combine them into one Issue, one branch, and one PR/MR.
-- Separate them into one Issue, branch, and PR/MR per feature.
-- Use a custom grouping supplied by the user.
+- If independent features or fixes need grouping, describe them and ask
+  whether to combine them in one Issue, branch, and PR/MR, submit each
+  separately, or use a custom grouping. Multiple files, tests, and documentation
+  for the same feature do not by themselves require a grouping question.
+- If the second merge would carry extra changes whose inclusion the user has
+  not authorized, name them and ask whether to include them.
 
-Wait for the answer before creating Issues or branches, staging, committing,
-or pushing. Never choose a grouping because the user has not replied. Multiple
-files, implementation plus tests, or documentation for the same feature do not
-by themselves require this question. Honor grouping already given in this task.
+Use decisions the user has already given. When neither decision is needed,
+continue directly. Otherwise wait for the outstanding answers before writing.
 
 Map each confirmed group to its files, hunks, and commits. Detect shared changes
 or dependencies before promising independent PRs. If those prevent a clean
@@ -121,10 +130,7 @@ Before the first write, complete one shared preflight for all confirmed groups:
   absence of the paths being transferred. Record which local changes each group
   carries so step 5 can verify them against the pushed result.
 
-Collect independent read-only checks together, including the local diff,
-target refs, and any additional commits a second merge would carry. Use those
-results to settle grouping and promotion scope in the same user question when
-both need a decision. Carry forward the verified host, project IDs, branch
+Carry forward the verified host, project IDs, branch
 mapping and CLI capabilities. Read help for the specific operation when its
 supported flags matter. Keep dependent writes in order and refresh the remote
 revision, approvals, checks and discussions immediately before merging.
@@ -243,8 +249,8 @@ Verified previous requests can resume the remaining stages with a clean checkout
 
 Report each group's Issue URL, branch and target, commit identifiers, PR/MR URL,
 and actual verification result. Distinguish created resources from reused ones.
-If isolated worktrees were used, report their paths, what was cleaned from the
-original checkout, and any duplicates left there with the reason.
+If isolated worktrees were used, report their paths, list the original file
+paths cleaned in step 5, and identify any retained duplicates and the reason.
 
 On failure, stop subsequent groups and identify completed steps and the blocked
 step. Preserve created resources. On continuation, inspect current state and

@@ -68,7 +68,7 @@ This inventory covers the shared defaults in `meta.template.ts` and every reposi
 | [push](skills/push/SKILL.md) | Push local commits to a remote. |
 | [review-pr](skills/review-pr/SKILL.md) | Review PRs/MRs and merge when the required checks pass. |
 | [server-ops](skills/server-ops/SKILL.md) | Inspect logs, diagnose incidents, and perform authorized maintenance through local SSH. |
-| [submit](skills/submit/SKILL.md) | Create an Issue, branch, and PR/MR. Use `to v1.9.0 then merge` to review and merge into `v1.9.0`, or `to v1.9.0 then test` to merge through both targets and clean up development branches. |
+| [submit](skills/submit/SKILL.md) | `to A` opens the PR/MR. After publication from an isolated worktree, it cleans verified duplicate changes from the original checkout unless you ask to keep them. `to A then merge` also reviews and merges into A. `to A then B` merges through both targets and cleans up eligible development branches. |
 | [team-workflow](skills/team-workflow/SKILL.md) | Coordinate repository roles and report each subagent's contributions. |
 | [typesafe-ai](vendor/typesafe-ai-skills/skills/typesafe-ai/SKILL.md) | Build typed AI decision workflows with TypeSafe's System One models, including Jev. |
 | [zentao-bug-list](skills/zentao-bug-list/SKILL.md) | List, filter, and prioritize bugs within the project's ZenTao scope. |
