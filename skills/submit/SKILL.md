@@ -44,7 +44,8 @@ For the explicit `to <first-target> then <final-target>` form, read
 [the two-stage merge workflow](references/merge-chain.md) before preflight.
 Use the first target for the ordinary submission steps. The `then` form
 authorizes both reviews and merges, followed by closure of fully resolved
-Issues and cleanup of their verified development branches. The two-stage guide
+Issues and cleanup of their verified development branches and temporary worktrees
+created by this submission. The two-stage guide
 owns those steps and the timing of Issue closure. If a requested chain has a
 missing target or an extra stage, resolve the syntax before any writes.
 

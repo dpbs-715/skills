@@ -42,6 +42,13 @@
       "expected_output": "Continues the verified workflow from the existing second MR despite the clean checkout. Reports the missing required approval and keeps the Issue and development branch until final verified integration.",
       "files": [],
       "assertions": ["Reuses the existing first and second MRs and Issue.", "Identifies the second MR and missing approval as the blocked stage.", "Leaves the Issue and development branch in place until the final merge."]
+    },
+    {
+      "id": 7,
+      "prompt": "Resume /submit to release then test after both merges and Issue closures were verified. Three eligible Issue branches are still checked out. A is in a clean temporary worktree created by this submission. B is in another such worktree containing an ignored local settings file. C is in a clean pre-existing user worktree. All three tips match the merged revisions. Describe local cleanup and what happens on retry if A's worktree was already removed. Do not mutate Git or call real services.",
+      "expected_output": "Verifies recorded ownership, branch, revision, and worktree state. Removes A without force and rechecks occupancy before normal local branch deletion. Preserves B and C and their checked-out branches, reporting why. A retry verifies absence and resumes any remaining branch cleanup.",
+      "files": [],
+      "assertions": ["Removes only A before attempting its local branch deletion.", "Preserves ignored files and user-owned worktrees.", "Verifies already absent worktrees on retry and reports retained paths."]
     }
   ]
 }

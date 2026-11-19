@@ -12,8 +12,12 @@ and clean up their development branches after the final integration.
   source repository mapping for each development branch, including forks.
 - Read `{{REPO_ROOT}}/skills/review-pr/SKILL.md` and its dependencies. Keep the
   usual submit grouping, language, preview, and worktree boundaries. A preview
-  includes both MR directions and the conditions for final Issue and branch
+  includes both MR directions and the conditions for final Issue, worktree, and branch
   cleanup. Mark remote facts that cannot be verified in preview.
+- When this submission creates a temporary worktree, record its repository,
+  exact path, Issue, and development branch in the task history. Record the
+  original checkout separately. Carry these details forward on retry. A matching
+  path or branch name alone does not establish who created a worktree.
 
 ## Merge the first requests
 
@@ -73,13 +77,29 @@ guard. With Git, use an explicit lease on the deletion refspec:
 git push --force-with-lease=refs/heads/<branch>:<verified-sha> <source-remote> :refs/heads/<branch>
 ```
 
-Verify the remote branch is gone. Clean up a local copy only when it has no
+Verify the remote branch is gone. Before deleting the local branch, inspect
+the recorded temporary worktree from the original checkout. Use
+`git worktree list --porcelain` to verify its path, branch, lock state, and
+HEAD against the recorded worktree and the first merge's verified source revision.
+Keep original, pre-existing, user-retained, locked, or repurposed worktrees.
+If ownership or current state is uncertain, leave the worktree in place.
+
+Check the worktree for an in-progress Git operation and use
+`git -C "<path>" status --porcelain=v1 --untracked-files=all --ignored --ignore-submodules=none`
+to detect staged, unstaged, untracked, or ignored files. If the checks succeed,
+the status is empty, and no operation is in progress, run
+`git worktree remove -- "<path>"` from the original checkout without force.
+If Git refuses removal, keep the worktree and report why. Recheck the worktree
+list and path after removal. On retry, skip a worktree already absent from both.
+
+Refresh the worktree list. Clean up a local branch only when it has no
 unintegrated work, is unused by every worktree, and normal `git branch -d`
 permits removal. Report branches that are already absent or must be kept. Keep
 the user's current checkout and any local work intact.
 
 Report both merge stages, the original Issues and their verified closure state,
-and the branches cleaned up or kept. On retry, reconstruct progress from the
+and the branches and temporary worktrees removed, already absent, or kept with
+the reason. On retry, reconstruct progress from the
 verified associations, remote requests, and branch state. Resume only remaining
 work. If the original associations are ambiguous, ask for the Issue or request
 link before writing anything.
