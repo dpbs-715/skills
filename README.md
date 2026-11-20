@@ -190,9 +190,10 @@ Synced skills in `generated/` get a `SYNC.md` file with the upstream path, repos
 
 Communication preferences live in `rules/communication/RULES.md`. They apply to
 user-facing discussion, progress updates, explanations, reviews, and results.
-They preserve necessary detail and impose no point-count limit. Codex and Pi
-receive the full short document in a managed global context section; Claude
-and OpenCode receive it through their always-on rule directories. Kimi keeps
+They preserve necessary detail and impose no point-count limit. Codex, Pi,
+and Antigravity receive the full short document in a managed global context
+section; Claude and OpenCode receive it through their always-on rule
+directories. Kimi keeps
 the document as a discoverable skill; this configuration does not provide it
 an always-on communication entry. Edit the source and run `pnpm skills link`
 to refresh installed copies without replacing surrounding user instructions.
@@ -209,7 +210,7 @@ The `skills` list is preloaded by Claude Code and shown as a role skill everywhe
 
 For a skill used only by a role, register its name in `agentOnlySkills` in `meta.ts` and in that role's `agentOnlySkills` list. Local sources stay under `skills/` and are declared in `localSkillSources`; third-party sources are declared in `vendors` and synced from `vendor/`. Both are rendered under `generated/` for the role to read, but omitted from every tool's general skill directory and from Claude's `skills` preload field. `before-you-build` belongs to `product-manager`; the selected visual, Three.js, and GSAP skills belong to specialist roles. This is discovery scoping, not filesystem access control.
 
-`pnpm skills link` renders each role to `generated/agents/<tool>/<name>.md` and links it into the native agent directory for Claude Code, Kimi Code, OpenCode, and Pi. Claude receives its native `skills` preload field; OpenCode receives `mode: subagent`; the other fields and body are shared. `pnpm skills unlink` removes only links owned by this repository. Edit `agents/`, never the generated files.
+`pnpm skills link` renders each role to `generated/agents/<tool>/<name>.md` and links it into the native agent directory for Claude Code, Kimi Code, OpenCode, Pi, and Antigravity. Claude receives its native `skills` preload field; OpenCode receives `mode: subagent`; Antigravity receives `subagent: true` and `mainAgent: false`, with explicit paths to role skills in the body rather than assuming Claude-style preloading. `pnpm skills unlink` removes only links owned by this repository. Edit `agents/`, never the generated files.
 
 The same command generates `generated/agents/INDEX.md` from the role manifests, with each role's description and source paths. Keep selection criteria and useful exclusions in `agent.json`'s `description`; the index is regenerated and checked by validation when roles change, are renamed, or are removed.
 
@@ -217,7 +218,7 @@ The [agent-routing rules](rules/agent-routing/RULES.md) assess specialist needs 
 
 Routing instructions deduplicate configuration already loaded or being read within each agent, including references through symlinks or generated copies. Back-references do not restart routing or dispatch the same assignment again. Subagent assignments prohibit further delegation unless explicitly required. These are model instructions rather than a programmatic recursion lock.
 
-Codex and Pi receive a short routing entry from `rules/agent-routing/ENTRY.md` in a managed section of their global instruction file, preserving user content and existing override precedence. It directs relevant tasks to the full generated skill by path; the duplicate skill-list entry is omitted. Claude and OpenCode receive the full rules through their always-loaded rule targets. Kimi receives them as a discoverable skill; this repository does not configure an always-loaded Kimi routing entry. On hosts without native role selection, delegation uses the actual available subagent tools with explicit role configuration paths. No Codex native role files are generated.
+Codex, Pi, and Antigravity receive a short routing entry from `rules/agent-routing/ENTRY.md` in a managed section of their global instruction file, preserving user content and each host's instruction-loading behavior. It directs relevant tasks to the full generated skill by path; the duplicate skill-list entry is omitted. Claude and OpenCode receive the full rules through their always-loaded rule targets. Kimi receives them as a discoverable skill; this repository does not configure an always-loaded Kimi routing entry. On hosts without native role selection, delegation uses the actual available subagent tools with explicit role configuration paths. No Codex native role files are generated.
 
 | Tool | Agent destination | Notes |
 | --- | --- | --- |
@@ -225,6 +226,7 @@ Codex and Pi receive a short routing entry from `rules/agent-routing/ENTRY.md` i
 | Kimi Code | `~/.kimi-code/agents` | Uses the shared Markdown agent definition. |
 | OpenCode | `~/.config/opencode/agents` | Generated role runs as a subagent. |
 | Pi | `~/.pi/agent/agents` | Requires a Pi subagent extension that reads this directory; Pi does not activate roles from files alone. |
+| Antigravity | `~/.gemini/config/agents` | Native custom subagents; no model, tool allowlist, or execution-policy override is installed. |
 
 The `team-workflow` skill forms an ad hoc team for user-requested collaboration or delegation requested by the routing rules. Direct role use does not require this skill. It explicitly binds each subagent to an installed role or passes the role's instructions, rules, and relevant skill paths to a generic subagent. The lead agent checks prerequisite outputs before starting dependent work and verifies the combined result. Completion reports map each subagent task to the repository role actually used, work completed, deliverables, checks, and status. Reusable templates are saved only when the user asks.
 
@@ -297,15 +299,16 @@ selected target; installing or evaluating the skill does not connect to hosts.
 
 The shared feedback rule applies when an agent finds evidence of a reproducible
 defect in this repository's maintained skills, rules, or roles. `pnpm skills link`
-installs a short entry in Codex and Pi's global instructions and configures
-the full rule for always-on rule hosts. Kimi receives it as a discoverable skill.
+installs a short entry in the global instructions for Codex, Pi, and
+Antigravity, and configures the full rule for always-on rule hosts. Kimi receives it as a discoverable skill.
 The agent reproduces the defect against a maintained source using placeholders,
 then reports the steps, cause, and suggested change. If you use a custom
 `meta.ts`, copy the `SkillFeedback` entry in `Skill` and the `skill-feedback`
 source from `meta.template.ts`. Add the settings for your hosts:
 
-- **Codex and Pi:** copy their `skill-feedback` markdown-section targets and
-  add `Skill.SkillFeedback` to `contextRuleSkills` (or your equivalent filter).
+- **Codex, Pi, and Antigravity:** copy their `skill-feedback`
+  markdown-section targets and add `Skill.SkillFeedback` to `contextRuleSkills`
+  (or your equivalent filter).
   This keeps the rule out of the ordinary skill directories, including
   `~/.agents/skills`, because it already loads via global instructions.
 - **Claude Code and OpenCode:** add `Skill.SkillFeedback` to
@@ -372,8 +375,9 @@ to member repositories or `~/.config`.
 
 After the one-time `pnpm skills link`, Codex and Pi receive a managed section in
 their global `AGENTS.md` (or an existing higher-precedence instruction file),
+Antigravity receives a section in `~/.gemini/GEMINI.md`,
 and Claude Code receives `~/.claude/rules/project-workspaces.md`. Existing user
-instructions are preserved. The Codex/Pi section comes from the short
+instructions are preserved. The context section comes from the short
 `rules/project-workspaces/ENTRY.md`; the full generated skill remains available
 by path without a duplicate skill-list entry. These rules tell the agent to run read-only
 discovery before the first substantive task, without a wrapper command or extra
@@ -448,6 +452,8 @@ By default this first renders configured `localSkillSources`, then applies the `
 | `~/.codex/AGENTS.md` | markdown-section | communication rules plus short discovery, routing, and feedback entries; prefers an existing nonempty `AGENTS.override.md` |
 | `~/.pi/agent/skills` | skill | same filtered skill list as `~/.codex/skills` |
 | `~/.pi/agent/AGENTS.md` | markdown-section | communication rules plus short discovery, routing, and feedback entries; prefers an existing higher-precedence context file |
+| `~/.gemini/GEMINI.md` | markdown-section | Antigravity communication rules and short discovery, routing, and feedback entries |
+| `~/.gemini/config/skills` | skill | same filtered skill list as `~/.codex/skills`; Antigravity App / CLI / IDE target |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.config/opencode/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
@@ -456,7 +462,9 @@ By default this first renders configured `localSkillSources`, then applies the `
 | `~/.claude/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
 | `~/.claude/rules` | rule | `alwaysOnInstructionSkills`, linked as `<skill>.md` markdown |
 
-Skill directories are populated only when they already exist (the tool is installed); missing ones are skipped, not created. Rule directories and JSON config files are created when their parent agent config directory exists.
+Skill directories are populated only when they already exist, unless a target explicitly sets `createIfParentExists: true`. The Antigravity skill target opts in, so linking creates it only when its immediate host config parent (`~/.gemini/config`) already exists. Other missing skill directories are skipped. Rule directories, agent directories, and JSON config files are created when their parent agent config directory exists.
+
+See [Antigravity compatibility](docs/antigravity.md) for the official paths, native role format, legacy paths, and runtime verification. Both the template and local configuration can use the `GEMINI.md` sections plus the two `~/.gemini/config/` targets. Gemini CLI-specific installation and role generation are not configured.
 
 Managed Markdown sections are also written only when their parent host directory
 exists. Re-linking updates the section without duplicating it; unlinking removes
@@ -466,12 +474,14 @@ full rules in this checkout, rather than editing generated managed sections.
 
 ### Why Claude gets rules instead of skills
 
-Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. OpenCode receives the same split, with an `instructions` glob in its configuration. Codex and Pi receive the communication document in full and short managed entries for project discovery, role routing, and skill feedback. Those entries load the full workflows by path when needed. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
+Claude auto-loads `~/.claude/rules/*.md` into context every session, whereas skills are invoked only at the model's discretion. Skills listed in `alwaysOnInstructionSkills` are linked to rendered Markdown under `~/.claude/rules` and excluded from `~/.claude/skills`. OpenCode receives the same split, with an `instructions` glob in its configuration. Codex, Pi, and Antigravity receive the communication document in full and short managed entries for project discovery, role routing, and skill feedback. Those entries load the full workflows by path when needed. Other shared rules remain skills there. `personal-knowledge` stays a skill everywhere — it is task-triggered by design.
 
 `frontend-design` is maintained as a UI-designer-only bundle in this checkout.
 Disable an independently installed global copy in its owning manager (for example,
 CC Switch) rather than overwriting a foreign symlink during `link`. The linker
 preserves foreign links and does not manage another tool's installation settings.
+
+Antigravity App and IDE use their own global skill directory; do not assume they read the shared home-level `~/.agents/skills` alias.
 
 Codex documents `~/.agents/skills` as the user-level skill location and supports symlinked skill folders. If two linked skills share the same `name`, Codex does not merge them; both can appear in skill selectors. To avoid duplicate entries, link a skill into only one Codex-scanned user location when possible.
 
