@@ -21,6 +21,12 @@ Layout:
 - Colocate tests with the code they cover.
 - Keep the layout reorganizable: a unit must not depend on its own depth or path in the tree.
 
+Import paths:
+
+- Follow the language's import conventions and the conventions of the package being edited. Short relative references work well for neighboring modules that move together. Across packages, use the owning package's public entry points.
+- When a reference traverses several parent directories or modules, prefer an established path that identifies the same target independently of the caller's location. Python can name the package directly, and Rust can start at `crate::` for a module in the same crate.
+- In JavaScript or TypeScript, keep nearby imports such as `./OrderRow`. If the project already maps `@` to `src`, prefer `@/shared/formatDate` over `../../../shared/formatDate` when both resolve to the same file and the build, runtime, and tests support the alias. Keep the working relative path when there is no suitable alternative.
+
 Module boundaries:
 
 - Identify the owner of rules, state, use cases, and external effects before choosing folders. A domain module and a deployment/package boundary need not coincide.

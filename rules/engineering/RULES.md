@@ -21,7 +21,7 @@ Load every matching topic file, and skip unrelated files to keep context small.
 - Complex state/config modeling, state ownership, or asynchronous ordering and recovery: read [topics/state-modeling.md](topics/state-modeling.md).
 - Naming, function signatures, comments, or code readability: read [topics/naming-and-comments.md](topics/naming-and-comments.md).
 - Git branch naming or repository workflow preferences: read [topics/git-conventions.md](topics/git-conventions.md).
-- File/directory organization, structuring, layout, or splitting work: read [topics/file-organization.md](topics/file-organization.md).
+- Choosing or reviewing import paths, organizing directories, or splitting files: read [topics/file-organization.md](topics/file-organization.md).
 - Magic values: read [topics/magic-values.md](topics/magic-values.md).
 - Requirements and scope decisions, deciding what to build or remove, process improvement, performance optimization, or automation: read [topics/build-what-is-needed.md](topics/build-what-is-needed.md).
 - Consistency, coherence, single entry points, or matching existing patterns: read [topics/consistency.md](topics/consistency.md).
