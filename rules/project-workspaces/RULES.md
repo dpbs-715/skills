@@ -46,10 +46,12 @@ node "{{REPO_ROOT}}/scripts/skills.ts" project inspect --cwd "<target-project-pa
 ```
 
 Read the applicable project instructions before proceeding. Respect the current
-host's `AGENTS.override.md` / `AGENTS.md` / `CLAUDE.md` precedence and imports;
-when only another host's entry exists, read its relevant project guidance
-explicitly. Check rules along the target file's directory path, not only the
-root inventory. Resolve relative references against the instruction's directory.
+host's loading, precedence, and imports for files such as `AGENTS.override.md`,
+`AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`. Some hosts combine multiple entries
+rather than selecting one. When only another host's entry exists, read its
+relevant project guidance explicitly. Check rules along the target file's
+directory path, not only the root inventory. Resolve relative references against
+the instruction's directory.
 Keep each instruction scoped to its own project or subtree. A backend build
 command does not replace a frontend build command.
 

@@ -80,7 +80,8 @@ failure is not permission to bypass validation with a raw overwrite.
 Run `pnpm skills link` in this checkout once after installing the feature.
 It installs `project-init`, links the discovery rule into Claude's rules
 directory, and adds a managed discovery section to Codex and Pi global
-instructions, preserving existing content. Only installed host directories are
+instructions and Antigravity's `~/.gemini/GEMINI.md`,
+preserving existing content. Only installed host directories are
 targeted. `pnpm skills unlink` removes the managed sections and repository-owned
 links while retaining user instructions and maps.
 

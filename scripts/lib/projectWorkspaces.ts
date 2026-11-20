@@ -212,12 +212,28 @@ export async function discoverWorkspaces(cwd: string, root = repoRoot()) {
   }
 }
 
+const customizationDirectories = ['.agents', '.agent', '_agents', '_agent']
 const projectResources = {
-  instructions: ['AGENTS.override.md', 'AGENTS.md', 'CLAUDE.md', 'CLAUDE.local.md', '.claude/CLAUDE.md', '.claude/AGENTS.md'],
-  rules: ['.claude/rules', '.codex/rules', '.pi/rules'],
-  skills: ['.agents/skills', '.claude/skills', '.codex/skills', '.pi/skills'],
-  agents: ['.claude/agents', '.codex/agents', '.pi/agents', '.agents/agents'],
-  mcp: ['.mcp.json', '.codex/config.toml', '.pi/mcp.json'],
+  instructions: [
+    'AGENTS.override.md', 'AGENTS.md', 'CLAUDE.md', 'CLAUDE.local.md', '.claude/CLAUDE.md', '.claude/AGENTS.md', 'GEMINI.md',
+    ...customizationDirectories.flatMap(dir => [`${dir}/AGENTS.md`, `${dir}/GEMINI.md`]),
+  ],
+  rules: [
+    '.claude/rules', '.codex/rules', '.pi/rules',
+    ...customizationDirectories.flatMap(dir => [`${dir}/rules`, `${dir}/rules.json`]),
+  ],
+  skills: [
+    ...customizationDirectories.flatMap(dir => [`${dir}/skills`, `${dir}/skills.json`]),
+    '.claude/skills', '.codex/skills', '.pi/skills',
+  ],
+  agents: [
+    '.claude/agents', '.codex/agents', '.pi/agents',
+    ...customizationDirectories.flatMap(dir => [`${dir}/agents`, `${dir}/agents.json`]),
+  ],
+  mcp: [
+    '.mcp.json', '.codex/config.toml', '.pi/mcp.json',
+    ...customizationDirectories.map(dir => `${dir}/mcp_config.json`),
+  ],
   serena: ['.serena/project.yml', '.serena/project.local.yml'],
 }
 

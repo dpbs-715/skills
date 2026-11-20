@@ -127,6 +127,45 @@ test('inspection lists live resource paths without reading configuration or clai
   assert.deepEqual((await inspectProject(web)).resources.mcp, [])
 })
 
+test('inspection discovers Antigravity entry points without loading configuration', async () => {
+  const { web } = await fixture()
+  const expected = {
+    instructions: ['GEMINI.md', '.agents/AGENTS.md', '.agents/GEMINI.md'],
+    rules: ['.agents/rules', '.agents/rules.json'],
+    skills: ['.agents/skills', '.agents/skills.json'],
+    agents: ['.agents/agents', '.agents/agents.json'],
+    mcp: ['.agents/mcp_config.json'],
+  }
+  const directories = ['.agents/rules', '.agents/skills', '.agents/agents']
+  for (const directory of directories)
+    await mkdir(join(web, directory), { recursive: true })
+  for (const path of Object.values(expected).flat().filter(path => !directories.includes(path)))
+    await writeFile(join(web, path), 'unparsed-do-not-print-secret')
+
+  const result = await inspectProject(web)
+  for (const [kind, paths] of Object.entries(expected))
+    assert.deepEqual(result.resources[kind], paths.map(path => join(web, path)))
+  assert.equal(result.toolStatus, 'configuration-discovered-only')
+  assert.doesNotMatch(JSON.stringify(result), /unparsed-do-not-print-secret/)
+})
+
+for (const alias of ['.agent', '_agents', '_agent']) {
+  test(`inspection retains Antigravity's ${alias} compatibility paths`, async () => {
+    const { web } = await fixture()
+    for (const kind of ['rules', 'skills', 'agents']) {
+      await mkdir(join(web, alias, kind), { recursive: true })
+      await writeFile(join(web, alias, `${kind}.json`), '{}')
+    }
+    await writeFile(join(web, alias, 'GEMINI.md'), '# Workspace rules\n')
+    await writeFile(join(web, alias, 'mcp_config.json'), '{}')
+    const result = await inspectProject(web)
+    assert.deepEqual(result.resources.instructions, [join(web, alias, 'GEMINI.md')])
+    for (const kind of ['rules', 'skills', 'agents'])
+      assert.deepEqual(result.resources[kind], [join(web, alias, kind), join(web, alias, `${kind}.json`)])
+    assert.deepEqual(result.resources.mcp, [join(web, alias, 'mcp_config.json')])
+  })
+}
+
 test('all matching workspaces are returned and separate clones never match by name', async () => {
   const { root, web, map } = await fixture()
   await saveWorkspace(map, { root })
