@@ -23,12 +23,14 @@ export interface VendorSkillMeta {
 }
 
 export interface DirectoryLinkTarget {
+  /** Create a missing skill directory only when its immediate parent exists. */
+  createIfParentExists?: boolean
   dir: string
   kind: 'skill' | 'rule'
   include: readonly string[]
 }
 
-export type AgentFormat = 'claude' | 'kimi-code' | 'opencode' | 'pi'
+export type AgentFormat = 'claude' | 'kimi-code' | 'opencode' | 'pi' | 'antigravity'
 
 export interface AgentLinkTarget {
   dir: string

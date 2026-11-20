@@ -213,7 +213,7 @@ const alwaysOnInstructionSet = new Set<string>(alwaysOnInstructionSkills)
 const normalSkillNames = installableSkills.filter(name => !alwaysOnInstructionSet.has(name))
 
 // These rules are delivered through global context; retain their generated bundles
-// for direct reads without advertising duplicate skill entries on Codex/Pi.
+// for direct reads without advertising duplicate skills on context-based hosts.
 const contextRuleSkills = new Set<string>([
     Skill.AgentRouting,
     Skill.ProjectWorkspaces,
@@ -279,6 +279,38 @@ export const linkTargets: readonly LinkTarget[] = [
         section: 'skill-feedback',
         source: 'rules/skill-feedback/ENTRY.md',
     },
+    // Antigravity global instructions; preserve any surrounding user content.
+    {
+        file: '~/.gemini/GEMINI.md',
+        kind: 'markdown-section',
+        section: 'communication-rules',
+        source: 'rules/communication/RULES.md',
+    },
+    {
+        file: '~/.gemini/GEMINI.md',
+        kind: 'markdown-section',
+        section: 'agent-routing',
+        source: 'rules/agent-routing/ENTRY.md',
+    },
+    {
+        file: '~/.gemini/GEMINI.md',
+        kind: 'markdown-section',
+        section: 'project-workspaces',
+        source: 'rules/project-workspaces/ENTRY.md',
+    },
+    {
+        file: '~/.gemini/GEMINI.md',
+        kind: 'markdown-section',
+        section: 'skill-feedback',
+        source: 'rules/skill-feedback/ENTRY.md',
+    },
+    {
+        createIfParentExists: true,
+        dir: '~/.gemini/config/skills',
+        kind: 'skill',
+        include: contextHostSkills,
+    },
+    { dir: '~/.gemini/config/agents', format: 'antigravity', kind: 'agent' },
     { dir: '~/.codex/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.kimi-code/skills', kind: 'skill', include: installableSkills },

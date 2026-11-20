@@ -7,7 +7,7 @@ import { ensureLink, type LinkResult, pruneLinks } from './symlink.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
 const agentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const formats: readonly AgentFormat[] = ['claude', 'kimi-code', 'opencode', 'pi']
+const formats: readonly AgentFormat[] = ['claude', 'kimi-code', 'opencode', 'pi', 'antigravity']
 export const GENERATED_AGENTS_DIR = join('generated', 'agents')
 export const GENERATED_AGENT_INDEX = join(GENERATED_AGENTS_DIR, 'INDEX.md')
 
@@ -78,6 +78,8 @@ function renderAgent(root: string, agent: { manifest: AgentManifest, body: strin
   }
   if (format === 'opencode')
     frontmatter.push('mode: subagent')
+  if (format === 'antigravity')
+    frontmatter.push('subagent: true', 'mainAgent: false')
   frontmatter.push('---')
 
   const rules = manifest.rules.length > 0
@@ -87,7 +89,12 @@ function renderAgent(root: string, agent: { manifest: AgentManifest, body: strin
       }).join('\n')
     : '- Follow applicable workspace instructions.'
   const skills = manifest.skills.length > 0
-    ? manifest.skills.map(skill => `- ${skill}`).join('\n')
+    ? manifest.skills.map((skill) => {
+        if (format !== 'antigravity')
+          return `- ${skill}`
+        const path = join(root, 'generated', skill, 'SKILL.md')
+        return `- Read [${skill}](${path.includes(' ') ? `<${path}>` : path}) when relevant.`
+      }).join('\n')
     : '- No role-specific skills are configured.'
   const agentOnly = (manifest.agentOnlySkills ?? []).map((skill) => {
     const path = join(root, 'generated', skill, 'SKILL.md')
@@ -140,14 +147,13 @@ export async function expectedAgentFiles(root = repoRoot()): Promise<Array<{
 export async function renderAgents(root = repoRoot()): Promise<string[]> {
   const files = await expectedAgentFiles(root)
   const index = await expectedAgentIndex(root)
-  if (files.length === 0) {
-    await rm(join(root, GENERATED_AGENTS_DIR), { force: true, recursive: true })
+  // This tree is renderer-owned; rebuilding it also removes retired host formats.
+  await rm(join(root, GENERATED_AGENTS_DIR), { force: true, recursive: true })
+  if (files.length === 0)
     return []
-  }
 
   for (const format of formats) {
     const targetDir = join(root, GENERATED_AGENTS_DIR, format)
-    await rm(targetDir, { force: true, recursive: true })
     await mkdir(targetDir, { recursive: true })
     for (const file of files.filter(file => file.format === format))
       await writeFile(join(targetDir, `${file.name}.md`), file.content)

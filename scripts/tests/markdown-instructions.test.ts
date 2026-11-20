@@ -117,8 +117,8 @@ test('linkAll and unlinkAll handle global sections and leave missing host direct
   assert.equal(await readFile(target.file, 'utf8'), '')
 })
 
-test('default targets bootstrap discovery, routing, and feedback for Codex/Pi and rule-based hosts', () => {
-  for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
+test('default targets bootstrap discovery, routing, and feedback for context and rule-based hosts', () => {
+  for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md', '~/.gemini/GEMINI.md']) {
     for (const section of ['agent-routing', 'project-workspaces', 'skill-feedback']) {
       assert.ok(linkTargets.some(target => target.kind === 'markdown-section'
         && target.file === file && target.section === section
@@ -132,7 +132,7 @@ test('default targets bootstrap discovery, routing, and feedback for Codex/Pi an
     assert.ok(target.include.includes('project-workspaces'))
     assert.ok(target.include.includes('skill-feedback'))
   }
-  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills']) {
+  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills', '~/.gemini/config/skills']) {
     const target = linkTargets.find(target => target.kind === 'skill' && target.dir === dir)
     assert.ok(target && target.kind === 'skill')
     assert.ok(!target.include.includes('agent-routing'))
@@ -179,12 +179,12 @@ test('feedback installs from a shared entry and leaves the existing host instruc
 test('communication rules load as context instead of optional skills on supported hosts', async () => {
   const source = localSkillSources.find(source => source.name === 'communication-rules')
   assert.ok(source && source.kind === 'document')
-  for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md']) {
+  for (const file of ['~/.codex/AGENTS.md', '~/.pi/agent/AGENTS.md', '~/.gemini/GEMINI.md']) {
     const target = linkTargets.find(target => target.kind === 'markdown-section' && target.file === file && target.section === 'communication-rules')
     assert.ok(target && target.kind === 'markdown-section')
     assert.equal(target.source, source.source)
   }
-  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills', '~/.claude/skills', '~/.config/opencode/skills']) {
+  for (const dir of ['~/.codex/skills', '~/.pi/agent/skills', '~/.agents/skills', '~/.claude/skills', '~/.config/opencode/skills', '~/.gemini/config/skills']) {
     const target = linkTargets.find(target => target.kind === 'skill' && target.dir === dir)
     assert.ok(target && target.kind === 'skill')
     assert.ok(!target.include.includes('communication-rules'))

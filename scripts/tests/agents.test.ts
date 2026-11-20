@@ -34,17 +34,37 @@ test('renders native agent definitions from one source', async () => {
     const kimi = await readFile(join(root, 'generated/agents/kimi-code/reviewer.md'), 'utf8')
     const opencode = await readFile(join(root, 'generated/agents/opencode/reviewer.md'), 'utf8')
     const pi = await readFile(join(root, 'generated/agents/pi/reviewer.md'), 'utf8')
+    const antigravity = await readFile(join(root, 'generated/agents/antigravity/reviewer.md'), 'utf8')
 
-    for (const content of [claude, kimi, opencode, pi]) {
+    for (const content of [claude, kimi, opencode, pi, antigravity]) {
       assert.match(content, /name: reviewer/)
       assert.match(content, /Review the assigned change/)
       assert.match(content, /rules\/engineering\/RULES\.md/)
-      assert.match(content, /- dcr/)
+      assert.match(content, /dcr/)
       assert.doesNotMatch(content, /On-demand skills/)
     }
     assert.match(claude, /skills:\n {2}- dcr/)
     assert.match(opencode, /mode: subagent/)
     assert.doesNotMatch(kimi, /mode: subagent/)
+    assert.match(antigravity, /subagent: true\nmainAgent: false/)
+    assert.ok(antigravity.includes(`[dcr](${root}/generated/dcr/SKILL.md)`))
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('rendering removes retired host formats from its owned output tree', async () => {
+  const root = await fixture()
+  const retired = join(root, 'generated/agents/gemini/reviewer.md')
+  try {
+    await mkdir(join(root, 'generated/agents/gemini'), { recursive: true })
+    await writeFile(retired, '# Retired Gemini CLI agent\n')
+    await renderAgents(root)
+    await assert.rejects(readFile(retired), { code: 'ENOENT' })
+    assert.match(await readFile(join(root, 'generated/agents/antigravity/reviewer.md'), 'utf8'), /subagent: true/)
+    const result = await validateSkills({ root, agentOnlySkills: [], installableSkills: [], localSkillSources: [] })
+    assert.deepEqual(result.issues, [])
   }
   finally {
     await rm(root, { recursive: true, force: true })
@@ -262,13 +282,14 @@ for (const change of ['rename', 'delete-all'] as const) {
       assert.equal(before.ok, false)
       assert.deepEqual(before.issues.filter(issue => issue.code === 'unexpected-generated-agent').map(issue => issue.path).sort(), [
         ...(change === 'delete-all' ? ['generated/agents/INDEX.md'] : []),
+        'generated/agents/antigravity/reviewer.md',
         'generated/agents/claude/reviewer.md',
         'generated/agents/kimi-code/reviewer.md',
         'generated/agents/opencode/reviewer.md',
         'generated/agents/pi/reviewer.md',
       ])
       if (change === 'rename')
-        assert.equal(before.issues.filter(issue => issue.code === 'missing-generated-agent').length, 4)
+        assert.equal(before.issues.filter(issue => issue.code === 'missing-generated-agent').length, 5)
 
       await linkAll({ root, localSkillSources: [], targets })
       assert.deepEqual((await validateSkills(validationOptions)).issues, [])

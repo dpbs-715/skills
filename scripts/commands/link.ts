@@ -54,8 +54,8 @@ function resolveJsonObjectEntries(
 
 /**
  * Link every {@link defaultLinkTargets} row to its destination, dispatching on
- * `kind`. Skill directories are only populated when they already exist (the
- * tool is installed); the rule directory is created when its parent exists.
+ * `kind`. Skill directories must exist unless creation under an existing parent
+ * is explicitly enabled; rule directories are created when their parent exists.
  * Local skill sources are rendered once up front so the per-target skill
  * linking below skips re-rendering.
  */
@@ -87,7 +87,8 @@ export async function linkAll({
 
     if (target.kind === 'skill') {
       const dir = homePath(target.dir)
-      if (!await pathExists(dir))
+      if (!await pathExists(dir)
+        && !(target.createIfParentExists && await pathExists(dirname(dir))))
         continue
       results.push(...await createSkillLinks({
         root,
