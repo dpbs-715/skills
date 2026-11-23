@@ -1,0 +1,16 @@
+[
+  { "query": "/create-pr", "should_trigger": true },
+  { "query": "$create-pr feature/login to develop", "should_trigger": true },
+  { "query": "Open a PR from this branch to main.", "should_trigger": true },
+  { "query": "Push this branch and open it for review against develop.", "should_trigger": true },
+  { "query": "帮我提个 MR 到 develop", "should_trigger": true },
+  { "query": "Preview the PR description to release/1.9 but don't create it yet.", "should_trigger": true },
+  { "query": "/review-pr 42", "should_trigger": false },
+  { "query": "Review PR #42 and merge it if it passes.", "should_trigger": false },
+  { "query": "Create a development branch for issue #31.", "should_trigger": false },
+  { "query": "File an issue for the login timeout bug.", "should_trigger": false },
+  { "query": "/submit to develop", "should_trigger": false },
+  { "query": "/push", "should_trigger": false },
+  { "query": "Review my local diff before I open a PR.", "should_trigger": false },
+  { "query": "What's the difference between a GitHub PR and a GitLab MR?", "should_trigger": false }
+]

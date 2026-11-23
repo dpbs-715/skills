@@ -1,0 +1,47 @@
+{
+  "skill_name": "push",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate /push on feature/report with a clean tree. Its upstream and push destination are both origin/feature/report. After fetching, `git rev-list --left-right --count HEAD...origin/feature/report` returns `2 3`. The local-only history is linear, but `git for-each-ref --contains` shows both local-only commits on refs/remotes/origin/feature/report-old. Do not run Git mutations or contact a real remote; describe the actions and final report.",
+      "expected_output": "Identifies that the commits to replay are already published, so automatic integration is blocked. Leaves history unchanged, does not force-push, and reports the containing ref, retained local commits, and the next decision needed.",
+      "files": [],
+      "assertions": ["Does not run git rebase.", "Does not run git push --force or --force-with-lease.", "Names the publication evidence as the blocker.", "Leaves local HEAD and both branch histories unchanged.", "Does not report the result as \"No commits to push.\""]
+    },
+    {
+      "id": 2,
+      "prompt": "Simulate /push on feature/login with a clean index, clean working tree, no untracked files, and no Git operation in progress. The verified destination is origin/feature/login. After fetching all configured remotes, the counts are `2 1`, the merge base is known, the two local-only commits are linear, and no remote ref, tag, or earlier remote-tracking tip contains them. Do not execute Git or contact a real remote.",
+      "expected_output": "Applies automatic integration without asking for confirmation: records the original HEAD, target, and merge base, rebases onto the fetched target with autostash and update-refs disabled, checks the result with range-diff, and pushes normally with final hashes.",
+      "files": [],
+      "assertions": ["Does not ask for confirmation before the rebase.", "Uses `git -c rebase.autoStash=false -c rebase.updateRefs=false rebase origin/feature/login` or the same target ref.", "Does not use git pull or create a merge commit.", "Compares old and new ranges with git range-diff before pushing.", "Pushes without any force option.", "Reports the final rebased commit hashes."]
+    },
+    {
+      "id": 3,
+      "prompt": "Simulate `/push to origin feature/export`. The local branch feature/export has no upstream and three local commits. The fetch from origin succeeds and confirms that refs/heads/feature/export does not exist there. The branch was created from develop, which is the known base. Do not execute Git or contact a real remote.",
+      "expected_output": "Treats the branch as a confirmed new destination, inspects outgoing commits against develop, pushes explicitly to refs/heads/feature/export, and sets the upstream.",
+      "files": [],
+      "assertions": ["Confirms the remote branch is missing before treating this as a new push.", "Inspects the outgoing commits against the known base.", "Pushes with an explicit refspec such as `git push --set-upstream origin HEAD:refs/heads/feature/export`.", "Does not ask for redundant confirmation."]
+    },
+    {
+      "id": 4,
+      "prompt": "Simulate `/push to origin feature/import`. The local branch has no upstream. The fetch from origin fails with `Could not resolve host`. Do not execute Git or contact a real remote.",
+      "expected_output": "Reports the network failure as a blocker. Does not conclude that the remote branch is missing and does not attempt a first push.",
+      "files": [],
+      "assertions": ["Classifies the fetch failure as a blocker.", "Does not treat the failed fetch as evidence that the remote branch does not exist.", "Does not run git push.", "Reports the intended destination, retained local commits, and next action."]
+    },
+    {
+      "id": 5,
+      "prompt": "Simulate /push on a clean, unpublished, linear feature branch. The counts were `1 1`, so you already performed one automatic rebase and one normal push. That push was rejected with `fetch first`. After fetching again, the destination has another new commit, so a second rebase would be needed. Do not execute Git or contact a real remote.",
+      "expected_output": "Stops at the retry limit of one automatic rebase and two push attempts, preserves the local commits, and reports the latest status without looping.",
+      "files": [],
+      "assertions": ["Does not perform a second rebase.", "Makes no further push attempt that would require another rebase.", "Does not force-push.", "Reports the retained local commits and the latest remote state.", "Does not report the result as \"No commits to push.\""]
+    },
+    {
+      "id": 6,
+      "prompt": "Simulate /push on feature/cleanup. The working tree has one modified tracked file. The verified destination is origin/feature/cleanup. Answer for two separate states: (a) counts are `2 0`; (b) counts are `2 1`, with unpublished linear commits. Do not execute Git or contact a real remote.",
+      "expected_output": "In state (a), pushes the two commits normally and says the uncommitted change was excluded. In state (b), blocks automatic integration because the working tree is dirty, without stashing, resetting, or discarding the change.",
+      "files": [],
+      "assertions": ["In state (a), performs a normal push and mentions the excluded uncommitted change.", "In state (b), does not rebase.", "Does not stash, auto-stash, reset, or discard the modified file.", "In state (b), names the dirty working tree as the blocker and the next action."]
+    }
+  ]
+}

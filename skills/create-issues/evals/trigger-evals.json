@@ -1,0 +1,14 @@
+[
+  { "query": "/create-issues", "should_trigger": true },
+  { "query": "File an issue for the export bug: empty notes are written as the string null.", "should_trigger": true },
+  { "query": "把这几条 review findings 批量建成 GitHub issue", "should_trigger": true },
+  { "query": "Turn the TODOs in src/report into GitLab issues, preview only, no branches.", "should_trigger": true },
+  { "query": "根据这段报错日志提一个 issue", "should_trigger": true },
+  { "query": "Explain what issue #34 is asking for.", "should_trigger": false },
+  { "query": "Review issue #34 and tell me whether it is still valid.", "should_trigger": false },
+  { "query": "/zentao-fix-bug 1234", "should_trigger": false },
+  { "query": "Open a PR that closes issue #34.", "should_trigger": false },
+  { "query": "/submit to develop", "should_trigger": false },
+  { "query": "Review my staged changes for bugs.", "should_trigger": false },
+  { "query": "列出我名下待处理的禅道 Bug", "should_trigger": false }
+]

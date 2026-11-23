@@ -1,0 +1,15 @@
+[
+  { "query": "/cpush", "should_trigger": true },
+  { "query": "c&p -ch", "should_trigger": true },
+  { "query": "cnp", "should_trigger": true },
+  { "query": "commit and push", "should_trigger": true },
+  { "query": "Commit my local changes and push them to the remote.", "should_trigger": true },
+  { "query": "把本地改动提交并推送", "should_trigger": true },
+  { "query": "提交一下然后推上去 -ch", "should_trigger": true },
+  { "query": "commit -ch", "should_trigger": false },
+  { "query": "/push", "should_trigger": false },
+  { "query": "/submit to develop", "should_trigger": false },
+  { "query": "Open a PR from feature/login to develop.", "should_trigger": false },
+  { "query": "Review my local changes before I commit and push them.", "should_trigger": false },
+  { "query": "Explain what git commit and git push each do.", "should_trigger": false }
+]

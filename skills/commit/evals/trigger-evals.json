@@ -2,5 +2,13 @@
   { "query": "commit -ch", "should_trigger": true },
   { "query": "As the authorized cpush coordinator, run the commit phase for the confirmed changes.", "should_trigger": true },
   { "query": "Explain what a Git commit contains.", "should_trigger": false },
-  { "query": "Review my local changes; do not commit them.", "should_trigger": false }
+  { "query": "Review my local changes; do not commit them.", "should_trigger": false },
+  { "query": "/commit", "should_trigger": true },
+  { "query": "$commit -en", "should_trigger": true },
+  { "query": "commit and push", "should_trigger": false },
+  { "query": "把改动提交并推送", "should_trigger": false },
+  { "query": "/submit to develop", "should_trigger": false },
+  { "query": "/push", "should_trigger": false },
+  { "query": "Open a PR from feature/login to develop.", "should_trigger": false },
+  { "query": "Explain the Conventional Commits format.", "should_trigger": false }
 ]

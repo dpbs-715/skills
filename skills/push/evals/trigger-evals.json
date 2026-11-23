@@ -1,0 +1,15 @@
+[
+  { "query": "/push", "should_trigger": true },
+  { "query": "push -ch", "should_trigger": true },
+  { "query": "$push to origin feature/export", "should_trigger": true },
+  { "query": "/push I rewrote the branch history on purpose, force push it with lease", "should_trigger": true },
+  { "query": "As the authorized cpush coordinator, run the push phase for the new commit.", "should_trigger": true },
+  { "query": "push it", "should_trigger": false },
+  { "query": "帮我推送一下", "should_trigger": false },
+  { "query": "commit and push", "should_trigger": false },
+  { "query": "把改动提交并推送到远程", "should_trigger": false },
+  { "query": "Push this branch and open a PR to develop.", "should_trigger": false },
+  { "query": "/submit to develop", "should_trigger": false },
+  { "query": "git push 报 non-fast-forward 是什么意思？", "should_trigger": false },
+  { "query": "Explain the difference between --force and --force-with-lease.", "should_trigger": false }
+]
