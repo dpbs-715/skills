@@ -1,7 +1,7 @@
 ---
 name: zentao-init
 description: Initialize, inspect, migrate, or update a workspace ZenTao binding, retaining .zentao for unregistered repositories. Select a server, one required project, and an optional product. Use for /zentao-init, $zentao-init, binding or changing ZenTao address/product/project, migrating .zentao, or validating a binding. Does not change ZenTao business objects.
-compatibility: Requires Node.js 24+ and an installed, authenticated `zentao` CLI supporting `--config` (verified with 0.2.0). Git resolves the project root automatically.
+compatibility: Requires Node.js 24+ and an installed, authenticated `zentao` CLI supporting `--config` (0.2.0 or newer). Git resolves the project root automatically.
 ---
 
 # ZenTao Init
@@ -56,8 +56,8 @@ Names are data, not shell syntax.
 
 ## Interaction
 
-Keep the skill instructions and internal reasoning in English. Communicate with
-the user in the language they are using unless they request another language.
+Communicate with the user in the language they are using unless they request
+another language.
 
 Make unresolved server, account, product, and project selections choice-based.
 Honor exact choices already supplied in this task:
@@ -84,30 +84,31 @@ preview-only request permits no write until the user authorizes it.
 
 ## File contract
 
-Read [the shared binding contract](references/binding.md) before choosing storage
-or validating a mapping. It owns the schema, workspace/legacy precedence,
-server normalization, migration constraints, and symbolic-link restrictions.
-Keep the task-specific selection and verification steps below.
+Read [the binding storage and schema contract](references/binding.md) before
+choosing storage or validating a mapping. It owns the schema, server
+normalization, migration constraints, and symbolic-link restrictions. Read
+[the shared connection workflow](references/connection.md) before any ZenTao
+query; its binding-resolution section is the authoritative effective-binding
+procedure. Keep the task-specific selection and verification steps below.
 
 ## Workflow
 
 ### 1. Resolve the repository root
 
-Run `git rev-parse --show-toplevel` from the user's current working directory.
-Use the returned absolute directory as the repository identity. Discover its
-workspace and resolve `project binding zentao --cwd <root>`. Keep returned
-`source`, `file`, `workspace`, `member`, and `resource` metadata throughout the
-invocation. For a registered but unmigrated member, retain the old binding while
-preparing the requested init change, then save to the selected workspace.
-Do not initialize a workspace implicitly. Select `--workspace` if ambiguous.
+Resolve the repository root and effective binding with the connection
+workflow's binding-resolution procedure, and keep the returned source metadata
+throughout the invocation. Unlike Bug skills, init handles a missing or invalid
+binding in step 2 instead of stopping. For a registered but unmigrated member,
+retain the old binding while preparing the requested init change, then save to
+the selected workspace. Do not initialize a workspace implicitly.
 
-If the command fails, do not silently initialize an arbitrary directory. Ask
+If `git rev-parse` fails, do not silently initialize an arbitrary directory. Ask
 the user to identify or confirm the intended project directory, then place the
 file directly in that directory.
 
 ### 2. Inspect an existing mapping
 
-Resolve the effective binding before querying ZenTao. An explicit workspace
+Use the step 1 result before querying ZenTao. An explicit workspace
 reference owns the binding; do not read or repair a conflicting legacy file.
 Without a reference, check `<git-root>/.zentao` with the legacy rules below.
 
@@ -127,9 +128,7 @@ Without a reference, check `<git-root>/.zentao` with the legacy rules below.
 
 ### 3. Resolve the server and login
 
-Read [the shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md).
-The connection script is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`.
-Use its `profiles` command to inspect saved login metadata without exposing
+Use the connection workflow's `profiles` command to inspect saved login metadata without exposing
 credentials or writing the global configuration.
 
 Resolve the server before any product/project query:
@@ -250,11 +249,9 @@ available from the CLI response, say so explicitly.
 
 ## Downstream contract
 
-Bug skills require version 2 and resolve the server and object scope through
-`project binding zentao` or connection-helper `inspect`. They do not fall back to the global profile's server or
-workspace. A Bug ID, matching object name, or repeated numeric ID is not a
-server override. A request conflicting with the binding must be clarified or
-handled with `/zentao-init`; it must not silently change the query destination.
+Bug skills require version 2. If several workspaces supply bindings, the user
+selects one. Missing or invalid bindings direct the user here; see the
+connection workflow's binding-resolution section.
 
 Account selection is local to an invocation. Keep it outside `.zentao` so
 different developers can use their own saved login on the same service.

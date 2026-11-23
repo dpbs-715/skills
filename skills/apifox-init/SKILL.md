@@ -22,8 +22,9 @@ or validation. Its helper is
 1. Resolve the root with `git rev-parse --show-toplevel`. Outside Git, ask for
    the intended directory. Resolve `project binding apifox --cwd <root>` using
    the shared workspace contract, and preserve native files such as
-   `.apifox/settings.json`. Use helper `inspect --root <root>` for an existing
-   binding; pass a selected `--workspace` when needed. Invalid JSON,
+   `.apifox/settings.json`. A `source: none` result starts initial setup. For
+   an existing binding, use helper `inspect --root <root>`; pass a selected
+   `--workspace` when needed. Invalid JSON,
    unsupported fields/versions, or symlinks require explaining the problem
    before a requested repair, not silently replacing the file.
 2. Run `apifox --version` and inspect relevant `--help` locally. If missing,

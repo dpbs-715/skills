@@ -1,0 +1,13 @@
+[
+  { "query": "/apifox-init", "should_trigger": true },
+  { "query": "$apifox-init Check this repo's Apifox project bindings", "should_trigger": true },
+  { "query": "Configure a second Apifox token for the client team.", "should_trigger": true },
+  { "query": "把这个仓库再绑定一个 Apifox 项目 mobile，设为默认", "should_trigger": true },
+  { "query": "Bind this repository to Apifox project 101 using my work alias.", "should_trigger": true },
+  { "query": "/apifox List the endpoints in backend", "should_trigger": false },
+  { "query": "Import openapi.yaml into the Apifox backend project.", "should_trigger": false },
+  { "query": "在 Apifox 里跑一下登录接口的测试用例", "should_trigger": false },
+  { "query": "Create an Apifox AI branch and update the users endpoint.", "should_trigger": false },
+  { "query": "/psql-init", "should_trigger": false },
+  { "query": "What is Apifox and how does it compare to Postman?", "should_trigger": false }
+]

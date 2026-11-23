@@ -1,0 +1,13 @@
+[
+  { "query": "/apifox List the endpoints in the backend project", "should_trigger": true },
+  { "query": "在 Apifox 的 mobile 项目里新增一个 GET /users 接口", "should_trigger": true },
+  { "query": "Run the Apifox login test scenario against the staging environment.", "should_trigger": true },
+  { "query": "Import openapi.yaml into the Apifox backend project.", "should_trigger": true },
+  { "query": "把 Apifox 里的 ai-login 分支合并到 main", "should_trigger": true },
+  { "query": "/apifox-init", "should_trigger": false },
+  { "query": "Add another Apifox token alias for the client team.", "should_trigger": false },
+  { "query": "把这个仓库再绑定一个 Apifox 项目", "should_trigger": false },
+  { "query": "Generate an OpenAPI spec from my Express routes.", "should_trigger": false },
+  { "query": "Write a Postman collection for the login API.", "should_trigger": false },
+  { "query": "/psql dev-orders Show the columns of public.orders", "should_trigger": false }
+]

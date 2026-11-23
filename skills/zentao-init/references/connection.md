@@ -1,31 +1,39 @@
 # Repository-bound ZenTao connections
 
-Read this workflow before any ZenTao query in init, bug-list, or fix-bug. Use
-the connection script path supplied by the calling SKILL.md. Do not run bare
-`zentao product`, `zentao project`, or `zentao bug` commands: CLI 0.2.0 otherwise
-uses its global current profile, which may belong to another repository.
+Read this workflow before any ZenTao query in init, bug-list, or fix-bug. The
+helper is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`, written
+`<connection-script>` below. Never run bare `zentao` commands: without the
+helper the CLI uses its global current profile, which may belong to another
+repository or server. Never switch the global profile, read or display the CLI
+config, enumerate environment variables, or collect credentials in chat.
 
-## Server identity
+## Resolve the binding
 
-Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md).
-Resolve `node <connection-script> inspect --root '<repository>'` before a bound
-read. It returns the validated binding plus effective source metadata without
-reading credentials or contacting ZenTao. Explicit workspace references take
-precedence; unmigrated members retain `.zentao`. Add `--workspace '<name>'` to
-inspect and bound runs when more than one workspace provides a binding.
+This is the authoritative binding-resolution procedure for all ZenTao skills.
 
-Use [the shared binding contract](binding.md) for schema and migration rules.
+1. Run `git rev-parse --show-toplevel` and use the result as `<repository>`.
+2. Run `node <connection-script> inspect --root '<repository>'`. It applies the
+   workspace/legacy precedence and the binding validation without reading
+   credentials or contacting ZenTao. Do not resolve maps or `.zentao` yourself
+   or rebuild a looser schema from Bug responses.
+3. On success with a `binding`, pin it (`server`, `project`, and `product` or
+   `null`) and its source metadata (`source`, `file`, and for workspace sources
+   `workspace`, `member`, `resource`) for the whole task.
+4. If the helper reports multiple workspace bindings, ask which workspace to
+   use, then pass the same `--workspace '<name>'` to `inspect` and every bound
+   `run --root`.
+5. Treat `source: "none"` and every other error (invalid map or reference,
+   unknown workspace, malformed or schema version 1 `.zentao`, symbolic link)
+   as a binding failure. Stop before any ZenTao request and report the helper's
+   message. Bug skills direct the user to `/zentao-init`; init follows its own
+   inspect/repair workflow. Never fall back to another source or the global
+   profile's server.
 
-Parse `server` as an absolute HTTP(S) URL. Reject credentials in the URL, query
-strings, fragments, whitespace, and invalid URLs. Normalize scheme and host
-case and default ports with the standard URL parser, and remove trailing
-slashes. Preserve the installation path and its case. Never match solely by
-hostname: `https://example.com/team-a` and `https://example.com/team-b` are
-different services, as are HTTP and HTTPS or different non-default ports.
-
-Compare saved profile servers using the same normalization. Store the
-normalized base URL in new or migrated mappings. Never treat a numeric object
-ID or object name as proof that two services are the same.
+Ordinary reads never migrate, repair, or create a binding. Binding IDs are only
+meaningful on the bound server, and the binding alone does not prove a
+product/project relationship or a Bug's ownership. A Bug ID, matching object
+name, or repeated numeric ID is not a server override; a request conflicting
+with the binding needs clarification or `/zentao-init`.
 
 ## Discover saved logins
 
@@ -35,24 +43,26 @@ Check that Node.js and `zentao` are installed, then run:
 node <connection-script> profiles
 ```
 
-The helper copies the active CLI config into a private temporary directory,
-asks `zentao --config <temporary-file> profile --format=json` for metadata, and
-removes the copy afterward. It exposes the CLI's `currentProfile` and entries
-with `key`, `server`, `account`, and `current`; it does not print credentials.
-Saved metadata is evidence of a configured login, not proof its token is still
-valid. The first remote read verifies access.
+The helper reads a private temporary copy of the CLI config and returns
+`currentProfile` plus entries with `key`, `server`, `account`, and `current`;
+it never prints credentials. Saved metadata is evidence of a configured login,
+not proof its token is still valid. The first remote read verifies access.
 
 The helper respects `ZENTAO_CONFIG_FILE`, otherwise uses
 `~/.config/zentao/zentao.json`. When the user explicitly uses a custom CLI
-configuration, pass `--config '<absolute-path>'` to the helper for discovery
-and every subsequent call. Keep this local path out of `.zentao`. Do not read
-or display the config contents or enumerate environment variables yourself.
+configuration, pass `--config '<absolute-path>'` to `profiles` and every `run`.
+Keep this local path out of bindings.
 
 ## Select the server and account
 
-Init selects a server before listing its products/projects. Bug skills require
-the stored server. Once the server is known, filter saved profiles to that
-exact normalized server and choose one:
+Compare servers as normalized URLs: lowercase scheme and host, drop default
+ports and trailing slashes, and keep the installation path and its case. Never
+match solely by hostname: `https://example.com/team-a` and
+`https://example.com/team-b` are different services, as are HTTP and HTTPS or
+different non-default ports.
+
+Init selects a server before listing its products/projects; Bug skills use the
+bound server. Filter saved profiles to that exact server and choose one:
 
 1. Honor an explicitly requested login account or exact profile key only if it
    uniquely matches that server. An assignee filter is not a login selection.
@@ -65,56 +75,32 @@ exact normalized server and choose one:
    then retry discovery. Never substitute another service's login.
 
 Use the metadata's `account` field for the default Bug assignee; do not split
-the profile key at `@`. Retain the exact `key` and server for the entire
-invocation, including pagination, retries, and additional detail reads.
-Re-discovery must not silently select a different account mid-query.
+the profile key at `@`. Retain the exact `key` for the entire invocation,
+including pagination, retries, and additional detail reads. Re-discovery must
+not silently select a different account mid-query.
 
 ## Run a bound read
 
 ```sh
 node <connection-script> run --root '<repository>' --profile '<exact-key>' -- bug 42
-node <connection-script> run --root '<repository>' --profile '<exact-key>' -- product --all --pick=id,name
+node <connection-script> run --root '<repository>' --profile '<exact-key>' -- my bugs --help
 ```
 
 Replace placeholders with verified values and quote shell arguments safely, or
-use a process argument array. The helper emits JSON.
+use a process argument array. The helper emits JSON. `run --root` re-resolves
+the binding, uses its server, rejects a conflicting `--server`, and checks the
+profile against that server inside a private temporary config, so concurrent
+reads never touch the global profile. Initialization may use
+`run --server '<candidate>' --profile ...` without `--root` to validate an
+explicitly selected candidate before saving; Bug workflows use bound reads.
 
-For `run --root`, the helper resolves the effective binding before reading the
-CLI credential copy, uses its server, and rejects a conflicting `--server`.
-Carry the selected `--workspace` on every page when needed. Initialization can
-still use `run --server '<candidate>' --profile ...` without `--root` to validate
-an explicitly selected candidate before saving; Bug workflows use bound reads.
-
-Each invocation:
-
-- creates its own temporary directory with mode `0700` and an opaque config
-  copy with mode `0600`, outside the repository;
-- checks the exact profile key and normalized server against CLI metadata;
-- selects that key inside the copy and verifies the selected key/server again;
-- runs only a supported read command with the same temporary `--config`;
-- removes authentication environment overrides from child processes so the CLI
-  cannot fall back to a different environment login;
-- removes the temporary directory on completion or handled failure.
-
-This permits A and B to query concurrently without switching the shared global
-profile. The CLI still owns credentials; neither credentials nor profile keys
-are stored in the repository mapping. The helper never writes changes back to
-the source CLI config. It also avoids the normal configstore write beside the
-global file during read commands.
-
-Run every page through this helper with the same selected key and server. Its
-allowlist covers the reads these skills need, including `version` (the helper
-requests markdown output and returns parsed `{ cli, serverVersion, server }`;
-server information may be cached in the login profile, so this is not a live
-upgrade check) and `my bugs` (the server-side
-assigned-to-me list, accepting `--browseType` and a JSON-array `--filters`);
-do not bypass rejection by using
-bare CLI commands or enabling raw request/configuration overrides. For uncertain
-read options, run `bug --help` or `my bugs --help` through the helper with the
-same server and key;
-it returns a JSON object containing the help text. If the required option is
-not supported by the helper, report the limitation instead of changing its code
-inside an application repository.
+The helper accepts `product`, `project`, `bug`, and `my bugs` reads and help.
+It rejects write actions and config, auth, or raw request overrides. The
+argument-free `version` command returns `{ cli, serverVersion, server }`, where
+server information may be cached in the login profile and is not a live upgrade
+check. Use `--help` through the helper for uncertain read options. Do not bypass
+a rejection with bare CLI commands; report the limitation instead of changing
+the helper inside an application repository.
 
 ## Failures
 
@@ -125,11 +111,10 @@ inside an application repository.
   API call. Do not retry with the global current profile.
 - Authentication rejection or expiry: ask for terminal re-login to the selected
   service. Permission denial is not proof the token expired; preserve the error.
-- CLI `1005`: report a config read/write failure, not a login failure. The
-  temporary-copy workflow normally avoids sandbox writes beside the global
-  config. If access is still sandbox-blocked, request the environment's approval
-  for the same helper command only; do not broaden it or expose config contents.
-- Unsupported `--config` or failed post-switch verification: stop. Do not switch
+- CLI `1005`: report a config read/write failure, not a login failure. If
+  access is sandbox-blocked, request the environment's approval for the same
+  helper command only; do not broaden it or expose config contents.
+- Unsupported `--config` or failed profile verification: stop. Do not switch
   the global profile as a fallback.
 - Other failures: preserve the reported code and useful message. For paginated
   reads, identify the failed page and do not present partial data as complete.

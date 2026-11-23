@@ -1,46 +1,41 @@
 ---
 name: psql
-description: Use the user's installed PostgreSQL psql CLI and saved local connections to query, inspect, export, or modify database data. Trigger when the user invokes `/psql` or `$psql`, or explicitly asks to use their psql CLI. Execute the requested work, including authorized writes, instead of only providing SQL.
-compatibility: Requires Node.js 24+, Git, the local psql CLI, reachable PostgreSQL, and local connection services. Workspace bindings or a legacy .psql are preferred but optional.
+description: Use the user's installed PostgreSQL psql CLI and repository-bound local connections to query, inspect, export, or modify database data. Trigger when the user invokes `/psql` or `$psql`, or explicitly asks to use their psql CLI; use psql-init to configure or check project bindings. Execute the requested work, including authorized writes, instead of only providing SQL.
+compatibility: Requires Node.js 24+, Git, the local psql CLI, reachable PostgreSQL, local connection services, and an effective workspace or legacy .psql binding created by psql-init.
 ---
 
 # psql
 
 Use the user's local CLI directly. Communicate in the user's language.
 Keep this skill independent of a particular repository or database; resolve
-the actual connection from local configuration and the current request.
+the actual connection from the project binding, local configuration, and the
+current request.
 
 ## Resolve the request and connection
 
-1. Locate `psql` with `command -v psql` and check `psql --version`. If absent
+1. Read [the project connection contract]({{REPO_ROOT}}/skills/psql-init/references/project.md).
+   Resolve `project binding psql --cwd <project-root>` and require a valid
+   `binding`. An explicit workspace reference takes precedence over `.psql`;
+   preserve the returned source throughout the task. If several workspaces
+   provide bindings, ask which one and pass `--workspace`. When `source: none`
+   or configuration is invalid, stop before reading local service files or
+   connecting, report the missing or invalid binding, and direct the user to
+   `/psql-init`. Never enumerate local services, borrow `PGSERVICE`, or write
+   a binding here.
+2. Select an exact service name from the bound manifest: an explicit name in
+   this request, then the user's selection in this task, then
+   `defaultService`. If none applies, offer only the project's bound services
+   as choices. A service outside the manifest requires `/psql-init` to add it.
+   For bare `/psql`, show the project's bound services and ask for the desired
+   operation.
+3. Locate `psql` with `command -v psql` and check `psql --version`. If absent
    from PATH, check `/opt/homebrew/opt/libpq/bin/psql` and
    `/usr/local/opt/libpq/bin/psql`. Use the existing executable; do not install
    software or edit shell configuration as part of a database request.
-2. Read [the project connection contract]({{REPO_ROOT}}/skills/psql-init/references/project.md).
-   Resolve `project binding psql --cwd <project-root>` and use its `binding`.
-   An explicit workspace reference takes precedence over `.psql`; preserve the
-   returned source throughout the task. If several workspaces provide bindings,
-   ask which one and pass `--workspace`. Only `source: none` permits local
-   service discovery; initialization is optional. Invalid configuration is an
-   error, never a reason to fall back or change services.
-3. With a valid manifest, select an exact service name from it: an explicit name
-   in this request, then the user's selection in this task, then
-   `defaultService`. If none applies, offer only the project's services as
-   choices. A service outside the manifest requires `/psql-init` to add it.
-   For bare `/psql`, show the project services and ask for the desired operation.
-   Without a manifest, discover local services using the shared contract. Use
-   an exact service explicitly requested or already selected in this task.
-   Otherwise show a numbered table of service names and dbnames for selection,
-   even if only one exists. Preserve the user's requested operation. Do not
-   choose from `PGSERVICE` or the first entry automatically. If no services are
-   found, report the configuration locations checked and ask the user to
-   configure a local service. Do not require `/psql-init` to continue this path.
 4. Resolve the selected service from local configuration using the shared
-   contract. With a manifest, look up only that service rather than enumerating
-   all connections. Missing local service or a manifest `dbname` mismatch is
-   an error; report it without substituting another service. Without a manifest,
-   use the selected local service's explicit dbname as the expected database;
-   ask the user to configure it if absent.
+   contract. Look up only that bound service rather than enumerating all local
+   connections. Missing local service or a manifest `dbname` mismatch is an
+   error; report it without substituting another service.
 5. Connect using the selected service without overriding its database or
    authentication. Use a safely quoted libpq service value (see the shared
    contract), not raw connection-string interpolation. Verify
@@ -48,9 +43,10 @@ the actual connection from local configuration and the current request.
    SQL. Set a bounded `PGCONNECT_TIMEOUT` if none is configured. Do not expose
    host, port, account, or credentials in the connection summary.
 
-The project manifest avoids repeated discovery and selection. It does not cache
-credentials or bypass runtime database verification. A service name and database
-name do not identify a server globally; local service configuration owns routing.
+The project binding scopes which local services this repository may use. It does
+not cache credentials or bypass runtime database verification. A service name
+and database name do not identify a server globally; local service configuration
+owns routing.
 
 ## Execute queries
 

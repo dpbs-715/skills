@@ -79,8 +79,10 @@ selector for the task; report it with the execution target.
 3. Without a workspace reference, retain the existing repository-local binding:
    `.zentao`, `.psql`, or `.apifox/projects.json`. A registered but unmigrated
    member still follows this path. Do not infer ownership from CLI globals.
-4. `source: none` means the integration is uninitialized. Preserve each skill's
-   existing behavior: PG may offer local services; ZenTao/Apifox require init.
+4. `source: none` means the integration is uninitialized. Working skills stop
+   before service calls and direct the user to the integration's init skill
+   (`/zentao-init`, `/psql-init`, or `/apifox-init`); they do not infer targets
+   from local or global CLI configuration or write bindings implicitly.
 5. Malformed maps, missing references, or invalid legacy bindings fail before
    service calls. Do not reinterpret validation errors as absence. Nonexistent
    repositories and filesystem permission failures are also distinct errors.

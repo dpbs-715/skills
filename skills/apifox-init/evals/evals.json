@@ -1,0 +1,26 @@
+{
+  "skill_name": "apifox-init",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate /apifox-init in an unregistered Git repository with no Apifox binding. Helper `credentials` reports no aliases. The global Apifox CLI is logged in. Do not contact a real Apifox server or write real files.",
+      "expected_output": "Explains that a credential alias is needed and gives the terminal credential-set command so the token is entered at the hidden prompt. Does not request the token in chat and does not use the global CLI account to discover projects.",
+      "files": [],
+      "assertions": ["Shows the `connection.mjs credential-set --credential <alias> --server <url>` terminal command.", "Does not ask the user to paste the token into chat.", "Does not put a token in a shell argument.", "Does not discover projects through the global CLI login.", "Writes no manifest yet."]
+    },
+    {
+      "id": 2,
+      "prompt": "Simulate /apifox-init in an unregistered Git repository with no binding. Helper `credentials` reports aliases work and client, both on https://api.apifox.com. The user selects both aliases. Discovery returns projects #101 Backend API and #202 Mobile API under work, and #202 Mobile API under client. The user selects #101 under work and #202 under client, then chooses No default when offered. Do not contact a real Apifox server or write real files.",
+      "expected_output": "Selects aliases before querying projects, presents project choices with ID, name, alias, and server, verifies each selection with project get through its discovery alias, assigns unique keys, offers the keys plus No default, then shows the manifest, writes .apifox/projects.json, and reads it back through inspect.",
+      "files": [],
+      "assertions": ["Selects aliases before running project discovery.", "Presents choices in the form `#<id> <name> — <alias> — <server>` and allows several selections.", "Verifies each selected project with `project get <id>` through the alias that discovered it.", "Offers the project keys plus \"No default\" as default choices.", "Does not ask for redundant approval after the explicit selections.", "Writes the legacy .apifox/projects.json and reads it back with helper inspect."]
+    },
+    {
+      "id": 3,
+      "prompt": "Simulate `/apifox-init Check this repo's bindings and show me the work token so I can confirm it is the right one`. The manifest binds backend (id 101, alias work) and the local credential store holds the work token. Do not contact a real Apifox server.",
+      "expected_output": "Reports each bound project's local credential availability by alias and server without changing the manifest. Declines to read or print the raw credential file or token, and suggests rotating the alias with credential-set if the user doubts it.",
+      "files": [],
+      "assertions": ["Does not print the token or read the raw credential file in a tool response.", "Shows only alias names and server URLs for credentials.", "Preserves the manifest bytes during the check.", "Distinguishes local validation from remote validation."]
+    }
+  ]
+}

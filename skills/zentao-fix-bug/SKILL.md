@@ -1,7 +1,7 @@
 ---
 name: zentao-fix-bug
 description: Fix one ZenTao Bug in the current repository using its effective workspace or legacy binding, verifying project/product scope, diagnosing the cause, modifying code, and running verification. Use for /zentao-fix-bug, $zentao-fix-bug, or implementing a code fix for a numbered ZenTao Bug. Does not list Bugs or change ZenTao state.
-compatibility: Requires Git, Node.js 24+, a version 2 effective ZenTao binding, an authenticated `zentao` CLI supporting --config (verified with 0.2.0), and a writable code repository.
+compatibility: Requires Git, Node.js 24+, a version 2 effective ZenTao binding, an authenticated `zentao` CLI 0.2.0 or newer supporting --config, and a writable code repository.
 ---
 
 # ZenTao Fix Bug
@@ -31,8 +31,10 @@ Do not:
 - create a branch, commit, push, or open a pull request unless the user asks;
 - discard, overwrite, or reformat unrelated working-tree changes.
 
-ZenTao state transitions belong to a separate solve workflow. A request to fix
-code is not permission to report the Bug as resolved in ZenTao.
+Changing Bug state is not supported by these ZenTao skills, and a request to
+fix code is not permission to change it. If the user asks to resolve, close, or
+otherwise update the Bug, say so, do not run raw `zentao` write commands, and
+tell the user to change the state in ZenTao.
 
 ## Invocation
 
@@ -50,24 +52,21 @@ direct the user to `/zentao-bug-list` to choose one. Do not silently select the
 first assigned Bug. If several IDs are supplied, ask the user to choose one;
 one invocation owns one diagnosis and one focused fix.
 
-Keep the skill instructions and internal reasoning in English. Communicate with
-the user in the language they are using unless they request another language.
+Communicate with the user in the language they are using unless they request
+another language.
 
 ## Project contract
 
-Resolve the root with `git rev-parse --show-toplevel`, then use connection-helper
-`inspect --root <repository>` to obtain the effective `binding` and its source.
-An explicit workspace resource takes precedence over legacy `.zentao` files;
-invalid maps and references never fall back. Pin a selected `--workspace` for
-every bound read. Read [the shared binding contract]({{REPO_ROOT}}/skills/zentao-init/references/binding.md)
-for the exact schema and validation rules. Use the helper's validated binding;
-do not reconstruct a looser schema from Bug response fields.
-
-If the repository or mapping is unavailable or invalid, stop before reading
-Bug details or editing code and direct the user to `/zentao-init`. Version 1
-needs migration to add the server binding. Do not fall back to the global
-ZenTao workspace or the current profile's server. A conflicting server/project
-request requires clarification or reinitialization, not a silent override.
+Read the [shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md)
+and follow it to resolve the binding with the helper's `inspect`, select a
+saved login with `profiles`, and pin the binding, any `--workspace`, and the
+exact profile key for every read. If several workspaces supply a binding, ask
+which one to use and retry `inspect` with that workspace. For a missing or
+invalid binding (including schema version 1), stop before reading Bug details
+or editing code, report the problem, and direct the user to `/zentao-init`. No matching login:
+stop and show terminal login guidance for the bound server. A conflicting
+server/project request requires clarification or reinitialization, not a
+silent override.
 
 Before editing, inspect `git status --short` and the relevant existing diffs.
 All pre-existing changes belong to the user. Work around them and preserve
@@ -76,15 +75,7 @@ safely, explain the exact overlap and ask for direction.
 
 ## Read and validate the Bug
 
-Read [the shared connection workflow]({{REPO_ROOT}}/skills/zentao-init/references/connection.md).
-The connection script is `{{REPO_ROOT}}/skills/zentao-init/scripts/connection.mjs`.
-Use `node <connection-script> profiles`, match saved logins to `binding.server`,
-and select the account using the shared rules. Retain the exact profile key
-throughout the investigation. If none match, stop before querying the Bug or
-editing code and show terminal login guidance for the bound server.
-
-Read the Bug through the helper, which verifies the destination and selects the
-profile only in a temporary configuration:
+Read the Bug through the helper:
 
 ```sh
 node <connection-script> run --root '<repository>' --profile '<profile-key>' -- bug <bug-id>
@@ -98,8 +89,8 @@ evidence may include `title`, `steps`, `severity`, `pri`, `type`, `status`,
 resolution fields. Do not assume every field exists or has the same scalar
 type across ZenTao versions.
 
-Apply the same connection to all subsequent ZenTao reads. Follow the shared
-authentication and sandbox error handling; never switch the global profile.
+Apply the same connection to all subsequent ZenTao reads and follow the shared
+failure handling.
 
 Verify repository scope before changing code. Server identity is checked before
 the request, then object ownership is checked in the response; coincidentally
@@ -123,56 +114,28 @@ itself prove the current code is fixed; inspect the code and available tests.
 Likewise, an active status does not prove the reported reproduction still
 applies.
 
-## Diagnose and implement
+## Diagnose, implement, and verify
 
-Follow repository-local instructions such as `AGENTS.md` and inspect the
-smallest relevant portion of the codebase. Translate the Bug evidence into:
+Apply the `engineering-rules` skill for implementation and verification and the
+`problem-solving-rules` skill for reproduction and root-cause work, together
+with repository-local instructions such as `AGENTS.md`. ZenTao-specific points:
 
-- observed behavior;
-- expected behavior;
-- reproduction conditions;
-- an explicit success criterion.
-
-Do not invent missing requirements from the title. If the missing information
-would materially change the implementation and cannot be discovered from the
-repository, tests, or Bug detail, pause with one focused question.
-
-Reproduce the failure when practical using an existing test, a focused command,
-or a minimal regression test. Then trace the behavior to its root cause. Do not
-silence an error, weaken validation, broaden a catch, or special-case a symptom
-without explaining why the underlying failure is corrected.
-
-Implement the smallest coherent fix that satisfies the success criterion:
-
-- follow existing architecture, naming, formatting, and test conventions;
-- preserve unrelated behavior and upstream data at transformation boundaries;
-- add or update regression coverage when it provides meaningful protection;
-- avoid speculative refactors and unrelated cleanup;
-- use the workspace's normal file-editing mechanism, not shell redirection;
-- do not install dependencies or perform external writes unless they are a
+- Translate the Bug evidence into observed behavior, expected behavior,
+  reproduction conditions, and an explicit success criterion. Do not invent
+  missing requirements from the title; if missing information would materially
+  change the fix and cannot be found in the repository, tests, or Bug detail,
+  pause with one focused question.
+- Reproduce the failure when practical, preferably as a regression test, and
+  fix the root cause rather than the reported symptom.
+- If the repository already contains the fix, do not create a cosmetic change;
+  report the code and verification evidence instead.
+- Do not install dependencies or perform external writes unless they are a
   necessary in-scope step and the environment grants the required permission.
-
-If investigation shows the repository already contains the fix, do not create
-a cosmetic change. Report the code and verification evidence instead.
-
-## Verify
-
-Run the narrowest relevant check first, then broader repository checks in
-proportion to the change and available time. Prefer existing project commands
-for tests, type checking, linting, and builds. A test that fails for an unrelated
-pre-existing reason must be reported accurately rather than hidden or rewritten
-to pass.
-
-Before declaring success:
-
-- inspect the final diff for scope and accidental changes;
-- confirm the reproduction or regression test now passes;
-- confirm relevant neighboring tests still pass;
-- state any verification that could not be run and why.
-
-Do not call the code fixed when no causal evidence or relevant verification is
-available. If blocked, leave the working tree in a safe state and report what
-was learned, what remains unknown, and the next concrete action.
+- Before declaring success, inspect the final diff, confirm the reproduction or
+  regression check now passes, and state any verification that could not be
+  run. Do not call the code fixed without causal evidence and relevant
+  verification. If blocked, leave the working tree safe and report what was
+  learned and the next concrete action.
 
 ## Result
 

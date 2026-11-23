@@ -1,0 +1,14 @@
+[
+  { "query": "/psql", "should_trigger": true },
+  { "query": "/psql dev-orders Show the columns of public.orders", "should_trigger": true },
+  { "query": "$psql Count today's orders in dev-orders", "should_trigger": true },
+  { "query": "用我本地的 psql 查一下 orders 表最近 20 条订单", "should_trigger": true },
+  { "query": "/psql dev-orders 把 public.orders 里 id=123 的备注改成 已审核", "should_trigger": true },
+  { "query": "Use my psql CLI to export the full order query to CSV.", "should_trigger": true },
+  { "query": "/psql-init", "should_trigger": false },
+  { "query": "Add my local dev-orders service to this project's database bindings.", "should_trigger": false },
+  { "query": "检查一下这个项目绑定的数据库服务哪些在本机缺失", "should_trigger": false },
+  { "query": "Write a SQL query that finds duplicate emails; I'll run it myself.", "should_trigger": false },
+  { "query": "Explain the difference between psql and pgAdmin.", "should_trigger": false },
+  { "query": "/apifox List the endpoints in backend", "should_trigger": false }
+]

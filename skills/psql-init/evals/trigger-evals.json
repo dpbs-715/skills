@@ -1,0 +1,13 @@
+[
+  { "query": "/psql-init", "should_trigger": true },
+  { "query": "$psql-init Check which project services are missing locally", "should_trigger": true },
+  { "query": "Bind my local dev-orders and dev-inventory PostgreSQL services to this project.", "should_trigger": true },
+  { "query": "把 dev-orders 设为这个项目的默认数据库服务", "should_trigger": true },
+  { "query": "Migrate this repository's .psql into the workspace binding.", "should_trigger": true },
+  { "query": "/psql-init Verify this project's connections", "should_trigger": true },
+  { "query": "/psql dev-orders select count(*) from public.orders", "should_trigger": false },
+  { "query": "用 psql 把订单 123 的状态改成已发货", "should_trigger": false },
+  { "query": "Explain how ~/.pg_service.conf and .pgpass work.", "should_trigger": false },
+  { "query": "/apifox-init", "should_trigger": false },
+  { "query": "Design a database schema for order shipments.", "should_trigger": false }
+]

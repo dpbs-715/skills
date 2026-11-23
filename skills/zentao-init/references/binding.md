@@ -1,15 +1,16 @@
-# ZenTao binding contract
+# ZenTao binding storage and schema
 
-Use this contract for init, Bug lists, and single-Bug fixes. The shared validator
-in `{{REPO_ROOT}}/scripts/lib/integrationContracts.ts` enforces the binding shape;
-the connection helper's `inspect` command returns a validated effective binding.
+This contract is for `zentao-init`: choosing storage, validating a proposed
+mapping, migrating, and writing. Bug skills do not need it; they resolve the
+effective binding through the helper as described in
+[the connection workflow](connection.md#resolve-the-binding), which is also the
+procedure init uses to inspect an existing binding. The shared validator in
+`{{REPO_ROOT}}/scripts/lib/integrationContracts.ts` enforces the shape below.
 
 Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md)
-before selecting storage. Registered members use a workspace resource;
-unmigrated or unregistered repositories retain UTF-8 JSON at `<git-root>/.zentao`.
-An explicit workspace reference takes precedence, including when a legacy file
-conflicts. Invalid workspace references never fall back. Ordinary reads never
-migrate a binding or create a workspace.
+before selecting storage or writing. Registered members use a workspace
+resource; unmigrated or unregistered repositories retain UTF-8 JSON at
+`<git-root>/.zentao`.
 
 ```json
 {
@@ -31,8 +32,6 @@ These IDs and names are examples, never defaults. The exact top-level keys are
   explicitly omitted. Keep the `product` key when its value is `null`.
 - Each object has exactly a positive safe integer `id` and a non-empty,
   server-returned `name`. Never invent names or extra fields.
-- Binding IDs are local to the exact server. The binding alone does not prove
-  the product/project relationship or a Bug's ownership; consumers verify it.
 - Do not store accounts, tokens, profile keys, or query preferences in bindings.
 
 Treat bindings as data. Reject malformed JSON, unsupported versions/fields,
@@ -44,8 +43,4 @@ CLI server onto old IDs automatically.
 Write registered bindings through `project binding-save zentao`; retain legacy
 files during explicit migration. Preserve unrelated map content and members.
 Check-only requests preserve file bytes and report stale names rather than
-silently rewriting them. Use the calling skill's repair/selection workflow for
-invalid bindings; queries stop before business reads until the binding is valid.
-
-Read [the connection workflow](connection.md) before remote requests for login
-selection, isolated CLI configuration, and failure handling.
+silently rewriting them.

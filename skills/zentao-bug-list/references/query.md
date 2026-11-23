@@ -21,9 +21,8 @@ node <connection-script> run --root '<repository>' --profile '<exact-key>' -- \
 ```
 
 `assignedTo` is case-sensitive. CLI 0.3.0 help incorrectly advertises
-`assignedtome`; on a verified ZenTao 22.6 deployment that value returned zero
-rows, while `assignedTo` returned the assigned Bugs for the same account.
-Use `assignedTo` even with that stale help. The personal endpoint is
+`assignedtome`, which can return zero rows where `assignedTo` returns the same
+account's assigned Bugs. Use `assignedTo` even with that stale help. The personal endpoint is
 `/api.php/v2/my/bugs`; its browse values are not interchangeable with those of
 the product/project Bug endpoint.
 
@@ -112,12 +111,3 @@ Do not stop because one page has no matching rows, displays fewer rows than
 requested, or appears sorted by status. A monotonic first page does not prove
 global server ordering. Full pagination is the completeness rule; `id_asc`
 provides a stable requested order, not permission to skip pages.
-
-## Evidence for the compatibility rule
-
-- [Official CLI documentation](https://github.com/easysoft/zentao-cli/blob/main/docs/cli-usage.md#api-覆盖与版本兼容)
-  documents the corrected case-sensitive `assignedTo` browse value in newer SDKs.
-- Verified on 2026-10-16 with CLI 0.3.0 and ZenTao 22.6: two reads with the same
-  profile and projection returned 7 assigned rows for `assignedTo` and 0 for
-  `assignedtome`. This explains that failure without attributing it to version,
-  permissions, or missing user data.

@@ -14,11 +14,13 @@ first. The helper is `{{REPO_ROOT}}/skills/apifox-init/scripts/connection.mjs`.
 
 ## Connection and scope
 
-1. Inspect bindings with helper `inspect`; when missing or invalid, use
-   `apifox-init`. Never guess a project or borrow the CLI's current account.
-   The helper resolves workspace resources before legacy repository files.
-   Pin its source metadata; when several workspaces provide bindings, select
-   `--workspace <name>` explicitly and keep it on every helper call.
+1. Inspect bindings with helper `inspect`; if it reports a missing or invalid binding,
+   stop before any remote call, report the helper's message, and direct
+   the user to `/apifox-init`. Never guess a project, borrow the CLI's current
+   account, or write a binding here. The helper resolves workspace resources
+   before legacy repository files. Pin its source metadata; when several
+   workspaces provide bindings, select `--workspace <name>` explicitly and keep
+   it on every helper call.
 2. Resolve an explicit project key, then the saved default or sole project.
    When ambiguous, offer project key/name/server choices. Keep that key fixed
    for reads, writes, and verification; a numeric resource ID cannot select it.

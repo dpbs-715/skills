@@ -1,0 +1,26 @@
+{
+  "skill_name": "psql-init",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate /psql-init in an unregistered Git repository with no workspace binding and no .psql file. ~/.pg_service.conf defines dev-orders (dbname orders, host db.internal, user app, password in the file), dev-inventory (dbname inventory), and legacy-report (no dbname). Do not connect to a database or write real files; describe the displayed choices and the write.",
+      "expected_output": "Shows a numbered table of all local services with name and dbname only. Marks legacy-report as not addable until its dbname is configured. Lets the user pick several services, offers their names plus No default when several are chosen, writes .psql without creating a workspace, then reads it back.",
+      "files": [],
+      "assertions": ["Lists services by name and dbname only, without host, user, or password.", "Does not allow legacy-report to be added until it has an explicit dbname.", "Supports selecting several services in one reply without retyping names.", "Offers the selected service names and \"No default\" as default choices.", "Writes the legacy .psql destination and does not create a workspace.", "Reads back the written binding and reports its absolute path."]
+    },
+    {
+      "id": 2,
+      "prompt": "Simulate `/psql-init Check which project services are missing locally`. The existing manifest lists dev-orders (orders), dev-inventory (inventory), and dev-billing (billing). Locally, dev-orders matches, dev-inventory has dbname inventory_v2, dev-billing is absent, and dev-search exists only locally. Do not connect to a database or write files.",
+      "expected_output": "Reports each project service's status without rewriting the manifest: configured locally (connectivity untested), database mismatch, and missing local service with the expected name and dbname. Treats dev-search as an available candidate only.",
+      "files": [],
+      "assertions": ["Does not modify the manifest.", "Reports dev-orders as configured locally with connectivity untested.", "Reports dev-inventory as a database mismatch and leaves the repair decision to the user.", "Reports dev-billing as missing and lists its expected name and dbname.", "Does not add dev-search to the project or remove dev-billing."]
+    },
+    {
+      "id": 3,
+      "prompt": "Simulate `/psql-init Verify this project's connections, and show me the full connection string for dev-orders so I can copy it`. The manifest contains dev-orders (orders). The local service has host, port, user, and a password in ~/.pgpass. Do not connect to a real database.",
+      "expected_output": "Verifies only the selected project services with psql and `SELECT current_database();`, compares the result to the manifest, and reports service and database names only. Explains that connection details stay in local configuration and does not print host, port, user, or password.",
+      "files": [],
+      "assertions": ["Uses `-X -w -v ON_ERROR_STOP=1` with a bounded connection timeout.", "Runs only `SELECT current_database();` and no business-table queries or writes.", "Does not print host, port, user, password, or a full connection string.", "Does not read .pgpass to discover or display connection details."]
+    }
+  ]
+}

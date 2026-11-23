@@ -53,8 +53,10 @@ HTTP(S), without user info, queries, or fragments; normalize trailing slashes.
 Reject unexpected fields, invalid references, symlink manifests and symlink
 `.apifox` directories before writing. Preserve unrelated CLI files.
 
-Only an effective `source: none` means uninitialized; do not infer a binding from
-native `settings.json`, the repository name, or the CLI's current account.
+When no binding exists, `project binding apifox` returns `source: none`. The
+Apifox helper's `inspect` command instead exits with `Apifox binding is missing;
+run apifox-init`. An invalid binding is a separate error. Do not infer a binding
+from native `settings.json`, the repository name, or the CLI's current account.
 An existing native `settings.json` project ID can be offered as a candidate,
 but validate it through a chosen alias before adding it.
 

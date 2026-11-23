@@ -30,7 +30,7 @@
       "prompt": "/zentao-bug-list。CLI 不支持 my bugs。项目 #9 的原始 Bug 列表 pager.total=5081、recPerPage=1000；第一页没有指派给 dev1 的 active Bug，第六页有 3 条匹配。第一页状态看起来单调有序。合法的 schemaVersion 2 .zentao 绑定 server=https://a.example.com/zentao、product=null、project=#9，存在该服务器 dev1 的有效登录。",
       "expected_output": "Uses raw list pages, not per-page CLI filtering. Computes six pages from the effective pager and fetches all six with the same scope/profile/projection using at most three concurrent reads. Does not stop on an empty filtered page or status ordering. Aggregates, de-duplicates, filters, globally sorts and then limits. Reports incomplete if a page fails.",
       "files": [],
-      "expectations": [
+      "assertions": [
         "完整读取 6 页，包含第 6 页匹配项",
         "分页读取原始数据，聚合后统一过滤",
         "不会用第一页状态单调性提前结束"
@@ -71,7 +71,7 @@
       "prompt": "/zentao-bug-list。合法 version 2 绑定产品 #6、项目 #9，账号 limingda。CLI 0.3.0 帮助把 my bugs 的 browseType 写成 assignedtome；同一账号用 assignedtome 得 0 条，用区分大小写的 assignedTo 得 7 条（1 active、6 resolved），都在产品 #6、项目 #9。",
       "expected_output": "Uses the verified assignedTo browse value despite stale help, filters the complete seven raw rows to the one active match in project 9, labels that scope/status and does not report account-wide total 1 or declare the personal API broken.",
       "files": [],
-      "expectations": [
+      "assertions": [
         "查询命令使用区分大小写的 assignedTo",
         "默认队列保留 active 并得到可信的 1 条结果",
         "默认使用项目 #9 范围，产品绑定不扩大查询"
@@ -88,7 +88,7 @@
       "prompt": "/zentao-bug-list 全部。version 2 绑定产品 #6、项目 #9、dev1 登录。my bugs 返回 dev1 的 7 条（1 active、6 resolved），产品都是 #6，其中五条在项目 #9、两条在项目 #10。",
       "expected_output": "Removes only the status filter, retains project 9 and dev1, excludes project 10, reports exact filtered count 5 and uses the personal entry. Does not treat 全部 as all assignees or an implicit whole-product request.",
       "files": [],
-      "expectations": [
+      "assertions": [
         "全部仅取消状态条件，保留当前指派人",
         "项目范围排除项目 #10 的两条 Bug",
         "结果明确 5 条，且不编造缺失行字段"
@@ -123,6 +123,28 @@
       "prompt": "/zentao-bug-list 整个产品。version 2 绑定 project=#9、product=null，dev1 已登录。",
       "expected_output": "Explains that whole-product scope is unavailable because no product is bound, directs the user to zentao-init for that missing binding, and does not guess a product or silently substitute project scope.",
       "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "/zentao-bug-list。当前仓库已在工作区映射中登记，成员引用的 zentao 资源 main 在 resources 中不存在（connection.mjs inspect 报错 Workspace discovery failed）；仓库根目录另有一份合法的 schemaVersion 2 .zentao，server=https://a.example.com/zentao，该服务器 dev1 已登录。",
+      "expected_output": "Runs the helper's inspect, treats its error as a binding failure, and stops before any Bug API call. Reports the helper's message and directs the user to /zentao-init. Does not fall back to the legacy .zentao, the global profile, or bare zentao commands, and does not edit the workspace map or .zentao.",
+      "files": [],
+      "assertions": [
+        "在任何 Bug 查询前停止",
+        "说明绑定错误并引导到 /zentao-init",
+        "不回退到 .zentao、全局 profile 或裸 zentao 命令"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "/zentao-bug-list 列出我待处理的 Bug，然后把 #42 标记为已解决、把 #43 关闭。合法 version 2 绑定 server=https://a.example.com/zentao、项目 #9，dev1 已登录。",
+      "expected_output": "Lists the requested queue normally, then explains that changing Bug state is not supported by these ZenTao skills and that the user should resolve #42 and close #43 in ZenTao. Does not run raw zentao write commands, attempt the helper with write actions, or claim either Bug was changed.",
+      "files": [],
+      "assertions": [
+        "说明这些技能不支持修改 Bug 状态",
+        "不执行任何 zentao 写操作命令",
+        "建议用户在禅道中自行修改状态"
+      ]
     }
   ]
 }

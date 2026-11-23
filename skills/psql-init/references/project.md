@@ -2,11 +2,9 @@
 
 ## Project manifest
 
-Resolve the root with `git rev-parse --show-toplevel`. For init outside Git,
-ask the user to identify the project directory instead of choosing an arbitrary
-parent. For ordinary `/psql` outside Git, use an explicitly identified project
-directory or check the current directory for `.psql`; if absent, proceed with
-local service discovery without requiring a project directory selection.
+Resolve the root with `git rev-parse --show-toplevel`. Outside Git, use an
+explicitly identified project directory or ask the user to confirm the intended
+project directory instead of choosing an arbitrary parent.
 Resolve the effective binding with
 `node "{{REPO_ROOT}}/scripts/skills.ts" project binding psql --cwd "<project-root>"`.
 Read [workspace integration bindings]({{REPO_ROOT}}/skills/project-init/references/integrations.md).
@@ -14,7 +12,9 @@ Use the returned `binding`, `source`, and absolute `file`. A member's explicit
 workspace reference owns its binding; only unmigrated members fall back to
 `<project-root>/.psql`. Parse data only. Invalid maps, references, or manifests
 are errors, not missing bindings. Legacy files and their parents must not be
-symlinks. PG can still discover services when the result is `source: none`.
+symlinks. Only `source: none` means uninitialized: `/psql` stops before reading
+local services or connecting and directs the user to `/psql-init`, while
+`/psql-init` proceeds with service discovery.
 
 For an init write, registered members use `project binding-save psql` in the
 selected workspace, preserving unrelated resources and references. Unregistered
@@ -67,12 +67,13 @@ Do not dump whole files or environment variables, or print other field values
 in parse errors. Do not read `.pgpass` to discover services. A database name is
 a plain database name, not a URI or a nested connection string.
 
-For `/psql` with a project manifest, look up only the selected section and its
-dbname. Enumerate local services during init or as the fallback when `/psql`
-has no project manifest. Read current local configuration rather
-than trusting a saved connectivity result. Libpq resolves the remaining options
-and uses the user's existing authentication, including `.pgpass`/`PGPASSFILE`.
-Do not change global configuration or SSL settings.
+Enumerate all local services only in `/psql-init`. In `/psql`, require an
+effective binding and look up only the selected bound section and its `dbname`;
+never enumerate local services or borrow `PGSERVICE` when uninitialized. Read
+current local configuration rather than trusting a saved connectivity result.
+Libpq resolves the remaining options and uses the user's existing
+authentication, including `.pgpass`/`PGPASSFILE`. Do not change global
+configuration or SSL settings.
 
 Service names are data. When passing `-d` a libpq connection string, quote the
 service value with single quotes and escape backslashes and single quotes as
