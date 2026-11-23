@@ -141,15 +141,12 @@ Reuse equivalent LGTM or findings text for the same head and base instead of
 reposting it. Deduplicate review text separately from formal approval state:
 an old LGTM or approval record does not prove that approval is still active.
 Inspect the authenticated account's current approval for the reviewed revision.
-If it is active, do not submit it again. If it is absent, dismissed, or revoked,
-read any dismissal reason and new discussions and revalidate the passing review
-and permission before restoring it. Unresolved blocking objections prevent restoration;
-unknown approval state must be reported rather than treated as active or absent.
-When eligible, restore the formal approval without reposting the LGTM text.
-For GitHub, submit a new approval review with a short restoration note and the
-reviewed revision, since approval is itself a review; for GitLab, use the guarded
-approve command above without another LGTM note. Verify the resulting active
-approval state before continuing.
+If it is active, do not submit it again. Unknown approval state must be reported
+rather than treated as active or absent. When an earlier LGTM or approval by
+this account exists for the reviewed head and base but the approval is now
+absent, dismissed, or revoked, read
+[the approval restoration rules](references/approval-restoration.md) and follow
+them before restoring it.
 
 Record the base SHA alongside the head SHA in a hidden marker, for example
 `<!-- review-pr: head=<sha> base=<sha> -->`.

@@ -20,6 +20,7 @@ stages. The underlying skills are:
 This skill coordinates scope, grouping, and handoffs. Keep platform commands,
 templates, metadata, duplicate checks, and verification in the underlying
 skills. The explicit handoffs below specialize their standalone branch behavior.
+Read the references below only when their condition applies.
 
 ## Invocation and language
 
@@ -32,11 +33,7 @@ $submit to develop -ch
 /submit -ch to v1.9.0 then test
 ```
 
-Plain `submit to <target>` leaves the PR/MR open. When changes were submitted
-from an isolated worktree, step 5 cleans matching copies from the original
-checkout (including staged changes) once every group's push and PR/MR are
-verified. Later or unrelated edits stay in place. A request to keep the
-original changes skips this cleanup.
+Plain `submit to <target>` leaves the PR/MR open.
 
 Use the current working tree and relevant current-branch commits as input.
 Recognize `-ch` and `-en` anywhere and remove them before parsing the targets.
@@ -56,20 +53,21 @@ operand `merge` before interpreting the operand as a branch:
 
 - `to <target> then merge` authorizes review and merge of each group's PR/MR
   into that target. Load `{{REPO_ROOT}}/skills/review-pr/SKILL.md` and its
-  review dependencies during preflight. For a preview, describe the review
-  and merge conditions and keep the entire workflow read-only.
+  review dependencies during preflight.
 - `to <first-target> then <final-target>` authorizes both reviewed merges.
-  Read [the two-stage merge workflow](references/merge-chain.md) before
-  preflight and follow its Issue, branch, and worktree cleanup rules. To name
-  a literal second branch called `merge`, use `then refs/heads/merge` and
-  resolve that exact branch as the final target.
+  Read [the two-stage merge workflow](references/merge-chain.md) once step 1 finds new work
+  or a verified unfinished submission, before asking scope questions, and follow its scope, Issue, branch, and
+  worktree cleanup rules. To name a literal second branch called `merge`, use
+  `then refs/heads/merge` and resolve that exact branch as the final target.
 
 Invocation authorizes Issue and branch creation, committing, normal pushes,
 PR/MR creation, and the scoped local cleanup in step 5 after scope is settled.
 Proceed by default without per-phase confirmation. Honor requests to keep the
-original changes. Only an explicit request to preview, show the plan first, or
-avoid submission limits the work to inspection and drafting, with no Git or
-remote mutations. Do not implement new features or rewrite published history.
+original changes; they skip step 5. Only an explicit request to preview, show
+the plan first, or avoid submission limits the work to inspection and drafting,
+with no Git or remote mutations; then read
+[the preview workflow](references/preview.md) and follow it instead of writing.
+Do not implement new features or rewrite published history.
 
 ## 1. Inspect and settle scope
 
@@ -78,23 +76,15 @@ files, and current-branch commits relative to the target. Distinguish already
 committed work from new changes. Identify existing Issue/branch/PR associations
 from verified repository evidence or user-provided links.
 
-Batch independent reads of local changes and target refs. For two named
-targets, compare the current remote first target with the remote final target
-before asking about scope. Identify any extra changes the second merge would
-carry beyond the requested work. Use the two-stage guide to recheck the
-actual promotion diff after the first merges.
+When that finds verified Issues, branches, or PRs/MRs from an earlier
+submission of these changes (a repeat invocation, a continuation, or a prior
+isolated worktree submission that left the original changes in place), read
+[the resume rules](references/resume.md) and follow them before settling scope.
 
-On repeat invocations, compare candidate changes with the actual content of
-verified associated branches and PRs/MRs, including merged results in the target.
-This matters when a prior isolated worktree submission left the original changes
-in place. Use diffs and commit/patch equivalence, not matching titles or commit
-hashes alone, to distinguish already submitted work from new changes. Exclude
-verified submitted portions from the new submission scope without changing the
-original working tree or index. If everything is already submitted, resume
-only unfinished steps, such as opening a missing PR, and return verified results.
-For partial overlap, carry only the verified new changes; ask if they cannot be
-separated reliably. Do not reuse a closed or merged PR as an open submission for
-new work.
+If there are no new changes and no verified submission with unfinished steps,
+return verified existing results when applicable or say there is nothing to
+submit. Stop before comparing promotion scope or asking about grouping. A clean
+checkout with a verified unfinished submission can still resume.
 
 Ask about outstanding scope decisions in a single message before any writes:
 
@@ -102,10 +92,9 @@ Ask about outstanding scope decisions in a single message before any writes:
   whether to combine them in one Issue, branch, and PR/MR, submit each
   separately, or use a custom grouping. Multiple files, tests, and documentation
   for the same feature do not by themselves require a grouping question.
-- If the second merge would carry extra changes whose inclusion the user has
-  not authorized, name them and ask whether to include them.
+- Include any scope question required by the two-stage merge workflow.
 
-Use decisions the user has already given. When neither decision is needed,
+Use decisions the user has already given. When no decision is needed,
 continue directly. Otherwise wait for the outstanding answers before writing.
 
 Map each confirmed group to its files, hunks, and commits. Detect shared changes
@@ -113,13 +102,12 @@ or dependencies before promising independent PRs. If those prevent a clean
 split, explain the concrete overlap and ask for a revised grouping or explicit
 dependent-branch plan. Do not silently include another group's work.
 
-If there is no work to submit, return verified existing results when applicable
-or say there is nothing to submit; do not create empty Issues or PRs/MRs.
-
 Before the first write, complete one shared preflight for all confirmed groups:
 
 - Verify the underlying skill files, including commit and push, are readable.
 - Check Git, the selected platform CLI, and authentication for the resolved host.
+  For a GitLab host, read [the GitLab host checks](references/gitlab.md)
+  before its API reads, including in previews.
 - Resolve the Issue destination, source/push repository, target repository and
   branch, and each group's branch base and transfer plan using the underlying skills.
 - Inspect whether each group can reach its branch without losing work or mixing
@@ -130,28 +118,10 @@ Before the first write, complete one shared preflight for all confirmed groups:
   absence of the paths being transferred. Record which local changes each group
   carries so step 5 can verify them against the pushed result.
 
-Carry forward the verified host, project IDs, branch
-mapping and CLI capabilities. Read help for the specific operation when its
-supported flags matter. Keep dependent writes in order and refresh the remote
-revision, approvals, checks and discussions immediately before merging.
-
-For GitLab API reads in a checkout bound to the intended server, use glab's
-repository context and verify the project ID and namespace. A self-managed
-server can advertise a clone URL with a different hostname from the configured
-remote. Verify that both identify the intended project before proceeding.
-Use normal branch and MR endpoints for the current user's permissions and
-merge status. Query administrative settings only when they answer an outstanding
-requirement. Leave nonessential metadata to its owning skill. For preview-only requests, missing authentication does not block a local
-draft; identify remote facts that could not be verified.
-
-For an explicit preview request, produce one consolidated plan for all groups:
-Issue drafts or verified existing Issues, planned branches and bases, commit
-scopes and proposed messages, and PR/MR drafts with source and target repositories.
-Use placeholders for Issue numbers that do not exist yet. Apply the underlying
-skills' drafting guidance without entering their write phases or stopping at
-separate per-skill previews. Return the complete plan and stop. If the user later
-authorizes submission, revalidate relevant state and continue without asking for
-the same approval again.
+Carry forward the verified host, project IDs, branch mapping and CLI
+capabilities. Read help for the specific operation when its supported flags
+matter. Keep dependent writes in order; review-pr owns the pre-merge refresh of
+revisions, approvals, checks, and discussions.
 
 ## 2. Create or reuse each Issue and associated branch
 
@@ -213,27 +183,14 @@ task when the environment provides that capability.
 
 ## 5. Clean up verified local duplicates
 
-After every group has a pushed source branch and a verified PR/MR, clean up the
-duplicate uncommitted changes that were carried from the original checkout to
-isolated worktrees. Verify the current remote source tips contain those exact
-changes, accounting for any rebase during push. Use the published diff or file
-content as evidence. Issue or branch creation alone is insufficient. Run this
-step before reporting completion, with no extra confirmation or wait for merge.
-
-Recheck the original branch and HEAD and compare each candidate path's index
-entry and on-disk state with the recorded state. Only clean paths whose staged
-and unstaged changes are fully accounted for by the verified submission. For
-tracked or staged paths, restore only those literal file paths in the index and
-working tree to the recorded HEAD. For a submitted untracked file, remove only
-that exact file after verifying its current content and mode. Treat both sides
-of a rename as one unit. Recheck immediately before writing and verify the
-result afterwards.
-
-Keep paths with unrelated or later edits, paths with ambiguous staged changes,
-and paths whose recorded state or remote coverage cannot be verified. Keep the
-original checkout in place. Never use a repository-wide reset or clean. If a
-cleanup operation fails, check what actually changed before retrying and report
-any duplicates that remain. A retry may clean only paths it can still verify.
+Run this step only when groups were submitted from an isolated worktree and the
+user did not ask to keep the original changes. After every group has a pushed
+source branch and a verified PR/MR, read
+[the local cleanup rules](references/cleanup.md) and follow them before
+reporting completion, with no extra confirmation or wait for merge. They back
+up the original checkout's affected paths before cleaning only verified
+duplicates; later or unrelated edits stay in place. Never use a repository-wide
+reset or clean.
 
 ## Completion and recovery
 
@@ -249,8 +206,8 @@ Verified previous requests can resume the remaining stages with a clean checkout
 
 Report each group's Issue URL, branch and target, commit identifiers, PR/MR URL,
 and actual verification result. Distinguish created resources from reused ones.
-If isolated worktrees were used, report their paths, list the original file
-paths cleaned in step 5, and identify any retained duplicates and the reason.
+If isolated worktrees were used, report their paths, the step 5 backup path,
+the original file paths cleaned, and any retained duplicates and the reason.
 
 On failure, stop subsequent groups and identify completed steps and the blocked
 step. Preserve created resources. On continuation, inspect current state and

@@ -1,0 +1,14 @@
+[
+  { "query": "/review-pr 42", "should_trigger": true },
+  { "query": "$review-pr https://gitlab.example.com/team/app/-/merge_requests/17", "should_trigger": true },
+  { "query": "Review PR #42 and merge it if everything passes.", "should_trigger": true },
+  { "query": "Review PR #42, comment only, do not merge.", "should_trigger": true },
+  { "query": "帮我审一下 MR !17，没问题就合并", "should_trigger": true },
+  { "query": "Review my uncommitted changes.", "should_trigger": false },
+  { "query": "审查一下我本地暂存的改动", "should_trigger": false },
+  { "query": "Review commit abc123 against its parent.", "should_trigger": false },
+  { "query": "Open a PR from feature/login to develop.", "should_trigger": false },
+  { "query": "/submit -ch to v1.9.0 then merge", "should_trigger": false },
+  { "query": "/dcr", "should_trigger": false },
+  { "query": "Explain how GitHub pull request reviews work.", "should_trigger": false }
+]

@@ -77,6 +77,34 @@
       "expected_output": "In one Chinese message, asks how to group invoice export and login recovery and whether to include the tax rounding fix in the release-to-test merge. Waits for both decisions before writing.",
       "files": [],
       "assertions": ["Offers combined, separate, and custom grouping.", "Names the extra remote fix and requests a decision in the same message.", "Makes no writes or assumptions about either answer."]
+    },
+    {
+      "id": 12,
+      "prompt": "Simulate step 5 of /submit after an isolated submission was pushed and its PR verified. The original state matches preflight: src/a.ts has a staged LF blob with CRLF on disk under core.autocrlf=input, src/deleted.ts has a submitted deletion, and src/new is an untracked dangling symlink included in the submission. Describe cleanup, restoring the original state, and the final report. Do not contact real services or mutate Git.",
+      "expected_output": "Verifies coverage, saves each candidate's index entry or absence and raw disk bytes, link target or absence in the original Git directory, and verifies the backup before cleaning. Restores only cleaned paths from the reported backup with the original LF index blob, CRLF disk bytes, deleted state and dangling link intact.",
+      "files": [],
+      "assertions": ["Uses a new timestamped directory under the original Git directory and verifies it before cleanup.", "Restores the LF index blob and the exact CRLF disk bytes independently.", "Preserves absence and the dangling link target without following it.", "Skips cleanup writes if the backup cannot be completed.", "Reports the backup path, cleaned paths and how to restore them without overwriting later edits."]
+    },
+    {
+      "id": 13,
+      "prompt": "Simulate a repeat /submit to develop. An earlier isolated worktree submission pushed Issue branch fix/12 with an open PR. The original checkout still holds that submitted change plus a new, separable edit in another file. Describe the scope and next steps without real writes.",
+      "expected_output": "Compares the checkout with the verified branch and PR content using diffs or patch equivalence, excludes the already submitted change without modifying the original checkout, and plans to submit only the new edit. Does not duplicate the existing PR.",
+      "files": [],
+      "assertions": ["Uses content comparison rather than titles or hashes alone.", "Excludes the submitted portion without touching the original working tree or index.", "Carries only the new edit and creates no duplicate PR for the submitted change."]
+    },
+    {
+      "id": 14,
+      "prompt": "Simulate /submit to release then test on a clean checkout with no outgoing commits or associated submission. Remote release has an unrelated change missing from test. What do you report?",
+      "expected_output": "Reports that there is nothing to submit. Ends before asking about promotion or writing anything.",
+      "files": [],
+      "assertions": ["Makes no changes.", "Asks no scope or grouping question."]
+    },
+    {
+      "id": 15,
+      "prompt": "Simulate /submit to release then test on a clean checkout. A verified prior submission of this work has merged into release and its promotion to test remains open. What happens next?",
+      "expected_output": "Resumes the verified pending promotion after checking its scope and current state.",
+      "files": [],
+      "assertions": ["Recognizes the unfinished submission despite the clean checkout.", "Does not recreate the first request."]
     }
   ]
 }

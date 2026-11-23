@@ -4,6 +4,16 @@
 then promotes the remote `v1.9.0` branch into `test`. Close resolved Issues
 and clean up their development branches after the final integration.
 
+## Settle scope
+
+Once submit's step 1 identifies new work or a verified unfinished submission,
+compare the current remote first target with the remote final target
+before asking about scope. Identify any extra changes the second merge would
+carry beyond the requested work. If the user has not authorized their
+inclusion, name them and ask whether to include them in the same single scope
+message as any grouping question, before any writes. Recheck the actual
+promotion diff after the first merges.
+
 ## Preflight
 
 - Accept one `then` separator after `to <first-target>`. Require two distinct
