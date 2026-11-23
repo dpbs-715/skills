@@ -56,11 +56,13 @@ connected. Agents must still check applicable nested project instructions.
   `~/.gemini/config/skills/`. The four globally delivered rule skills are
   excluded from this directory to avoid duplicate entries.
 - Native role definitions in `~/.gemini/config/agents/`.
-- A desktop App global `read_file` grant for the entire checkout, including
-  hidden files and local configuration. Linking adds the root directory once to `userSettings.globalPermissionGrants.allow` in
-  `~/.gemini/config/config.json`. Unlinking retains these JSON settings, as it
-  does for OpenCode. Remove individual grants in the App's permission settings
-  to revoke access.
+- Desktop App `read_file` grants for the checkout's `skills/`, `agents/`,
+  `rules/`, and `generated/` directories. Linking adds them to
+  `userSettings.globalPermissionGrants.allow` in `~/.gemini/config/config.json`.
+  This includes the generated personal knowledge index. The source notes under
+  `knowledge/` and private integration data under `local/` are outside these grants.
+  Unlinking preserves existing permissions. For an older installation, follow
+  the [permission migration](upgrading-local-meta.md#antigravity).
 
 The skills use the existing `SKILL.md` bundles, and roles use the same
 `agents/<name>/AGENT.md` and `agent.json` sources. Generated output remains
