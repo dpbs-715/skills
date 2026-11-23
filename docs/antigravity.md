@@ -8,6 +8,7 @@ The integration follows Antigravity's current official documentation:
 - [Rules](https://antigravity.google/docs/rules/)
 - [Skills](https://antigravity.google/docs/skills/)
 - [Custom subagents](https://antigravity.google/docs/subagents/)
+- [Permissions](https://antigravity.google/docs/permissions/)
 - [MCP](https://antigravity.google/docs/mcp/)
 
 The current shared customization directory serves Antigravity App, CLI, and IDE.
@@ -55,6 +56,11 @@ connected. Agents must still check applicable nested project instructions.
   `~/.gemini/config/skills/`. The four globally delivered rule skills are
   excluded from this directory to avoid duplicate entries.
 - Native role definitions in `~/.gemini/config/agents/`.
+- A desktop App global `read_file` grant for the entire checkout, including
+  hidden files and local configuration. Linking adds the root directory once to `userSettings.globalPermissionGrants.allow` in
+  `~/.gemini/config/config.json`. Unlinking retains these JSON settings, as it
+  does for OpenCode. Remove individual grants in the App's permission settings
+  to revoke access.
 
 The skills use the existing `SKILL.md` bundles, and roles use the same
 `agents/<name>/AGENT.md` and `agent.json` sources. Generated output remains
@@ -86,7 +92,7 @@ skills remain readable by path, not installed into the general skill list.
 No model, tool allowlist, MCP configuration, or shell execution policy is
 prescribed; native host defaults and user permissions still apply. The linker
 does not change authentication, model preferences, MCP definitions, trust,
-sandbox settings, or tool permissions. Installing a role does not prove that a
+sandbox settings, or other tool permissions. Installing a role does not prove that a
 particular product version exposes a working delegation tool.
 
 ## Local Configuration
@@ -97,6 +103,7 @@ preserve existing unrelated targets and add:
 1. The four `markdown-section` rows for `~/.gemini/GEMINI.md`.
 2. The `skill` row for `~/.gemini/config/skills`.
 3. The `agent` row for `~/.gemini/config/agents` with `format: 'antigravity'`.
+4. The `json-array` row for the desktop permission grants in `~/.gemini/config/config.json`.
 
 No Gemini CLI-specific targets are needed. Removing a host format from rendering
 does not delete that tool's own files or third-party installations outside this

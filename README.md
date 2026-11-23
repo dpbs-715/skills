@@ -453,6 +453,7 @@ By default this first renders configured `localSkillSources`, then applies the `
 | `~/.pi/agent/skills` | skill | same filtered skill list as `~/.codex/skills` |
 | `~/.pi/agent/AGENTS.md` | markdown-section | communication rules plus short discovery, routing, and feedback entries; prefers an existing higher-precedence context file |
 | `~/.gemini/GEMINI.md` | markdown-section | Antigravity communication rules and short discovery, routing, and feedback entries |
+| `~/.gemini/config/config.json` | json-array | desktop read access to the entire skills checkout |
 | `~/.gemini/config/skills` | skill | same filtered skill list as `~/.codex/skills`; Antigravity App / CLI / IDE target |
 | `~/.kimi-code/skills` | skill | all `installableSkills`, including shared rule skills |
 | `~/.config/opencode/skills` | skill | `installableSkills` minus `alwaysOnInstructionSkills` |
@@ -464,7 +465,7 @@ By default this first renders configured `localSkillSources`, then applies the `
 
 Skill directories are populated only when they already exist, unless a target explicitly sets `createIfParentExists: true`. The Antigravity skill target opts in, so linking creates it only when its immediate host config parent (`~/.gemini/config`) already exists. Other missing skill directories are skipped. Rule directories, agent directories, and JSON config files are created when their parent agent config directory exists.
 
-See [Antigravity compatibility](docs/antigravity.md) for the official paths, native role format, legacy paths, and runtime verification. Both the template and local configuration can use the `GEMINI.md` sections plus the two `~/.gemini/config/` targets. Gemini CLI-specific installation and role generation are not configured.
+See [Antigravity compatibility](docs/antigravity.md) for the official paths, native role format, legacy paths, and runtime verification. Both the template and local configuration can use the `GEMINI.md` sections plus the skill, agent, and desktop permission targets under `~/.gemini/config/`. Gemini CLI-specific installation and role generation are not configured.
 
 Managed Markdown sections are also written only when their parent host directory
 exists. Re-linking updates the section without duplicating it; unlinking removes

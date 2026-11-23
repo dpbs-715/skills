@@ -11,7 +11,7 @@ import type { LinkTarget } from '../lib/metaTypes.ts'
 import { pathExists, repoRoot } from '../lib/utils.ts'
 
 const antigravityTargets = linkTargets.filter(target => 'file' in target
-  ? target.file === '~/.gemini/GEMINI.md'
+  ? target.file.startsWith('~/.gemini/')
   : target.dir.startsWith('~/.gemini/config/'))
 const temporaryPaths: string[] = []
 
@@ -68,7 +68,7 @@ test('the template configures Antigravity without Gemini CLI-specific targets', 
   assert.deepEqual(antigravityTargets.filter(target => target.kind === 'agent'), [
     { dir: '~/.gemini/config/agents', format: 'antigravity', kind: 'agent' },
   ])
-  assert.ok(!antigravityTargets.some(target => target.kind === 'json-array' || target.kind === 'json-object' || target.kind === 'rule'))
+  assert.ok(!antigravityTargets.some(target => target.kind === 'json-object' || target.kind === 'rule'))
   assert.ok(!linkTargets.some(target => 'dir' in target && ['~/.gemini/skills', '~/.gemini/agents'].includes(target.dir)))
 })
 
@@ -84,6 +84,20 @@ test('Antigravity links, relinks and unlinks without changing personal rules, se
   const privateConfiguration = '{"mcpServers":{"private":{"token":"test-secret"}}}\n'
   await writeFile(settings, privateConfiguration)
   await writeFile(mcp, privateConfiguration)
+  const appConfig = join(config, 'config.json')
+  const grants = { allow: ['read_url(example.com)'], ask: ['command(*)'], deny: ['write_file(private)'] }
+  const originalConfig = { userSettings: { globalPermissionGrants: grants, permissionPreset: 'default' }, plugins: {} }
+  await writeFile(appConfig, JSON.stringify(originalConfig))
+  const expectedConfig = {
+    ...originalConfig,
+    userSettings: {
+      ...originalConfig.userSettings,
+      globalPermissionGrants: {
+        ...grants,
+        allow: [...grants.allow, `read_file(${root})`],
+      },
+    },
+  }
   const targets = underHome(antigravityTargets, home)
   const options = { root, localSkillSources: [], targets }
 
@@ -116,6 +130,7 @@ test('Antigravity links, relinks and unlinks without changing personal rules, se
   }
   assert.ok((await linkAll(options)).every(result => result.status === 'exists'))
   assert.equal(await readFile(global, 'utf8'), installed)
+  assert.deepEqual(JSON.parse(await readFile(appConfig, 'utf8')), expectedConfig)
   assert.equal(await readFile(settings, 'utf8'), privateConfiguration)
   assert.equal(await readFile(mcp, 'utf8'), privateConfiguration)
 
@@ -131,6 +146,7 @@ test('Antigravity links, relinks and unlinks without changing personal rules, se
       assert.equal(await readFile(join(target.dir, 'foreign.md'), 'utf8'), '# Foreign agent\n')
     }
   }
+  assert.deepEqual(JSON.parse(await readFile(appConfig, 'utf8')), expectedConfig)
   assert.equal(await readFile(settings, 'utf8'), privateConfiguration)
   assert.equal(await readFile(mcp, 'utf8'), privateConfiguration)
 })

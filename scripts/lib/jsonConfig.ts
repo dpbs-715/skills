@@ -6,7 +6,7 @@ import { pathExists } from './utils.ts'
 
 interface JsonArrayConfigOptions {
   file: string
-  property: string
+  property: string | readonly [string, ...string[]]
   values: readonly string[]
 }
 
@@ -52,12 +52,16 @@ export async function ensureJsonArrayEntries({
   values,
 }: JsonArrayConfigOptions): Promise<LinkResult[]> {
   const config = await readJsonObject(file)
-  const existing = config[property]
+  const path = typeof property === 'string' ? [property] : property
+  const parent = ensureNestedObject(config, path.slice(0, -1), file)
+  const key = path[path.length - 1]
+  const name = path.join('.')
+  const existing = parent[key]
   const entries: string[] = []
 
   if (existing !== undefined) {
     if (!Array.isArray(existing) || existing.some(entry => typeof entry !== 'string'))
-      throw new Error(`Expected ${property} to be a string array in config file: ${file}`)
+      throw new Error(`Expected ${name} to be a string array in config file: ${file}`)
 
     entries.push(...existing)
   }
@@ -71,13 +75,13 @@ export async function ensureJsonArrayEntries({
   }
 
   if (!changed)
-    return [{ name: property, target: file, status: 'exists' }]
+    return [{ name, target: file, status: 'exists' }]
 
-  config[property] = entries
+  parent[key] = entries
   await mkdir(dirname(file), { recursive: true })
   await writeFile(file, `${JSON.stringify(config, null, 2)}\n`)
 
-  return [{ name: property, target: file, status: 'updated' }]
+  return [{ name, target: file, status: 'updated' }]
 }
 
 function ensureNestedObject(config: JsonObject, path: readonly string[], file: string): JsonObject {

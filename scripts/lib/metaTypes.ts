@@ -41,7 +41,7 @@ export interface AgentLinkTarget {
 export interface JsonArrayConfigTarget {
   file: string
   kind: 'json-array'
-  property: string
+  property: string | readonly [string, ...string[]]
   include: readonly string[]
 }
 

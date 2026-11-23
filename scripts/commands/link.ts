@@ -105,7 +105,7 @@ export async function linkAll({
       results.push(...await ensureJsonArrayEntries({
         file,
         property: target.property,
-        values: target.include,
+        values: target.include.map(value => value.replaceAll(REPO_ROOT_TOKEN, () => root)),
       }))
       continue
     }

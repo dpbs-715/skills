@@ -311,6 +311,12 @@ export const linkTargets: readonly LinkTarget[] = [
         include: contextHostSkills,
     },
     { dir: '~/.gemini/config/agents', format: 'antigravity', kind: 'agent' },
+    {
+        file: '~/.gemini/config/config.json',
+        kind: 'json-array',
+        property: ['userSettings', 'globalPermissionGrants', 'allow'],
+        include: ['read_file({{REPO_ROOT}})'],
+    },
     { dir: '~/.codex/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.kimi-code/skills', kind: 'skill', include: installableSkills },
