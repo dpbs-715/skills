@@ -94,7 +94,10 @@ test('Antigravity links, relinks and unlinks without changing personal rules, se
       ...originalConfig.userSettings,
       globalPermissionGrants: {
         ...grants,
-        allow: [...grants.allow, `read_file(${root})`],
+        allow: [
+          ...grants.allow,
+          ...['skills', 'agents', 'rules', 'generated'].map(dir => `read_file(${root}/${dir})`),
+        ],
       },
     },
   }

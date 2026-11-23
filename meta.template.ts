@@ -315,7 +315,12 @@ export const linkTargets: readonly LinkTarget[] = [
         file: '~/.gemini/config/config.json',
         kind: 'json-array',
         property: ['userSettings', 'globalPermissionGrants', 'allow'],
-        include: ['read_file({{REPO_ROOT}})'],
+        include: [
+            'read_file({{REPO_ROOT}}/skills)',
+            'read_file({{REPO_ROOT}}/agents)',
+            'read_file({{REPO_ROOT}}/rules)',
+            'read_file({{REPO_ROOT}}/generated)',
+        ],
     },
     { dir: '~/.codex/skills', kind: 'skill', include: contextHostSkills },
     { dir: '~/.pi/agent/skills', kind: 'skill', include: contextHostSkills },
