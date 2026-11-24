@@ -345,6 +345,7 @@ export const linkTargets: readonly LinkTarget[] = [
             { key: '{{REPO_ROOT}}/agents/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/rules/**', value: 'allow' },
             { key: '{{REPO_ROOT}}/generated/**', value: 'allow' },
+            { key: '{{REPO_ROOT}}/scripts/**', value: 'allow' },
         ],
         file: '~/.config/opencode/opencode.json',
         kind: 'json-object',
