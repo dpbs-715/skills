@@ -2,7 +2,7 @@
 
 ## Start With Scope
 
-Before defining requirements, adding capability, or choosing an implementation, identify the user's intended outcome, what can be omitted or reused, and the smallest useful change. Use confirmed goals, constraints, and acceptance criteria; keep this check brief and apply it to small fixes without adding a report or approval step.
+Before defining requirements, adding capability, or choosing an implementation, identify the user's intended outcome, what can be omitted or reused, and the smallest useful change. Keeping a change small does not mean appending new independent responsibilities to an already large file or function. Use confirmed goals, constraints, and acceptance criteria; keep this check brief and apply it to small fixes without adding a report or approval step.
 
 Read and apply [Build What's Needed](topics/build-what-is-needed.md) for these decisions, including when the user says to start development. Reading this index alone does not apply the topic rules.
 
@@ -21,7 +21,7 @@ Load every matching topic file, and skip unrelated files to keep context small.
 - Complex state/config modeling, state ownership, or asynchronous ordering and recovery: read [topics/state-modeling.md](topics/state-modeling.md).
 - Naming, function signatures, comments, or code readability: read [topics/naming-and-comments.md](topics/naming-and-comments.md).
 - Git branch naming or repository workflow preferences: read [topics/git-conventions.md](topics/git-conventions.md).
-- Choosing or reviewing import paths, organizing directories, or splitting files: read [topics/file-organization.md](topics/file-organization.md).
+- Adding sub-flows, commands, handlers, tool/dispatch branches, or catalog/copy/config entries to an existing module or large file; modifying entry points, module roots, orchestrators, or large UI containers; choosing or reviewing import paths; or organizing directories and splitting files: read [topics/file-organization.md](topics/file-organization.md).
 - Magic values: read [topics/magic-values.md](topics/magic-values.md).
 - Requirements and scope decisions, deciding what to build or remove, process improvement, performance optimization, or automation: read [topics/build-what-is-needed.md](topics/build-what-is-needed.md).
 - Consistency, coherence, single entry points, or matching existing patterns: read [topics/consistency.md](topics/consistency.md).

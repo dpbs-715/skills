@@ -11,3 +11,4 @@ Coherence over local tidiness:
 Restructure deliberately:
 
 - Diagnose the real shape first ("not ugly, just uneven") before reorganizing.
+- Keep a single public entry point without turning it into a monolithic file; when an existing file or catalog has outgrown its boundary, apply the split checkpoints in [file-organization.md](file-organization.md) instead of appending to match past inertia.
