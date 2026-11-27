@@ -25,4 +25,5 @@ Load every matching topic file, and skip unrelated files to keep context small.
 - Magic values: read [topics/magic-values.md](topics/magic-values.md).
 - Requirements and scope decisions, deciding what to build or remove, process improvement, performance optimization, or automation: read [topics/build-what-is-needed.md](topics/build-what-is-needed.md).
 - Consistency, coherence, single entry points, or matching existing patterns: read [topics/consistency.md](topics/consistency.md).
+- When adding shared infrastructure or UI primitives, resolving duplicated foundations, retiring parallel engines, verifying cross-language wire contracts, or excluding smoke and diagnostic harnesses from release builds, read [topics/shared-foundations.md](topics/shared-foundations.md).
 - Replacing mock/static data with real API fields: read [topics/api-integration.md](topics/api-integration.md).

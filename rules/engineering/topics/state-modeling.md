@@ -17,6 +17,7 @@ Choose the representation after understanding the state relationship.
 For changes involving concurrent writes, retries, streaming, or remote synchronization, make the relevant time semantics explicit:
 
 - Identify when a command is accepted, when it completes, and which owner determines ordering.
+- If a command returns an immediate acknowledgement (ACK), keep the initiating interaction pending until an event or snapshot confirms the requested transition. Release it on confirmation or explicit failure so a second submission cannot slip through after acceptance.
 - Where delivery can repeat, define the deduplication identity and the effects a retry may repeat.
 - Define how cancellation, replacement, or a newer revision prevents late results from overwriting current state.
 - For reconnect or replay, identify the authoritative recovery source and how snapshots and subsequent events fit together. Shared state ownership does not imply identical delivery guarantees for every client.

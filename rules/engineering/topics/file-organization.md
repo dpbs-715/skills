@@ -40,6 +40,7 @@ Very large feature files should be split by sub-feature, flow, or responsibility
 - Domain-shared code stays in the domain/module directory.
 - Only cross-domain, business-neutral code goes to common/shared.
 - Do not promote to common just because two files use it once.
+- When a second consumer needs the same critical guarantee, use [shared-foundations.md](shared-foundations.md) to decide what to unify within the owning feature, domain, or shared module.
 
 ## Layout
 
