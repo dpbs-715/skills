@@ -27,7 +27,11 @@ export interface IntegrationBindings {
 }
 
 export type WorkspaceResources = { [K in IntegrationKind]?: Record<string, IntegrationBindings[K]> }
-export type ProjectBindings = Partial<Record<IntegrationKind, string>>
+export type ProjectBindings = Partial<Record<Exclude<IntegrationKind, 'psql'>, string>> & { psql?: string | string[] }
+
+export function resourceNames(reference: string | string[] | undefined): string[] {
+  return typeof reference === 'string' ? [reference] : reference ?? []
+}
 
 export function integrationKind(value: string): IntegrationKind {
   if (!(integrationKinds as readonly string[]).includes(value))
@@ -160,5 +164,13 @@ export function validateResources(value: unknown): WorkspaceResources {
 
 export function validateProjectBindings(value: unknown): ProjectBindings {
   const input = keys(value, integrationKinds, 'Project bindings')
-  return Object.fromEntries(Object.entries(input).map(([kind, name]) => [kind, alias(name)]))
+  return Object.fromEntries(Object.entries(input).map(([kind, reference]) => {
+    if (kind === 'psql' && Array.isArray(reference)) {
+      const names = reference.map(alias)
+      if (!names.length || new Set(names).size !== names.length)
+        throw new Error('PostgreSQL resource list must be non-empty and contain unique aliases')
+      return [kind, names]
+    }
+    return [kind, alias(reference)]
+  }))
 }

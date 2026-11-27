@@ -16,6 +16,12 @@ symlinks. Only `source: none` means uninitialized: `/psql` stops before reading
 local services or connecting and directs the user to `/psql-init`, while
 `/psql-init` proceeds with service discovery.
 
+For multiple environments a member can use `bindings.psql: [dev, test]`.
+Use the combined service list for project-wide checks. Use
+`project binding psql --resource <name>` for a specific environment or a
+resource edit. To change only the list of bound resources, use the
+[workspace save workflow]({{REPO_ROOT}}/skills/project-init/references/workspaces.md#commands).
+
 For an init write, registered members use `project binding-save psql` in the
 selected workspace, preserving unrelated resources and references. Unregistered
 projects retain `.psql`. Explicit migration uses `project binding-import psql`;

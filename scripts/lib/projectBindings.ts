@@ -2,7 +2,7 @@ import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 
-import { alias, type IntegrationBindings, type IntegrationKind, validateBinding } from './integrationContracts.ts'
+import { alias, type IntegrationBindings, type IntegrationKind, type PsqlBinding, resourceNames, validateBinding } from './integrationContracts.ts'
 import { discoverWorkspaceEntries, saveWorkspace } from './projectWorkspaces.ts'
 import { repoRoot } from './utils.ts'
 
@@ -17,6 +17,7 @@ export interface ResolvedBinding<K extends IntegrationKind> {
   workspace?: string
   member?: string
   resource?: string
+  resources?: string[]
   binding?: IntegrationBindings[K]
 }
 
@@ -58,7 +59,22 @@ async function matchingWorkspaces(cwd: string, options: BindingOptions) {
   return { discovered, matches }
 }
 
-export async function resolveProjectBinding<K extends IntegrationKind>(cwd: string, kind: K, options: BindingOptions = {}): Promise<ResolvedBinding<K>> {
+function combinedPsqlBinding(resources: Record<string, PsqlBinding>, names: string[]): PsqlBinding {
+  const services = new Map<string, PsqlBinding['services'][number]>()
+  for (const name of names) {
+    for (const service of resources[name].services) {
+      const previous = services.get(service.name)
+      if (previous && !isDeepStrictEqual(previous, service))
+        throw new Error(`Conflicting definitions for PostgreSQL service ${service.name}; select --resource explicitly`)
+      services.set(service.name, service)
+    }
+  }
+  return { schemaVersion: 1, defaultService: null, services: [...services.values()] }
+}
+
+export async function resolveProjectBinding<K extends IntegrationKind>(cwd: string, kind: K, options: BindingOptions & { resource?: string } = {}): Promise<ResolvedBinding<K>> {
+  if (options.resource !== undefined && kind !== 'psql')
+    throw new Error('--resource selection is only supported for PostgreSQL bindings')
   const { discovered, matches } = await matchingWorkspaces(cwd, options)
   const candidates = matches.flatMap(entry => entry.projects
     .filter(project => project.current && project.bindings?.[kind])
@@ -67,15 +83,20 @@ export async function resolveProjectBinding<K extends IntegrationKind>(cwd: stri
     throw new Error(`Multiple workspace ${kind} bindings; select --workspace explicitly`)
   if (candidates.length === 1) {
     const candidate = candidates[0]
-    const binding = candidate.entry.workspace.resources?.[kind]?.[candidate.resource]
-    if (!binding)
-      throw new Error('Workspace binding resource is missing; no fallback was used')
-    return {
-      source: 'workspace', file: candidate.entry.file, workspace: candidate.entry.name,
-      member: candidate.member, resource: candidate.resource,
-      binding: validateBinding(kind, binding),
+    const names = resourceNames(candidate.resource)
+    if (options.resource !== undefined && !names.includes(options.resource))
+      throw new Error(`Requested PostgreSQL resource is not bound to this project; available: ${names.join(', ')}`)
+    const source = {
+      source: 'workspace' as const, file: candidate.entry.file, workspace: candidate.entry.name, member: candidate.member,
     }
+    const resources = candidate.entry.workspace.resources!
+    if (names.length > 1 && options.resource === undefined)
+      return { ...source, resources: names, binding: validateBinding(kind, combinedPsqlBinding(resources.psql!, names)) }
+    const resource = options.resource ?? names[0]
+    return { ...source, resource, binding: resources[kind]![resource] }
   }
+  if (options.resource !== undefined)
+    throw new Error('No bound workspace PostgreSQL resource to select; no fallback was used')
   return readRepositoryBinding(discovered.current.root, kind)
 }
 
@@ -92,25 +113,26 @@ async function writeProjectBinding<K extends IntegrationKind>(cwd: string, kind:
   const workspace = selected.workspace
   const expected = JSON.stringify(workspace)
   const member = members[0].key
+  const bound = workspace.projects[member].bindings?.[kind]
   if (action === 'import') {
     const group = workspace.resources?.[kind]
     const existing = group && Object.hasOwn(group, resource) ? group[resource] : undefined
     if (existing && !isDeepStrictEqual(validateBinding(kind, existing), binding))
       throw new Error('Import would overwrite a different workspace resource; choose another resource name or update explicitly')
-    const bound = workspace.projects[member].bindings?.[kind]
-    if (bound && bound !== resource)
+    if (bound && !resourceNames(bound).includes(resource))
       throw new Error('Project already references another resource; update the association explicitly')
   }
   workspace.resources = {
     ...workspace.resources,
     [kind]: { ...workspace.resources?.[kind], [resource]: binding },
   }
-  workspace.projects[member].bindings = { ...workspace.projects[member].bindings, [kind]: resource }
+  const reference = Array.isArray(bound) ? [...new Set([...bound, resource])] : resource
+  workspace.projects[member].bindings = { ...workspace.projects[member].bindings, [kind]: reference }
   const saved = await saveWorkspace(workspace, { root: options.root ?? repoRoot(), replace: true, expected })
   return {
     ...saved, member, resource, kind,
     affectedMembers: Object.entries(workspace.projects)
-      .filter(([, project]) => project.bindings?.[kind] === resource).map(([key]) => key),
+      .filter(([, project]) => resourceNames(project.bindings?.[kind]).includes(resource)).map(([key]) => key),
   }
 }
 

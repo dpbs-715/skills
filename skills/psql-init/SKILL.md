@@ -35,6 +35,12 @@ Read [the shared project contract](references/project.md) before proceeding.
    project-only change; no additional generic confirmation is needed. Report
    added/removed services, default, and the absolute manifest path.
 
+For members with multiple PostgreSQL resources, resolve the selected resource
+with `project binding psql --resource <name>` before editing its services or
+default. Never save the combined service list into an individual resource.
+To bind existing environments, set the member's `bindings.psql` to the
+requested names using the workspace save workflow in the shared contract.
+
 For registered members use the workspace resource destination. Before changing
 a shared resource, identify every referencing member and ensure they are in the
 requested scope; otherwise use a separate resource. Preserve all unrelated map

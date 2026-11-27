@@ -100,6 +100,10 @@ fixes one scoped Bug.
 services, and [psql](../skills/psql/SKILL.md) queries or modifies data in those
 bound services through the installed `psql` CLI.
 
+Use `bindings.psql: [dev, test]` to share both environments with a member.
+`project binding psql` lists their services together. Add `--resource test`
+to use only the test services and their configured default.
+
 ## Apifox
 
 - Workflow: [apifox-init](../skills/apifox-init/SKILL.md) and

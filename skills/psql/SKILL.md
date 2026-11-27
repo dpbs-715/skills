@@ -17,7 +17,11 @@ current request.
    Resolve `project binding psql --cwd <project-root>` and require a valid
    `binding`. An explicit workspace reference takes precedence over `.psql`;
    preserve the returned source throughout the task. If several workspaces
-   provide bindings, ask which one and pass `--workspace`. When `source: none`
+   provide bindings, ask which one and pass `--workspace`. A member can bind
+   several PostgreSQL resources. If the user specifies an environment such as
+   `test`, pass that bound resource name with `--resource test` and select
+   a service within it. Otherwise use the combined list for service selection.
+   When `source: none`
    or configuration is invalid, stop before reading local service files or
    connecting, report the missing or invalid binding, and direct the user to
    `/psql-init`. Never enumerate local services, borrow `PGSERVICE`, or write

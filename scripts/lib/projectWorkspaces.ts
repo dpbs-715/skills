@@ -8,7 +8,7 @@ import process from 'node:process'
 import { parse, stringify } from 'yaml'
 
 import { homePath } from './symlink.ts'
-import { type ProjectBindings, type WorkspaceResources, validateProjectBindings, validateResources } from './integrationContracts.ts'
+import { type ProjectBindings, resourceNames, type WorkspaceResources, validateProjectBindings, validateResources } from './integrationContracts.ts'
 import { pathExists, repoRoot } from './utils.ts'
 
 const execFileAsync = promisify(execFile)
@@ -86,7 +86,7 @@ export function validateWorkspace(value: unknown): ProjectWorkspace {
       result.bindings = validateProjectBindings(project.bindings)
       for (const [kind, resource] of Object.entries(result.bindings)) {
         const entries = resources?.[kind as keyof WorkspaceResources]
-        if (!entries || !Object.hasOwn(entries, resource))
+        if (!entries || resourceNames(resource).some(name => !Object.hasOwn(entries, name)))
           throw new Error(`Project ${key} references a missing ${kind} resource`)
       }
     }

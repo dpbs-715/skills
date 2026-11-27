@@ -9,7 +9,7 @@ async function bindingCommand(command: string, args: string[]) {
   const kind = integrationKind(args[0])
   const options: Record<string, string> = {}
   const allowed = command === 'binding'
-    ? ['--cwd', '--workspace']
+    ? ['--cwd', '--workspace', ...(kind === 'psql' ? ['--resource'] : [])]
     : command === 'binding-save' ? ['--cwd', '--workspace', '--resource', '--input'] : ['--cwd', '--workspace', '--resource']
   for (let index = 1; index < args.length; index += 2) {
     const key = args[index]
@@ -21,7 +21,7 @@ async function bindingCommand(command: string, args: string[]) {
   const cwd = options['--cwd'] ?? process.cwd()
   const selection = { workspace: options['--workspace'] }
   if (command === 'binding')
-    return resolveProjectBinding(cwd, kind, selection)
+    return resolveProjectBinding(cwd, kind, { ...selection, resource: options['--resource'] })
   const resource = options['--resource']
   if (!resource)
     throw new Error('--resource is required')

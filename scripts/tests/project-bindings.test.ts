@@ -12,7 +12,7 @@ import { stringify } from 'yaml'
 
 import { type IntegrationKind, validateBinding } from '../lib/integrationContracts.ts'
 import { importProjectBinding, resolveProjectBinding, saveProjectBinding } from '../lib/projectBindings.ts'
-import { listWorkspaces, saveWorkspace } from '../lib/projectWorkspaces.ts'
+import { listWorkspaces, saveWorkspace, validateWorkspace } from '../lib/projectWorkspaces.ts'
 
 const exec = promisify(execFile)
 const serverA = 'https://a.example.test/zentao'
@@ -84,6 +84,48 @@ test('shared resources work from either member and updates preserve other integr
   assert.equal(Object.keys(saved.resources!.zentao!).length, 1)
   assert.equal(saved.projects.api.bindings?.psql, 'backend')
   assert.equal(saved.projects.web.bindings?.psql, undefined)
+})
+
+test('PostgreSQL resource lists combine services and allow selection within the member', async t => {
+  const c = await setup(t)
+  const testService = { name: 'test-orders', dbname: 'orders' }
+  const testBinding = { ...bindings.psql, defaultService: testService.name, services: [...bindings.psql.services, testService] }
+  const map = {
+    ...c.map,
+    resources: { psql: { dev: bindings.psql, test: testBinding, other: bindings.psql } },
+    projects: {
+      web: { ...c.map.projects.web, bindings: { psql: ['dev', 'test'] } },
+      api: { ...c.map.projects.api, bindings: { psql: 'dev' } },
+    },
+  }
+  await saveWorkspace(map, { ...c.options, replace: true })
+  const combined = await resolveProjectBinding(c.web, 'psql', c.options)
+  assert.deepEqual(combined.resources, ['dev', 'test'])
+  assert.deepEqual(combined.binding, { ...testBinding, defaultService: null })
+  const selectTest = { ...c.options, resource: 'test' }
+  assert.deepEqual((await resolveProjectBinding(c.web, 'psql', selectTest)).binding, testBinding)
+  await assert.rejects(resolveProjectBinding(c.api, 'psql', selectTest), /not bound/)
+
+  const updated = await saveProjectBinding(c.api, 'psql', 'dev', bindings.psql, c.options)
+  assert.deepEqual(updated.affectedMembers.sort(), ['api', 'web'])
+  const conflicting = { ...testBinding, services: [{ name: 'orders', dbname: 'other' }, testService] }
+  await saveProjectBinding(c.web, 'psql', 'test', conflicting, c.options)
+  await assert.rejects(resolveProjectBinding(c.web, 'psql', c.options), /Conflicting definitions/)
+  assert.deepEqual((await resolveProjectBinding(c.web, 'psql', selectTest)).binding, conflicting)
+
+  await c.legacy('psql', testBinding, c.web)
+  await assert.rejects(importProjectBinding(c.web, 'psql', 'other', c.options), /overwrite|another resource/)
+  await saveProjectBinding(c.web, 'psql', 'test', testBinding, c.options)
+  await importProjectBinding(c.web, 'psql', 'test', c.options)
+  await saveProjectBinding(c.web, 'psql', 'other', bindings.psql, c.options)
+  assert.deepEqual((await resolveProjectBinding(c.web, 'psql', c.options)).resources, ['dev', 'test', 'other'])
+})
+
+test('workspace validation rejects empty, duplicate, invalid and dangling PostgreSQL references', () => {
+  const resources = { psql: { dev: bindings.psql } }
+  for (const bindings of [{ psql: [] }, { psql: ['dev', 'dev'] }, { psql: ['dev', 'missing'] }, { psql: ['dev', 7] }, { zentao: ['main'] }]) {
+    assert.throws(() => validateWorkspace({ name: 'scm', resources, projects: { web: { path: '/web', bindings } } }))
+  }
 })
 
 test('explicit migration preserves original bytes and refuses different existing resources', async t => {

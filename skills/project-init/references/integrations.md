@@ -68,8 +68,17 @@ node "{{REPO_ROOT}}/scripts/skills.ts" project binding apifox --cwd "<repository
 
 The result includes `source` (`workspace`, `repository`, or `none`), `file`, and
 the validated `binding` when present. Workspace results also identify
-`workspace`, `member`, and `resource`. Pin this source and any needed workspace
+`workspace` and `member`. A single resource returns `resource`. Pin this source and any needed workspace
 selector for the task; report it with the execution target.
+
+A member may set `bindings.psql: [dev, test]` to reference multiple existing
+PostgreSQL resources. The list must be nonempty and contain distinct aliases.
+With multiple resources the resolver returns their names in `resources` and
+combines their services in declaration order with `defaultService: null`.
+Identical service entries appear once. If a name has conflicting definitions,
+select a resource explicitly. Pass `--resource test` to resolve only that
+member's test manifest, including its own default. A scalar such as
+`bindings.psql: dev` retains its original behavior.
 
 1. A matching member's explicit workspace reference is authoritative. Ignore
    legacy repository files for that integration, even if they are invalid or
@@ -109,6 +118,12 @@ and the integration's normal validation. When several maps match, select one
 explicitly. For an unregistered repository, retain the old init destination;
 do not implicitly create a workspace. Initializing a binding does not initialize
 another integration or connect MCP servers.
+
+For a PostgreSQL reference list, save updates or appends the named resource
+and keeps its siblings. Import accepts an already referenced name under the
+existing collision checks. To change membership alone, including converting a
+scalar to a list, update the member's references through the
+[workspace save workflow](workspaces.md#commands). Reuse the existing resources.
 
 ## Explicit Migration
 
